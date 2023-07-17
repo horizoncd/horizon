@@ -39,7 +39,7 @@ var (
 	db, _ = orm.NewSqliteDB("")
 	ctx   context.Context
 	mgrs  = managerparam.InitManager(db)
-	mgr   = mgrs.UserManager
+	mgr   = mgrs.UserMgr
 )
 
 func Test(t *testing.T) {
@@ -49,7 +49,7 @@ func Test(t *testing.T) {
 	)
 
 	method := uint8(idpmodels.ClientSecretSentAsPost)
-	idp, err := mgrs.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+	idp, err := mgrs.IdpMgr.Create(ctx, &idpmodels.IdentityProvider{
 		Model:                   global.Model{ID: 1},
 		Name:                    "netease",
 		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
@@ -71,7 +71,7 @@ func Test(t *testing.T) {
 	}
 	t.Logf(string(b))
 
-	link, err := mgrs.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
+	link, err := mgrs.UserLinksMgr.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
 		Sub:   "netease",
 		Name:  name,
 		Email: email,

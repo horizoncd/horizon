@@ -32,8 +32,6 @@ const (
 	ClusterQueryContainerName = "containerName"
 	ClusterQueryPodName       = "podName"
 	ClusterQueryTailLines     = "tailLines"
-	ClusterQueryStart         = "start"
-	ClusterQueryEnd           = "end"
 	ClusterQueryExtraOwner    = "extraOwner"
 	ClusterQueryHard          = "hard"
 
@@ -41,11 +39,8 @@ const (
 	ClusterQueryIsFavorite = "isFavorite"
 	// ClusterQueryWithFavorite is used to query cluster with favorite field inside.
 	ClusterQueryWithFavorite = "withFavorite"
-	ClusterQueryAction       = "action"
-
-	ClusterQueryByGVK = "gvk"
-
-	ClusterQueryResourceName = "resourceName"
+	ClusterQueryUpdatedAfter = "updatedAfter"
+	ClusterQueryOnlyDeleted  = "onlyDeleted"
 )
 
 const (

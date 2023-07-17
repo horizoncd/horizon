@@ -19,6 +19,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/group"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -38,8 +41,6 @@ import (
 	tmodels "github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -125,7 +126,7 @@ func CreateUsers(t *testing.T) {
 	user5.Name = user5Name
 
 	for _, user := range []usermodel.User{user1, user2, user3, user4, user5} {
-		_, err := manager.UserManager.Create(ctx, &user)
+		_, err := manager.UserMgr.Create(ctx, &user)
 		assert.Nil(t, err)
 	}
 }
@@ -293,7 +294,7 @@ func TestTemplateMember(t *testing.T) {
 		OnlyOwner:    &onlyOwner,
 	}
 
-	_, err = manager.TemplateReleaseManager.Create(ctx, release)
+	_, err = manager.TemplateReleaseMgr.Create(ctx, release)
 	assert.Nil(t, err)
 
 	jerry := &usermodel.User{
@@ -304,7 +305,7 @@ func TestTemplateMember(t *testing.T) {
 		Phone:    "12390821",
 		Admin:    false,
 	}
-	jerry, err = manager.UserManager.Create(ctx, jerry)
+	jerry, err = manager.UserMgr.Create(ctx, jerry)
 	assert.Nil(t, err)
 	createMemberParam := &PostMember{
 		ResourceType: common.ResourceTemplate,

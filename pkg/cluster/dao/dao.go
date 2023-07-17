@@ -252,6 +252,7 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 	}
 
 	genSQL := func(statement *gorm.DB, query *q.Query) *gorm.DB {
+		onlyDeleted := false
 		for k, v := range query.Keywords {
 			switch k {
 			case common.ClusterQueryTagSelector:
@@ -293,9 +294,16 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 					statement = statement.Where("c.id not in (select resource_id from "+
 						"tb_collection where resource_type = 'clusters' and user_id = ?)", userID)
 				}
+			case common.ClusterQueryUpdatedAfter:
+				statement = statement.Where("c.updated_at >= ?", v)
+			case common.ClusterQueryOnlyDeleted:
+				statement = statement.Where("c.deleted_ts > ?", 0)
+				onlyDeleted = true
 			}
 		}
-		statement = statement.Where("c.deleted_ts = 0")
+		if !onlyDeleted {
+			statement = statement.Where("c.deleted_ts = 0")
+		}
 		return statement
 	}
 

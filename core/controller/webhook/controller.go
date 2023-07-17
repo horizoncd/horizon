@@ -56,12 +56,12 @@ type controller struct {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		webhookMgr:     param.WebhookManager,
-		userMgr:        param.UserManager,
-		eventMgr:       param.EventManager,
+		webhookMgr:     param.WebhookMgr,
+		userMgr:        param.UserMgr,
+		eventMgr:       param.EventMgr,
 		clusterMgr:     param.ClusterMgr,
-		applicationMgr: param.ApplicationManager,
-		groupMgr:       param.GroupManager,
+		applicationMgr: param.ApplicationMgr,
+		groupMgr:       param.GroupMgr,
 	}
 }
 

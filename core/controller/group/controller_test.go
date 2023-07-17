@@ -23,6 +23,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	groupmanagermock "github.com/horizoncd/horizon/mock/pkg/group/manager"
@@ -42,8 +45,6 @@ import (
 	tmodels "github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -162,12 +163,12 @@ func TestGetAuthedGroups(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.GroupManager.GetByID(ctx, got)
+				group, _ := manager.GroupMgr.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupMgr.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -402,12 +403,12 @@ func TestControllerCreateGroup(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.GroupManager.GetByID(ctx, got)
+				group, _ := manager.GroupMgr.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupMgr.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -455,12 +456,12 @@ func TestControllerCreateGroup(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.GroupManager.GetByID(ctx, got)
+				group, _ := manager.GroupMgr.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupMgr.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -539,7 +540,7 @@ func TestControllerGetByID(t *testing.T) {
 	id, err := groupCtl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
-	group, err := manager.GroupManager.GetByID(ctx, id)
+	group, err := manager.GroupMgr.GetByID(ctx, id)
 
 	assert.Nil(t, err)
 
@@ -1209,7 +1210,7 @@ func TestControllerTransfer(t *testing.T) {
 	}
 
 	// check transfer success
-	g, err := manager.GroupManager.GetByID(ctx, id)
+	g, err := manager.GroupMgr.GetByID(ctx, id)
 
 	assert.Nil(t, err)
 	assert.Equal(t, id3, g.ParentID)
@@ -1278,7 +1279,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 			if err := groupCtl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			group, _ := manager.GroupManager.GetByID(ctx, tt.args.id)
+			group, _ := manager.GroupMgr.GetByID(ctx, tt.args.id)
 
 			if group != nil {
 				if group.ID > 0 {

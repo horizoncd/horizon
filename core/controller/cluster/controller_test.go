@@ -529,7 +529,7 @@ func test(t *testing.T) {
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
-	tagManager := manager.TagManager
+	tagManager := manager.TagMgr
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	expectparams := make(map[string]string)
@@ -554,11 +554,11 @@ func test(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	appMgr := manager.ApplicationManager
-	trMgr := manager.TemplateReleaseManager
+	appMgr := manager.ApplicationMgr
+	trMgr := manager.TemplateReleaseMgr
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
-	groupMgr := manager.GroupManager
+	groupMgr := manager.GroupMgr
 	registryDAO := registrydao.NewDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
 
@@ -646,12 +646,12 @@ func test(t *testing.T) {
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
-		userManager:          manager.UserManager,
+		userManager:          manager.UserMgr,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
-		eventMgr:             manager.EventManager,
+		eventMgr:             manager.EventMgr,
 		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
 			JwtSigningKey:         "horizon",
 			CallbackTokenExpireIn: time.Hour * 2,
@@ -1091,7 +1091,7 @@ func test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	c.tagMgr = manager.TagManager
+	c.tagMgr = manager.TagMgr
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
@@ -1103,7 +1103,7 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
 	assert.NotNil(t, pr.FinishedAt)
-	tags, err := manager.TagManager.ListByResourceTypeID(ctx, common.ResourceCluster, 1)
+	tags, err := manager.TagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(tags))
 	assert.Equal(t, "test_key", tags[0].Key)
@@ -1301,11 +1301,11 @@ func testV2(t *testing.T) {
 			},
 		}, nil).Times(1)
 
-	appMgr := manager.ApplicationManager
-	trMgr := manager.TemplateReleaseManager
+	appMgr := manager.ApplicationMgr
+	trMgr := manager.TemplateReleaseMgr
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
-	groupMgr := manager.GroupManager
+	groupMgr := manager.GroupMgr
 	envRegionMgr := manager.EnvRegionMgr
 
 	registryDAO := registrydao.NewDAO(db)
@@ -1398,15 +1398,15 @@ func testV2(t *testing.T) {
 		regionMgr:            regionMgr,
 		groupSvc:             groupservice.NewService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
-		userManager:          manager.UserManager,
+		userManager:          manager.UserMgr,
 		autoFreeSvc:          service.New([]string{"dev2", "test2"}),
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
-		tagMgr:               manager.TagManager,
+		tagMgr:               manager.TagMgr,
 		registryFty:          registryFty,
 		cd:                   mockCd,
-		eventMgr:             manager.EventManager,
+		eventMgr:             manager.EventMgr,
 	}
 	applicationGitRepo.EXPECT().GetApplication(gomock.Any(), applicationName, gomock.Any()).
 		Return(&appgitrepo.GetResponse{
@@ -1556,11 +1556,11 @@ func testUpgrade(t *testing.T) {
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	mockCd := cdmock.NewMockCD(mockCtl)
 
-	appMgr := manager.ApplicationManager
-	trMgr := manager.TemplateReleaseManager
+	appMgr := manager.ApplicationMgr
+	trMgr := manager.TemplateReleaseMgr
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
-	groupMgr := manager.GroupManager
+	groupMgr := manager.GroupMgr
 	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
@@ -1622,15 +1622,15 @@ func testUpgrade(t *testing.T) {
 		regionMgr:             regionMgr,
 		groupSvc:              groupservice.NewService(manager),
 		pipelinerunMgr:        manager.PipelinerunMgr,
-		userManager:           manager.UserManager,
+		userManager:           manager.UserMgr,
 		autoFreeSvc:           parameter.AutoFreeSvc,
 		userSvc:               userservice.NewService(manager),
 		schemaTagManager:      manager.ClusterSchemaTagMgr,
 		applicationGitRepo:    applicationGitRepo,
-		tagMgr:                manager.TagManager,
+		tagMgr:                manager.TagMgr,
 		registryFty:           registryFty,
 		cd:                    mockCd,
-		eventMgr:              manager.EventManager,
+		eventMgr:              manager.EventMgr,
 		templateUpgradeMapper: templateUpgradeMapper,
 	}
 

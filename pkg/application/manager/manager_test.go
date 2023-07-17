@@ -17,8 +17,11 @@ package manager
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -33,8 +36,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/global"
 	userdao "github.com/horizoncd/horizon/pkg/user/dao"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -236,7 +239,7 @@ func TestList(t *testing.T) {
 		createdBy       = currentUser.GetID()
 		updatedBy       = currentUser.GetID()
 	)
-	application := &models.Application{
+	application0 := &models.Application{
 		GroupID:         uint(groupID),
 		Name:            name,
 		Description:     description,
@@ -249,10 +252,10 @@ func TestList(t *testing.T) {
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
 	}
-	_, err = mgr.Create(ctx, application, map[string]string{user2.Email: role.Owner})
+	application0, err = mgr.Create(ctx, application0, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)
 
-	application = &models.Application{
+	application1 := &models.Application{
 		GroupID:         2,
 		Name:            "application1",
 		Description:     description,
@@ -265,7 +268,7 @@ func TestList(t *testing.T) {
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
 	}
-	_, err = mgr.Create(ctx, application, nil)
+	application1, err = mgr.Create(ctx, application1, nil)
 	assert.Nil(t, err)
 	total, _, err := mgr.List(ctx, []uint{1, 2}, q.New(nil))
 	assert.Nil(t, err)
@@ -285,4 +288,39 @@ func TestList(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, total, 1)
 	assert.Equal(t, apps[0].Name, "application0")
+
+	total, _, err = mgr.List(ctx, nil, &q.Query{
+		Keywords: q.KeyWords{
+			common.ApplicationQueryID: application0.ID,
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, total)
+
+	total, _, err = mgr.List(ctx, nil, &q.Query{
+		Keywords: q.KeyWords{
+			common.ApplicationQueryID: []uint{application0.ID, application1.ID},
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, total)
+
+	err = mgr.DeleteByID(ctx, application0.ID)
+	assert.Nil(t, err)
+
+	total, apps, err = mgr.List(ctx, nil, &q.Query{})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, total)
+	for _, app := range apps {
+		log.Info(ctx, fmt.Sprintf("app: %#v", app))
+	}
+
+	total, _, err = mgr.List(ctx, nil, &q.Query{
+		Keywords: q.KeyWords{
+			common.ApplicationQueryID:          []uint{application0.ID, application1.ID},
+			common.ApplicationQueryWithDeleted: true,
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, total)
 }

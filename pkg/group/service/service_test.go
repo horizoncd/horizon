@@ -21,12 +21,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/lib/orm"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -83,7 +84,7 @@ func TestServiceGetChildByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := service{
-				groupManager: manager.GroupManager,
+				groupManager: manager.GroupMgr,
 			}
 			got, err := s.GetChildByID(ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {

@@ -52,7 +52,7 @@ func NewOutPutGetter(ctx context.Context, repo templaterepo.TemplateRepo, m *man
 	return &getter{
 		templateRepo:       repo,
 		templateMgr:        m.TemplateMgr,
-		templateReleaseMgr: m.TemplateReleaseManager,
+		templateReleaseMgr: m.TemplateReleaseMgr,
 	}, nil
 }
 

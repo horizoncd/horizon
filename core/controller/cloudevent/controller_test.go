@@ -21,6 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
@@ -40,9 +44,6 @@ import (
 	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/stretchr/testify/assert"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/mock/gomock"
 )
@@ -256,10 +257,10 @@ func Test(t *testing.T) {
 		PipelineJSONBlob:    map[string]interface{}{},
 		ApplicationJSONBlob: map[string]interface{}{},
 	}, nil)
-	application, _ := manager.ApplicationManager.Create(ctx, &appmodels.Application{
+	application, _ := manager.ApplicationMgr.Create(ctx, &appmodels.Application{
 		Name: "app",
 	}, map[string]string{})
-	user, _ := manager.UserManager.Create(ctx, &usermodels.User{
+	user, _ := manager.UserMgr.Create(ctx, &usermodels.User{
 		Name: "user",
 	})
 	cluster, _ := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
@@ -280,7 +281,7 @@ func Test(t *testing.T) {
 
 	p := &param.Param{Manager: manager}
 	p.ClusterGitRepo = clusterGitRepo
-	p.TemplateReleaseManager = templateReleaseMgr
+	p.TemplateReleaseMgr = templateReleaseMgr
 	c := NewController(tektonFty, p)
 	err = c.CloudEvent(ctx, &WrappedPipelineRun{
 		PipelineRun: pipelineRun,

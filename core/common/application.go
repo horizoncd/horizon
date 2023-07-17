@@ -21,4 +21,7 @@ const (
 	ApplicationQueryByRelease        = "templateRelease"
 	ApplicationQueryByGroup          = "groupID"
 	ApplicationQueryByGroupRecursive = "groupRecursive"
+	ApplicationQueryID               = "id"
+
+	ApplicationQueryWithDeleted = "withDeleted"
 )

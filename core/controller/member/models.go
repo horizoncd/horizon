@@ -108,12 +108,12 @@ type converter struct {
 
 func New(param *param.Param) ConvertMemberHelp {
 	return &converter{
-		userManager:    param.UserManager,
+		userManager:    param.UserMgr,
 		groupSvc:       param.GroupSvc,
 		applicationSvc: param.ApplicationSvc,
 		clusterSvc:     param.ClusterSvc,
 		templateMgr:    param.TemplateMgr,
-		releaseMgr:     param.TemplateReleaseManager,
+		releaseMgr:     param.TemplateReleaseMgr,
 	}
 }
 

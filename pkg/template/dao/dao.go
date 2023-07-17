@@ -170,6 +170,9 @@ func (d dao) UpdateByID(ctx context.Context, templateID uint, template *models.T
 		}
 
 		oldTemplate.UpdatedBy = template.UpdatedBy
+		if template.Type != "" {
+			oldTemplate.Type = template.Type
+		}
 		if template.Repository != "" {
 			oldTemplate.Repository = template.Repository
 		}

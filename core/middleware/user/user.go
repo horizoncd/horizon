@@ -30,6 +30,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
+
 	"github.com/horizoncd/horizon/core/common"
 	coreconfig "github.com/horizoncd/horizon/core/config"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -63,7 +64,7 @@ func Middleware(param *param.Param, store sessions.Store,
 	config *coreconfig.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// 1. aksk auth if operator header exists
-		user, err := akskAuthn(c, config.AccessSecretKeys, param.UserManager)
+		user, err := akskAuthn(c, config.AccessSecretKeys, param.UserMgr)
 		if err != nil {
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
 			return

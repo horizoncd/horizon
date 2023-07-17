@@ -61,8 +61,8 @@ func NewService(ctx context.Context, manager *managerparam.Manager, config event
 		eventHandlers: map[string]EventHandler{},
 		resume:        true,
 
-		eventMgr:   manager.EventManager,
-		webhookMgr: manager.WebhookManager,
+		eventMgr:   manager.EventMgr,
+		webhookMgr: manager.WebhookMgr,
 	}
 }
 

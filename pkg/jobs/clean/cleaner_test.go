@@ -19,12 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/pkg/config/clean"
 	"github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	wmodels "github.com/horizoncd/horizon/pkg/webhook/models"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEventClean(t *testing.T) {
@@ -48,7 +49,7 @@ func TestEventClean(t *testing.T) {
 		ResourceID:       0,
 	}
 
-	webhook, err = mgr.WebhookManager.CreateWebhook(ctx, webhook)
+	webhook, err = mgr.WebhookMgr.CreateWebhook(ctx, webhook)
 	assert.Nil(t, err)
 
 	durationKept := time.Duration(0)
@@ -65,7 +66,7 @@ func TestEventClean(t *testing.T) {
 		CreatedAt: time.Now().Add(-durationKept),
 	}
 
-	events, err := mgr.EventManager.CreateEvent(ctx, event)
+	events, err := mgr.EventMgr.CreateEvent(ctx, event)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(events))
 	eventNeedToKept := events[0]
@@ -77,7 +78,7 @@ func TestEventClean(t *testing.T) {
 		CreatedAt: time.Now().Add(-durationDeleted),
 		UpdatedAt: time.Now().Add(-durationDeleted),
 	}
-	webhookNeedToDelete, err = mgr.WebhookManager.CreateWebhookLog(ctx, webhookNeedToDelete)
+	webhookNeedToDelete, err = mgr.WebhookMgr.CreateWebhookLog(ctx, webhookNeedToDelete)
 	assert.Nil(t, err)
 
 	webhookNeedToKeep := &wmodels.WebhookLog{
@@ -87,7 +88,7 @@ func TestEventClean(t *testing.T) {
 		CreatedAt: time.Now().Add(-durationKept),
 		UpdatedAt: time.Now().Add(-durationKept),
 	}
-	webhookNeedToKeep, err = mgr.WebhookManager.CreateWebhookLog(ctx, webhookNeedToKeep)
+	webhookNeedToKeep, err = mgr.WebhookMgr.CreateWebhookLog(ctx, webhookNeedToKeep)
 	assert.Nil(t, err)
 
 	event = &models.Event{
@@ -100,7 +101,7 @@ func TestEventClean(t *testing.T) {
 		CreatedAt: time.Now().Add(-durationDeleted),
 	}
 
-	events, err = mgr.EventManager.CreateEvent(ctx, event)
+	events, err = mgr.EventMgr.CreateEvent(ctx, event)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(events))
 	eventNeedToDelete := events[0]
@@ -122,7 +123,7 @@ func TestEventClean(t *testing.T) {
 		CreatedAt: time.Now().Add(-durationDeleted),
 	}
 
-	events, err = mgr.EventManager.CreateEvent(ctx, event)
+	events, err = mgr.EventMgr.CreateEvent(ctx, event)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(events))
 	eventNeedToDelete2 := events[0]
@@ -148,18 +149,18 @@ func TestEventClean(t *testing.T) {
 	cleaner.webhookLogClean(ctx, current)
 	cleaner.eventClean(ctx, current)
 
-	_, err = mgr.EventManager.GetEvent(ctx, eventNeedToKept.ID)
+	_, err = mgr.EventMgr.GetEvent(ctx, eventNeedToKept.ID)
 	assert.Nil(t, err)
 
-	_, err = mgr.EventManager.GetEvent(ctx, eventNeedToDelete.ID)
+	_, err = mgr.EventMgr.GetEvent(ctx, eventNeedToDelete.ID)
 	assert.NotNil(t, err)
 
-	_, err = mgr.EventManager.GetEvent(ctx, eventNeedToDelete2.ID)
+	_, err = mgr.EventMgr.GetEvent(ctx, eventNeedToDelete2.ID)
 	assert.NotNil(t, err)
 
-	_, err = mgr.WebhookManager.GetWebhookLog(ctx, webhookNeedToKeep.ID)
+	_, err = mgr.WebhookMgr.GetWebhookLog(ctx, webhookNeedToKeep.ID)
 	assert.Nil(t, err)
 
-	_, err = mgr.WebhookManager.GetWebhookLog(ctx, webhookNeedToDelete.ID)
+	_, err = mgr.WebhookMgr.GetWebhookLog(ctx, webhookNeedToDelete.ID)
 	assert.NotNil(t, err)
 }

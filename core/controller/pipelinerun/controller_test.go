@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
@@ -47,7 +49,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	"github.com/stretchr/testify/assert"
 
 	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"

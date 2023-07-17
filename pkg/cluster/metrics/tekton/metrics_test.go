@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package tekton
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 //nolint:lll

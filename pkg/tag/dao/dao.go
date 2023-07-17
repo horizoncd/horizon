@@ -17,11 +17,12 @@ package dao
 import (
 	"context"
 
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/common"
 	"github.com/horizoncd/horizon/pkg/tag/models"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type DAO interface {
@@ -48,12 +49,17 @@ func NewDAO(db *gorm.DB) DAO {
 
 func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error) {
 	var tags []*models.Tag
-	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
+	err := d.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.WithContext(ctx).Where("resource_type = ? AND resource_id = ?", resourceType, resourceID).Find(&tags)
 
-	if result.Error != nil {
-		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())
+		if result.Error != nil {
+			return herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-
 	return tags, nil
 }
 

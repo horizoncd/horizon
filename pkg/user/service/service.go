@@ -35,7 +35,7 @@ type service struct {
 
 func NewService(manager *managerparam.Manager) Service {
 	return &service{
-		userManager: manager.UserManager,
+		userManager: manager.UserMgr,
 	}
 }
 

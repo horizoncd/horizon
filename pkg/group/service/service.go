@@ -109,6 +109,6 @@ func (s service) GetChildrenByIDs(ctx context.Context, ids []uint) (map[uint]*Ch
 
 func NewService(manager *managerparam.Manager) Service {
 	return &service{
-		groupManager: manager.GroupManager,
+		groupManager: manager.GroupMgr,
 	}
 }

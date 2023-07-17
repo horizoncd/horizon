@@ -17,6 +17,8 @@ package cluster
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/horizoncd/horizon/core/config"
 	"github.com/horizoncd/horizon/core/controller/build"
 	"github.com/horizoncd/horizon/lib/q"
@@ -53,7 +55,6 @@ import (
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Controller interface {
@@ -169,9 +170,9 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		commitGetter:          param.GitGetter,
 		cd:                    param.CD,
 		k8sutil:               param.K8sUtil,
-		applicationMgr:        param.ApplicationManager,
+		applicationMgr:        param.ApplicationMgr,
 		applicationSvc:        param.ApplicationSvc,
-		templateReleaseMgr:    param.TemplateReleaseManager,
+		templateReleaseMgr:    param.TemplateReleaseMgr,
 		templateSchemaGetter:  param.TemplateSchemaGetter,
 		autoFreeSvc:           param.AutoFreeSvc,
 		outputGetter:          param.OutputGetter,
@@ -183,16 +184,16 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		pipelineMgr:           param.PipelineMgr,
 		tektonFty:             param.TektonFty,
 		registryFty:           registryfty.Fty,
-		userManager:           param.UserManager,
+		userManager:           param.UserMgr,
 		userSvc:               param.UserSvc,
-		memberManager:         param.MemberManager,
-		groupManager:          param.GroupManager,
+		memberManager:         param.MemberMgr,
+		groupManager:          param.GroupMgr,
 		schemaTagManager:      param.ClusterSchemaTagMgr,
-		tagMgr:                param.TagManager,
+		tagMgr:                param.TagMgr,
 		grafanaService:        param.GrafanaService,
 		grafanaConfig:         config.GrafanaConfig,
 		buildSchema:           param.BuildSchema,
-		eventMgr:              param.EventManager,
+		eventMgr:              param.EventMgr,
 		tokenSvc:              param.TokenSvc,
 		tokenConfig:           config.TokenConfig,
 		templateUpgradeMapper: config.TemplateUpgradeMapper,

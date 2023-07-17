@@ -108,6 +108,7 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
+	clustermetrcis "github.com/horizoncd/horizon/pkg/cluster/metrics"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
@@ -457,7 +458,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		TemplateSchemaGetter: templateSchemaGetter,
 		CD: cd.NewCD(regionInformers, clusterGitRepo, coreConfig.ArgoCDMapper,
 			coreConfig.GitopsRepoConfig.DefaultBranch),
-		K8sUtil:        cd.NewK8sUtil(regionInformers, manager.EventManager),
+		K8sUtil:        cd.NewK8sUtil(regionInformers, manager.EventMgr),
 		OutputGetter:   outputGetter,
 		TektonFty:      tektonFty,
 		ClusterGitRepo: clusterGitRepo,
@@ -578,7 +579,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	// start jobs
 	cleaner := clean.New(coreConfig.Clean, manager)
 	autoFreeJob := func(ctx context.Context) {
-		autofree.Run(ctx, &coreConfig.AutoFreeConfig, manager.UserManager, clusterCtl, prCtl)
+		autofree.Run(ctx, &coreConfig.AutoFreeConfig, manager.UserMgr, clusterCtl, prCtl)
 	}
 	eventHandlerJob, eventHandlerSvc := eventhandler.New(ctx, coreConfig.EventHandlerConfig, manager)
 	webhookJob, _ := jobwebhook.New(ctx, eventHandlerSvc, coreConfig.WebhookConfig, manager)
@@ -623,6 +624,11 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 
 	// register routes
 	health.RegisterRoutes(r)
+	clustermetrcis.NewMetrics(
+		manager.ApplicationMgr,
+		manager.ClusterMgr,
+		manager.TagMgr,
+		manager.GroupMgr)
 	metrics.RegisterRoutes(r)
 
 	// v1

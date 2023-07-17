@@ -17,12 +17,13 @@ package manager
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/dao"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	"gorm.io/gorm"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 )
 
 type Manager interface {
-	Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error
+	Create(ctx context.Context, results *tekton.PipelineResults, data *global.HorizonMetaData) error
 	ListPipelineStats(ctx context.Context, application, cluster string, pageNumber, pageSize int) (
 		[]*models.PipelineStats, int64, error)
 }
@@ -58,7 +59,7 @@ func (m manager) ListPipelineStats(ctx context.Context, application, cluster str
 	return m.dao.ListPipelineStats(ctx, query)
 }
 
-func (m manager) Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error {
+func (m manager) Create(ctx context.Context, results *tekton.PipelineResults, data *global.HorizonMetaData) error {
 	return m.dao.Create(ctx, results, data)
 }
 

@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package tekton
 
 import (
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 var (

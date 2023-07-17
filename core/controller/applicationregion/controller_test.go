@@ -83,21 +83,21 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, r3)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.TagBasic{
+	err = manager.TagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.TagBasic{
 		{
 			Key:   "a",
 			Value: "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r2.ID, []*tagmodels.TagBasic{
+	err = manager.TagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r2.ID, []*tagmodels.TagBasic{
 		{
 			Key:   "a",
 			Value: "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.TagBasic{
+	err = manager.TagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.TagBasic{
 		{
 			Key:   "a",
 			Value: "1",
@@ -135,15 +135,15 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	c = &controller{
-		mgr:                  manager.ApplicationRegionManager,
+		mgr:                  manager.ApplicationRegionMgr,
 		regionMgr:            regionMgr,
 		environmentMgr:       envMgr,
 		environmentRegionMgr: manager.EnvironmentRegionMgr,
-		applicationMgr:       manager.ApplicationManager,
-		groupMgr:             manager.GroupManager,
+		applicationMgr:       manager.ApplicationMgr,
+		groupMgr:             manager.GroupMgr,
 	}
 
-	g, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+	g, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "",
 		Path: "",
 		RegionSelector: `- key: "a"
@@ -151,7 +151,7 @@ func Test(t *testing.T) {
     - "1"`,
 	})
 	assert.Nil(t, err)
-	application, err := manager.ApplicationManager.Create(ctx, &appmodels.Application{
+	application, err := manager.ApplicationMgr.Create(ctx, &appmodels.Application{
 		Model:   global.Model{},
 		GroupID: g.ID,
 		Name:    "",

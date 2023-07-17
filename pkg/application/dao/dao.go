@@ -17,7 +17,10 @@ package dao
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
+
+	"gorm.io/gorm"
 
 	corecommon "github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -28,7 +31,6 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"gorm.io/gorm"
 )
 
 const (
@@ -307,6 +309,7 @@ func (d *dao) List(ctx context.Context, groupIDs []uint,
 
 	// basic filter
 	genSQL := func() *gorm.DB {
+		withDeleted := false
 		statement := d.db.WithContext(ctx).Table("tb_application as a").Select("a.*")
 		for k, v := range query.Keywords {
 			switch k {
@@ -316,9 +319,19 @@ func (d *dao) List(ctx context.Context, groupIDs []uint,
 				statement = statement.Where("a.template = ?", v)
 			case corecommon.ApplicationQueryByRelease:
 				statement = statement.Where("a.template_release = ?", v)
+			case corecommon.ApplicationQueryID:
+				if reflect.TypeOf(v).Kind() == reflect.Slice {
+					statement = statement.Where("a.id in ?", v)
+				} else {
+					statement = statement.Where("a.id = ?", v)
+				}
+			case corecommon.ApplicationQueryWithDeleted:
+				withDeleted = true
 			}
 		}
-		statement = statement.Where("a.deleted_ts = 0")
+		if !withDeleted {
+			statement = statement.Where("a.deleted_ts = 0")
+		}
 		return statement
 	}
 
