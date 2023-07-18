@@ -148,7 +148,7 @@ func (c *Cleaner) eventNeedClean(ctx context.Context, event *models.Event, curre
 			continue
 		}
 		m := make(map[string]interface{})
-		if event.Extra != nil && *event.Extra != "" {
+		if event.EventType == models.ClusterKubernetesEvent && event.Extra != nil && *event.Extra != "" {
 			err := json.Unmarshal([]byte(*event.Extra), &m)
 			if err != nil {
 				log.Errorf(ctx, "failed to unmarshal event extra: %v", err)
