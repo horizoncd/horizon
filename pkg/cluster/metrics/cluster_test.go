@@ -111,8 +111,8 @@ func Test(t *testing.T) {
 
 	strReader := strings.NewReader(`# HELP horizon_cluster_info A metric with a constant '1' value labeled by cluster, application, group, etc.
 # TYPE horizon_cluster_info gauge
-horizon_cluster_info{application="app1",cluster="cluster1",environment="dev",group="/group1",region="hz",template="javaapp"} 1
-horizon_cluster_info{application="app1",cluster="cluster2",environment="dev",group="/group1",region="hz",template="javaapp"} 1
+horizon_cluster_info{application="app1",cluster="cluster1",environment="dev",group="group1",region="hz",template="javaapp"} 1
+horizon_cluster_info{application="app1",cluster="cluster2",environment="dev",group="group1",region="hz",template="javaapp"} 1
 # HELP horizon_cluster_labels A metric with a constant '1' value labeled by cluster and tags
 # TYPE horizon_cluster_labels gauge
 horizon_cluster_labels{application="app1",cluster="cluster1",label_name="cluster1"} 1
@@ -126,8 +126,8 @@ horizon_cluster_labels{application="app1",cluster="cluster2",label_hello_world1=
 
 	strReader = strings.NewReader(`# HELP horizon_cluster_info A metric with a constant '1' value labeled by cluster, application, group, etc.
 # TYPE horizon_cluster_info gauge
-horizon_cluster_info{application="app1",cluster="cluster1",environment="dev",group="/group1",region="hz",template="javaapp"} 1
-horizon_cluster_info{application="app1",cluster="cluster2",environment="dev",group="/group1",region="hz",template="javaapp"} 1
+horizon_cluster_info{application="app1",cluster="cluster1",environment="dev",group="group1",region="hz",template="javaapp"} 1
+horizon_cluster_info{application="app1",cluster="cluster2",environment="dev",group="group1",region="hz",template="javaapp"} 1
 # HELP horizon_cluster_labels A metric with a constant '1' value labeled by cluster and tags
 # TYPE horizon_cluster_labels gauge
 horizon_cluster_labels{application="app1",cluster="cluster1",label_name="cluster1"} 1
