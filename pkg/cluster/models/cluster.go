@@ -16,6 +16,7 @@ package models
 
 import (
 	"github.com/horizoncd/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/tag/models"
 )
 
 type Cluster struct {
@@ -38,6 +39,11 @@ type Cluster struct {
 	CreatedBy       uint
 	UpdatedBy       uint
 	ExpireSeconds   uint
+}
+
+type ClusterWithTags struct {
+	*Cluster
+	Tags []*models.Tag
 }
 
 type ClusterWithRegion struct {

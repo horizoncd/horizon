@@ -624,11 +624,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 
 	// register routes
 	health.RegisterRoutes(r)
-	clustermetrcis.NewMetrics(
-		manager.ApplicationMgr,
-		manager.ClusterMgr,
-		manager.TagMgr,
-		manager.GroupMgr)
+	clustermetrcis.NewMetrics(manager)
 	metrics.RegisterRoutes(r)
 
 	// v1

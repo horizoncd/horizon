@@ -12,31 +12,20 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
-	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	gmodels "github.com/horizoncd/horizon/pkg/group/models"
-	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-const Parrallelism = 100
-
 func NewMetrics(
-	appMgr appmanager.Manager,
-	clusterMgr clustermanager.Manager,
-	tagMgr tagmanager.Manager,
-	groupMgr groupmanager.Manager,
+	managers *managerparam.Manager,
 ) {
 	prometheus.MustRegister(&Collector{
-		appMgr,
-		clusterMgr,
-		tagMgr,
-		groupMgr,
+		managers: managers,
 	})
 }
 
@@ -46,18 +35,14 @@ type groupWithFullPath struct {
 }
 
 type item struct {
-	app     *amodels.Application
-	cluster *cmodels.Cluster
-	group   *groupWithFullPath
-	tags    []*tagmodels.Tag
+	app         *amodels.Application
+	cluster     *cmodels.Cluster
+	group       *groupWithFullPath
+	clusterTags []*tagmodels.Tag
 }
 
 type Collector struct {
-	// managers *managerparam.Manager
-	appMgr     appmanager.Manager
-	clusterMgr clustermanager.Manager
-	tagMgr     tagmanager.Manager
-	groupMgr   groupmanager.Manager
+	managers *managerparam.Manager
 }
 
 const (
@@ -90,9 +75,9 @@ func (c *Collector) getClusters() []*item {
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{ID: 0})
 
-	_, deletedClusters, err := c.clusterMgr.List(ctx, &q.Query{
+	_, deletedClusters, err := c.managers.ClusterMgr.List(ctx, &q.Query{
 		Keywords: q.KeyWords{
-			common.ClusterQueryUpdatedAfter: time.Now().Add(-1 * time.Hour),
+			common.ClusterQueryUpdatedAfter: time.Now().Add(-15 * time.Minute),
 			common.ClusterQueryOnlyDeleted:  true,
 		},
 		Sorts:             []*q.Sort{{Key: "c.created_at", DESC: true}},
@@ -103,7 +88,7 @@ func (c *Collector) getClusters() []*item {
 		return []*item{}
 	}
 
-	_, clusters, err := c.clusterMgr.List(ctx, &q.Query{
+	_, clusters, err := c.managers.ClusterMgr.List(ctx, &q.Query{
 		Sorts:             []*q.Sort{{Key: "c.created_at", DESC: true}},
 		WithoutPagination: true,
 	})
@@ -114,9 +99,11 @@ func (c *Collector) getClusters() []*item {
 
 	clusters = append(clusters, deletedClusters...)
 
+	clusterIDs := make([]uint, 0)
 	m := make(map[uint]struct{})
 	appIDs := make([]uint, 0)
 	for _, cluster := range clusters {
+		clusterIDs = append(clusterIDs, cluster.ID)
 		if _, ok := m[cluster.ApplicationID]; ok {
 			continue
 		}
@@ -124,7 +111,18 @@ func (c *Collector) getClusters() []*item {
 		appIDs = append(appIDs, cluster.ApplicationID)
 	}
 
-	_, apps, err := c.appMgr.List(ctx, []uint{}, &q.Query{
+	tags, err := c.managers.TagMgr.ListByResourceTypeIDs(ctx, common.ResourceCluster, clusterIDs, false)
+	if err != nil {
+		log.Errorf(ctx, "Failed to get tags: %v", err)
+		return []*item{}
+	}
+
+	tagsMap := make(map[uint][]*tagmodels.Tag)
+	for _, tag := range tags {
+		tagsMap[tag.ResourceID] = append(tagsMap[tag.ResourceID], tag)
+	}
+
+	_, apps, err := c.managers.ApplicationMgr.List(ctx, []uint{}, &q.Query{
 		Keywords: q.KeyWords{
 			common.ApplicationQueryID:          appIDs,
 			common.ApplicationQueryWithDeleted: true,
@@ -141,7 +139,7 @@ func (c *Collector) getClusters() []*item {
 		appMap[app.ID] = app
 	}
 
-	groups, err := c.groupMgr.GetAll(ctx)
+	groups, err := c.managers.GroupMgr.GetAll(ctx)
 	if err != nil {
 		log.Errorf(ctx, "Failed to get groups: %v", err)
 		return []*item{}
@@ -153,8 +151,6 @@ func (c *Collector) getClusters() []*item {
 	}
 
 	items := make([]*item, 0)
-	// wg := sync.WaitGroup{}
-	// parralleLimit := make(chan struct{}, Parrallelism)
 	for _, cluster := range clusters {
 		app := appMap[cluster.ApplicationID]
 		if app == nil {
@@ -169,22 +165,13 @@ func (c *Collector) getClusters() []*item {
 			g.genFullPath(groupMap)
 		}
 		itm := &item{
-			app:     app,
-			cluster: cluster.Cluster,
-			group:   g,
+			app:         app,
+			cluster:     cluster.Cluster,
+			group:       g,
+			clusterTags: tagsMap[cluster.ID],
 		}
 		items = append(items, itm)
-		// wg.Add(1)
-		// go func(itm *item) {
-		// 	parralleLimit <- struct{}{}
-		// 	defer func() {
-		// 		<-parralleLimit
-		// 	}()
-		// 	defer wg.Done()
-		itm.listTags(c.tagMgr)
-		// 	}(itm)
 	}
-	// wg.Wait()
 	return items
 }
 
@@ -240,7 +227,7 @@ func (*Collector) CollectClusterLabel(itm *item, ch chan<- prometheus.Metric) {
 		"cluster":     c.Name,
 		"application": a.Name,
 	}
-	for _, tag := range itm.tags {
+	for _, tag := range itm.clusterTags {
 		label := fmt.Sprintf("label_%s", tag.Key)
 		label = replacer.Replace(label)
 		if !validLabel(label) {
@@ -270,30 +257,19 @@ func (g *groupWithFullPath) genFullPath(groups map[uint]*gmodels.Group) {
 	}
 	ids := strings.SplitN(g.Group.TraversalIDs, ",", -1)
 	builder := strings.Builder{}
-	for _, idStr := range ids {
+	for i, idStr := range ids {
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
 			log.Warningf(context.Background(), "Failed to parse group id: %v", err)
 			return
 		}
 		g := groups[uint(id)]
-		builder.WriteByte('/')
+		if i > 0 {
+			builder.WriteByte('/')
+		}
 		if g != nil {
 			builder.WriteString(groups[uint(id)].Name)
 		}
 	}
 	g.FullPath = builder.String()
-}
-
-func (i *item) listTags(tagMgr tagmanager.Manager) {
-	if i == nil || i.cluster == nil {
-		return
-	}
-	ctx := context.Background()
-	tags, err := tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, i.cluster.ID)
-	if err != nil {
-		log.Errorf(ctx, "Failed to get tags: %v", err)
-		return
-	}
-	i.tags = tags
 }

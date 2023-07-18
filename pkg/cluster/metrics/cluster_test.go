@@ -3,7 +3,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -42,7 +41,7 @@ func createContext(t *testing.T) (context.Context, *gorm.DB, *managerparam.Manag
 }
 
 func Test(t *testing.T) {
-	ctx, db, mgr := createContext(t)
+	ctx, _, mgr := createContext(t)
 	user, err := mgr.UserMgr.Create(ctx, &usermodels.User{
 		Name:  "tony",
 		Email: "tony@dummy.org",
@@ -108,19 +107,7 @@ func Test(t *testing.T) {
 	_, err = mgr.ClusterMgr.Create(ctx, cluster2, cluster2Tags, nil)
 	assert.Nil(t, err)
 
-	var tags []*tagmodels.Tag
-	result := db.Raw("SELECT * FROM `tb_tag` WHERE resource_type = \"clusters\" AND resource_id = 1").Scan(&tags)
-	fmt.Println(result.Error)
-	for _, tag := range tags {
-		fmt.Println(tag)
-	}
-
-	collector := &Collector{
-		mgr.ApplicationMgr,
-		mgr.ClusterMgr,
-		mgr.TagMgr,
-		mgr.GroupMgr,
-	}
+	collector := &Collector{mgr}
 
 	strReader := strings.NewReader(`# HELP horizon_cluster_info A metric with a constant '1' value labeled by cluster, application, group, etc.
 # TYPE horizon_cluster_info gauge
