@@ -15,15 +15,13 @@
 package cd
 
 import (
-	"context"
-
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
+
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 )
 
 type GetStepParams struct {
@@ -92,43 +90,6 @@ type DeleteClusterParams struct {
 	Cluster     string
 }
 
-type ClusterNextParams struct {
-	Environment string
-	Cluster     string
-}
-
-type ClusterPromoteParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type ClusterPauseParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type ClusterResumeParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type ClusterPatchParams struct {
-	Resource     schema.GroupVersionResource
-	PatchOption  metav1.PatchOptions
-	PatchBody    []byte
-	PatchType    types.PatchType
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
 type ExecuteActionParams struct {
 	RegionEntity *regionmodels.RegionEntity
 	Namespace    string
@@ -136,13 +97,6 @@ type ExecuteActionParams struct {
 	GVR          schema.GroupVersionResource
 	ResourceName string
 	ClusterID    uint
-}
-
-type ClusterAutoPromoteParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
 }
 
 type GetContainerLogParams struct {
@@ -177,8 +131,6 @@ type OperationResult struct {
 	Error  error
 }
 
-type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
-
 type containerList struct {
 	name       string
 	containers []*corev1.Container
@@ -201,10 +153,6 @@ func (c *containerList) Less(i, j int) bool {
 
 func (c *containerList) Swap(i, j int) {
 	c.containers[i], c.containers[j] = c.containers[j], c.containers[i]
-}
-
-type Revision struct {
-	Pods map[string]*ClusterPod `json:"pods" yaml:"pods"`
 }
 
 type ClusterStateV2 struct {
@@ -409,13 +357,6 @@ type CompactContainer struct {
 type CompactPodSpec struct {
 	InitContainers []CompactContainer `json:"initContainers"`
 	Containers     []CompactContainer `json:"containers"`
-}
-
-type CompactCondition struct {
-	Type              string `json:"type"`
-	Status            string `json:"status"`
-	Message           string `json:"message"`
-	LastTranitionTime string `json:"lastTranitionTime"`
 }
 
 type CompactPodStatus struct {

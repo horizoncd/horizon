@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/tag"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -44,10 +45,17 @@ func NewAPI(tagCtl tag.Controller) *API {
 	}
 }
 
-func (a *API) List(c *gin.Context) {
+func (a *API) ListClusterTags(c *gin.Context) {
+	a.List(c, common.ResourceCluster, common.ParamClusterID)
+}
+
+func (a *API) ListApplicationTags(c *gin.Context) {
+	a.List(c, common.ResourceApplication, common.ParamApplicationID)
+}
+
+func (a *API) List(c *gin.Context, resourceType, keyResourceID string) {
 	const op = "tag: list"
-	resourceType := c.Param(_resourceTypeParam)
-	resourceIDStr := c.Param(_resourceIDParam)
+	resourceIDStr := c.Param(keyResourceID)
 	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/server/route"
 
 	"github.com/gin-gonic/gin"
@@ -28,8 +29,12 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v/:%v/tags", _resourceTypeParam, _resourceIDParam),
-			HandlerFunc: api.List,
+			Pattern:     fmt.Sprintf("/clusters/:%v/tags", common.ParamClusterID),
+			HandlerFunc: api.ListClusterTags,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/tags", common.ParamApplicationID),
+			HandlerFunc: api.ListApplicationTags,
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%v/:%v/tags", _resourceTypeParam, _resourceIDParam),
