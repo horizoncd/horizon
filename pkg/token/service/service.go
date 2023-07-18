@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+
 	herror "github.com/horizoncd/horizon/core/errors"
 	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -39,7 +40,7 @@ type Service interface {
 
 func NewService(manager *managerparam.Manager, config tokenconfig.Config) Service {
 	return &service{
-		tokenManager: manager.TokenManager,
+		tokenManager: manager.TokenMgr,
 		TokenConfig:  config,
 	}
 }

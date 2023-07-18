@@ -63,12 +63,12 @@ type controller struct {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		userMgr:        param.UserManager,
-		accessTokenMgr: param.AccessTokenManager,
-		tokenMgr:       param.TokenManager,
+		userMgr:        param.UserMgr,
+		accessTokenMgr: param.AccessTokenMgr,
+		tokenMgr:       param.TokenMgr,
 		tokenSvc:       param.TokenSvc,
 		memberSvc:      param.MemberService,
-		memberMgr:      param.MemberManager,
+		memberMgr:      param.MemberMgr,
 	}
 }
 

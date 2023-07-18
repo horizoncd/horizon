@@ -20,12 +20,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -62,7 +63,7 @@ func TestServiceGetByID(t *testing.T) {
 	t.Run("GetByID", func(t *testing.T) {
 		s := service{
 			groupSvc: groupservice.NewService(mgr),
-			appMgr:   mgr.ApplicationManager,
+			appMgr:   mgr.ApplicationMgr,
 		}
 		result, err := s.GetByID(ctx, application.ID)
 		assert.Nil(t, err)
@@ -72,7 +73,7 @@ func TestServiceGetByID(t *testing.T) {
 	t.Run("GetByIDs", func(t *testing.T) {
 		s := service{
 			groupSvc: groupservice.NewService(mgr),
-			appMgr:   mgr.ApplicationManager,
+			appMgr:   mgr.ApplicationMgr,
 		}
 		result, err := s.GetByIDs(ctx, []uint{application.ID})
 		assert.Nil(t, err)

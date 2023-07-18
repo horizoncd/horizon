@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -279,7 +280,11 @@ func Test(t *testing.T) {
 	assert.NotNil(t, clusterGetByID)
 	assert.Nil(t, err)
 
+	cluster2UpdatedAt := time.Now().Add(-2 * time.Hour)
 	cluster2 := &models.Cluster{
+		Model: global.Model{
+			UpdatedAt: cluster2UpdatedAt,
+		},
 		ApplicationID:   applicationID,
 		Name:            "cluster2",
 		EnvironmentName: environmentName,
@@ -437,4 +442,26 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(clrs))
 	assert.Equal(t, "cluster4", clrs[0].Name)
+
+	count, _, err = mgr.List(ctx, &q.Query{Keywords: q.KeyWords{
+		common.ClusterQueryUpdatedAfter: cluster2UpdatedAt.Add(1 * time.Second),
+	}})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, count)
+
+	count, _, err = mgr.List(ctx, &q.Query{Keywords: q.KeyWords{common.ClusterQueryOnlyDeleted: true}})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, count)
+
+	err = mgr.DeleteByID(ctx, cluster2.ID)
+	assert.Nil(t, err)
+
+	count, _, err = mgr.List(ctx, &q.Query{
+		Keywords: q.KeyWords{
+			common.ClusterQueryOnlyDeleted:  true,
+			common.ClusterQueryUpdatedAfter: time.Now().Add(-1 * time.Hour),
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, count)
 }

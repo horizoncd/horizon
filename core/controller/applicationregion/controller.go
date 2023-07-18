@@ -46,12 +46,12 @@ var _ Controller = (*controller)(nil)
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		mgr:                  param.ApplicationRegionManager,
+		mgr:                  param.ApplicationRegionMgr,
 		regionMgr:            param.RegionMgr,
 		environmentMgr:       param.EnvMgr,
 		environmentRegionMgr: param.EnvironmentRegionMgr,
-		groupMgr:             param.GroupManager,
-		applicationMgr:       param.ApplicationManager,
+		groupMgr:             param.GroupMgr,
+		applicationMgr:       param.ApplicationMgr,
 	}
 }
 

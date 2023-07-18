@@ -41,7 +41,7 @@ func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo,
 	manager *managerparam.Manager) *Getter {
 	return &Getter{
 		repo:               repo,
-		templateReleaseMgr: manager.TemplateReleaseManager,
+		templateReleaseMgr: manager.TemplateReleaseMgr,
 	}
 }
 

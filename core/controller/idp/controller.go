@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+
 	"github.com/horizoncd/horizon/core/common"
 	idpconst "github.com/horizoncd/horizon/core/common/idp"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -32,7 +34,6 @@ import (
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 	linkmanager "github.com/horizoncd/horizon/pkg/userlink/manager"
-	"golang.org/x/oauth2"
 )
 
 var (
@@ -59,9 +60,9 @@ type controller struct {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		idpManager:  param.IdpManager,
-		userManager: param.UserManager,
-		linkManager: param.UserLinksManager,
+		idpManager:  param.IdpMgr,
+		userManager: param.UserMgr,
+		linkManager: param.UserLinksMgr,
 	}
 }
 

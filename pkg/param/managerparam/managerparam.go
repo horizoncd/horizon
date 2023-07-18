@@ -15,8 +15,9 @@
 package managerparam
 
 import (
-	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
 	"gorm.io/gorm"
+
+	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
 
 	accesstokenmanager "github.com/horizoncd/horizon/pkg/accesstoken/manager"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
@@ -44,59 +45,59 @@ import (
 )
 
 type Manager struct {
-	UserManager              usermanager.Manager
-	UserLinksManager         linkmanager.Manager
-	ApplicationManager       applicationmanager.Manager
-	TemplateReleaseManager   trmanager.Manager
-	TemplateSchemaTagManager trtmanager.Manager
-	CollectionMgr            collectionmanager.Manager
-	ClusterMgr               clustermanager.Manager
-	MemberManager            membermanager.Manager
-	ClusterSchemaTagMgr      templateschematagmanager.Manager
-	ApplicationRegionManager applicationregionmanager.Manager
-	EnvironmentRegionMgr     environmentregionmanager.Manager
-	TagManager               tagmanager.Manager
-	TemplateMgr              templatemanager.Manager
-	EnvRegionMgr             environmentregionmanager.Manager
-	RegionMgr                regionmanager.Manager
-	PipelinerunMgr           prmanager.Manager
-	PipelineMgr              pipelinemanager.Manager
-	EnvMgr                   envmanager.Manager
-	GroupManager             groupmanager.Manager
-	RegistryManager          registrymanager.Manager
-	IdpManager               idpmanager.Manager
-	AccessTokenManager       accesstokenmanager.Manager
-	WebhookManager           webhookManager.Manager
-	EventManager             eventManager.Manager
-	TokenManager             tokenmanager.Manager
+	UserMgr              usermanager.Manager
+	UserLinksMgr         linkmanager.Manager
+	ApplicationMgr       applicationmanager.Manager
+	TemplateReleaseMgr   trmanager.Manager
+	TemplateSchemaTagMgr trtmanager.Manager
+	CollectionMgr        collectionmanager.Manager
+	ClusterMgr           clustermanager.Manager
+	MemberMgr            membermanager.Manager
+	ClusterSchemaTagMgr  templateschematagmanager.Manager
+	ApplicationRegionMgr applicationregionmanager.Manager
+	EnvironmentRegionMgr environmentregionmanager.Manager
+	TagMgr               tagmanager.Manager
+	TemplateMgr          templatemanager.Manager
+	EnvRegionMgr         environmentregionmanager.Manager
+	RegionMgr            regionmanager.Manager
+	PipelinerunMgr       prmanager.Manager
+	PipelineMgr          pipelinemanager.Manager
+	EnvMgr               envmanager.Manager
+	GroupMgr             groupmanager.Manager
+	RegistryMgr          registrymanager.Manager
+	IdpMgr               idpmanager.Manager
+	AccessTokenMgr       accesstokenmanager.Manager
+	WebhookMgr           webhookManager.Manager
+	EventMgr             eventManager.Manager
+	TokenMgr             tokenmanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
 	return &Manager{
-		UserManager:              usermanager.New(db),
-		UserLinksManager:         linkmanager.New(db),
-		ApplicationManager:       applicationmanager.New(db),
-		TemplateReleaseManager:   trmanager.New(db),
-		TemplateSchemaTagManager: trtmanager.New(db),
-		ClusterMgr:               clustermanager.New(db),
-		CollectionMgr:            collectionmanager.New(db),
-		MemberManager:            membermanager.New(db),
-		ClusterSchemaTagMgr:      templateschematagmanager.New(db),
-		ApplicationRegionManager: applicationregionmanager.New(db),
-		EnvironmentRegionMgr:     environmentregionmanager.New(db),
-		TagManager:               tagmanager.New(db),
-		TemplateMgr:              templatemanager.New(db),
-		EnvRegionMgr:             environmentregionmanager.New(db),
-		RegionMgr:                regionmanager.New(db),
-		PipelinerunMgr:           prmanager.New(db),
-		PipelineMgr:              pipelinemanager.New(db),
-		EnvMgr:                   envmanager.New(db),
-		GroupManager:             groupmanager.New(db),
-		RegistryManager:          registrymanager.New(db),
-		IdpManager:               idpmanager.NewManager(db),
-		AccessTokenManager:       accesstokenmanager.New(db),
-		WebhookManager:           webhookManager.New(db),
-		EventManager:             eventManager.New(db),
-		TokenManager:             tokenmanager.New(db),
+		UserMgr:              usermanager.New(db),
+		UserLinksMgr:         linkmanager.New(db),
+		ApplicationMgr:       applicationmanager.New(db),
+		TemplateReleaseMgr:   trmanager.New(db),
+		TemplateSchemaTagMgr: trtmanager.New(db),
+		ClusterMgr:           clustermanager.New(db),
+		CollectionMgr:        collectionmanager.New(db),
+		MemberMgr:            membermanager.New(db),
+		ClusterSchemaTagMgr:  templateschematagmanager.New(db),
+		ApplicationRegionMgr: applicationregionmanager.New(db),
+		EnvironmentRegionMgr: environmentregionmanager.New(db),
+		TagMgr:               tagmanager.New(db),
+		TemplateMgr:          templatemanager.New(db),
+		EnvRegionMgr:         environmentregionmanager.New(db),
+		RegionMgr:            regionmanager.New(db),
+		PipelinerunMgr:       prmanager.New(db),
+		PipelineMgr:          pipelinemanager.New(db),
+		EnvMgr:               envmanager.New(db),
+		GroupMgr:             groupmanager.New(db),
+		RegistryMgr:          registrymanager.New(db),
+		IdpMgr:               idpmanager.NewManager(db),
+		AccessTokenMgr:       accesstokenmanager.New(db),
+		WebhookMgr:           webhookManager.New(db),
+		EventMgr:             eventManager.New(db),
+		TokenMgr:             tokenmanager.New(db),
 	}
 }

@@ -88,12 +88,12 @@ type WebhookLogGenerator struct {
 
 func NewWebhookLogGenerator(manager *managerparam.Manager) *WebhookLogGenerator {
 	return &WebhookLogGenerator{
-		webhookMgr:     manager.WebhookManager,
-		eventMgr:       manager.EventManager,
-		groupMgr:       manager.GroupManager,
-		applicationMgr: manager.ApplicationManager,
+		webhookMgr:     manager.WebhookMgr,
+		eventMgr:       manager.EventMgr,
+		groupMgr:       manager.GroupMgr,
+		applicationMgr: manager.ApplicationMgr,
 		clusterMgr:     manager.ClusterMgr,
-		userMgr:        manager.UserManager,
+		userMgr:        manager.UserMgr,
 	}
 }
 

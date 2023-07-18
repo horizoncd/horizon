@@ -49,8 +49,8 @@ var _ Controller = &controller{}
 
 func NewOauthChecker(param *param.Param) Controller {
 	return &controller{
-		tokenManager: param.TokenManager,
-		userManager:  param.UserManager,
+		tokenManager: param.TokenMgr,
+		userManager:  param.UserMgr,
 		scopeService: param.ScopeService,
 	}
 }

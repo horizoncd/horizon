@@ -22,6 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
@@ -31,8 +34,6 @@ import (
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -58,7 +59,7 @@ func TestMain(m *testing.M) {
 	callbacks.RegisterCustomCallbacks(db)
 
 	manager := managerparam.InitManager(db)
-	tokenManager = manager.TokenManager
+	tokenManager = manager.TokenMgr
 	tokenSvc = NewService(manager, tokenconfig.Config{
 		JwtSigningKey:         "UZMccEsEgXA/phl3w/OK1gZU6lhKJIswZqsyfQEPqpc=",
 		CallbackTokenExpireIn: 2 * time.Hour,

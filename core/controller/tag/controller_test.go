@@ -69,9 +69,9 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	appMgr := manager.ApplicationManager
+	appMgr := manager.ApplicationMgr
 	clusterMgr := manager.ClusterMgr
-	templateReleaseMgr := manager.TemplateReleaseManager
+	templateReleaseMgr := manager.TemplateReleaseMgr
 	regionMgr := manager.RegionMgr
 
 	// init data
@@ -111,7 +111,7 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:     clusterMgr,
-		tagMgr:         manager.TagManager,
+		tagMgr:         manager.TagMgr,
 		clusterGitRepo: clusterGitRepo,
 		applicationMgr: appMgr,
 	}

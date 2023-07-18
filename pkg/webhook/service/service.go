@@ -89,9 +89,9 @@ func NewService(ctx context.Context, manager *managerparam.Manager, config webho
 		config:         config,
 		ctx:            ctx,
 		workers:        make(map[uint]*worker),
-		webhookManager: manager.WebhookManager,
-		eventManager:   manager.EventManager,
-		userManager:    manager.UserManager,
+		webhookManager: manager.WebhookMgr,
+		eventManager:   manager.EventMgr,
+		userManager:    manager.UserMgr,
 	}
 }
 

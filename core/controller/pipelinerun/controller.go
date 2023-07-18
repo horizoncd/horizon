@@ -68,9 +68,9 @@ func NewController(param *param.Param) Controller {
 		envMgr:         param.EnvMgr,
 		tektonFty:      param.TektonFty,
 		commitGetter:   param.GitGetter,
-		applicationMgr: param.ApplicationManager,
+		applicationMgr: param.ApplicationMgr,
 		clusterGitRepo: param.ClusterGitRepo,
-		userManager:    param.UserManager,
+		userManager:    param.UserMgr,
 	}
 }
 

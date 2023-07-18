@@ -235,7 +235,7 @@ func TestList(t *testing.T) {
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, "tomcat", templates[0].Name)
 
-	m, err := mgr.MemberManager.Create(ctx, &membermodels.Member{
+	m, err := mgr.MemberMgr.Create(ctx, &membermodels.Member{
 		ResourceType: common.ResourceTemplate,
 		ResourceID:   1,
 		Role:         roleservice.Owner,
@@ -257,13 +257,13 @@ func TestListTemplates(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	groupMgr := groupmanagermock.NewMockManager(mockCtl)
 	memberMgr := membermock.NewMockManager(mockCtl)
-	mgr.MemberManager = memberMgr
-	mgr.GroupManager = groupMgr
+	mgr.MemberMgr = memberMgr
+	mgr.GroupMgr = groupMgr
 
 	ctrl := &controller{
 		groupMgr:           groupMgr,
 		templateMgr:        mgr.TemplateMgr,
-		templateReleaseMgr: mgr.TemplateReleaseManager,
+		templateReleaseMgr: mgr.TemplateReleaseMgr,
 		memberMgr:          memberMgr,
 	}
 
@@ -428,7 +428,7 @@ func TestCreateTemplateInNonRootGroup(t *testing.T) {
 	assert.Equal(t, templateName, tpl.Name)
 	assert.Equal(t, uint(1), tpl.ID)
 
-	release, err := mgr.TemplateReleaseManager.GetByID(ctx, 1)
+	release, err := mgr.TemplateReleaseMgr.GetByID(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, templateTag, release.Name)
 	assert.Equal(t, templateName, release.TemplateName)
@@ -449,7 +449,7 @@ func TestDeleteTemplate(t *testing.T) {
 	err = ctl.DeleteRelease(ctx, 1)
 	assert.Nil(t, err)
 
-	release, err := mgr.TemplateReleaseManager.GetByID(ctx, 1)
+	release, err := mgr.TemplateReleaseMgr.GetByID(ctx, 1)
 	assert.NotNil(t, err)
 	assert.Nil(t, release)
 
@@ -610,7 +610,7 @@ func createContext() {
 			ID: 1,
 		},
 	}
-	_, err := mgr.UserManager.Create(ctx, &currentUser)
+	_, err := mgr.UserMgr.Create(ctx, &currentUser)
 	if err != nil {
 		panic(err)
 	}
@@ -629,10 +629,10 @@ func createController(t *testing.T) (Controller, *mock_repo.MockTemplateRepo) {
 	ctl := &controller{
 		gitgetter:            githubGetter,
 		templateRepo:         repo,
-		groupMgr:             mgr.GroupManager,
+		groupMgr:             mgr.GroupMgr,
 		templateMgr:          mgr.TemplateMgr,
-		templateReleaseMgr:   mgr.TemplateReleaseManager,
-		memberMgr:            mgr.MemberManager,
+		templateReleaseMgr:   mgr.TemplateReleaseMgr,
+		memberMgr:            mgr.MemberMgr,
 		templateSchemaGetter: getter,
 	}
 	return ctl, repo
@@ -640,11 +640,11 @@ func createController(t *testing.T) (Controller, *mock_repo.MockTemplateRepo) {
 
 func createChart(t *testing.T, ctl Controller, groupID uint) {
 	if groupID != 0 {
-		_, err := mgr.GroupManager.GetByID(ctx, groupID)
+		_, err := mgr.GroupMgr.GetByID(ctx, groupID)
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				name := fmt.Sprintf("test-%d", rand.Uint32())
-				_, err := mgr.GroupManager.Create(ctx, &groupmodels.Group{
+				_, err := mgr.GroupMgr.Create(ctx, &groupmodels.Group{
 					Name:         name,
 					Path:         name,
 					ParentID:     0,

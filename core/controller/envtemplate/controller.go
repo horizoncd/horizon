@@ -49,7 +49,7 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		applicationGitRepo:   param.ApplicationGitRepo,
 		templateSchemaGetter: param.TemplateSchemaGetter,
-		applicationMgr:       param.ApplicationManager,
+		applicationMgr:       param.ApplicationMgr,
 		envMgr:               param.EnvMgr,
 		buildSchema:          param.BuildSchema,
 	}

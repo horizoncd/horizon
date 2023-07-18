@@ -22,6 +22,15 @@ import (
 	"sync"
 	"time"
 
+	"gorm.io/gorm"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/config/k8sevent"
@@ -31,14 +40,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	"gorm.io/gorm"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -172,7 +173,7 @@ func (e *eventHandler) save(cache []*corev1.Event) error {
 
 			reqIDs.Store(horizonEvent.ReqID, struct{}{})
 
-			sameEvents, _ := e.mgr.EventManager.ListEvents(ctx, &q.Query{Keywords: q.KeyWords{common.ReqID: horizonEvent.ReqID}})
+			sameEvents, _ := e.mgr.EventMgr.ListEvents(ctx, &q.Query{Keywords: q.KeyWords{common.ReqID: horizonEvent.ReqID}})
 			// skip same event
 			for _, sameEvent := range sameEvents {
 				if sameEvent.Extra != nil && horizonEvent.Extra != nil &&

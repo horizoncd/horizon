@@ -17,14 +17,15 @@ package dao
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
 	"github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	"gorm.io/gorm"
 )
 
 var (
@@ -33,14 +34,14 @@ var (
 
 type DAO interface {
 	// Create create a pipeline
-	Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error
+	Create(ctx context.Context, results *tekton.PipelineResults, data *global.HorizonMetaData) error
 	// ListPipelineStats list pipeline stats by query struct
 	ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.PipelineStats, int64, error)
 }
 
 type dao struct{ db *gorm.DB }
 
-func (d dao) Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error {
+func (d dao) Create(ctx context.Context, results *tekton.PipelineResults, data *global.HorizonMetaData) error {
 	prMetadata := results.Metadata
 	prResult := results.PrResult
 	trResults, stepResults := results.TrResults, results.StepResults

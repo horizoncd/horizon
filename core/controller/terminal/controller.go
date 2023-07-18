@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/client-go/tools/remotecommand"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
@@ -36,7 +38,6 @@ import (
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"k8s.io/client-go/tools/remotecommand"
 
 	"gopkg.in/igm/sockjs-go.v3/sockjs"
 )
@@ -66,8 +67,8 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		kubeClientFty:      kubeclient.Fty,
 		clusterMgr:         param.ClusterMgr,
-		applicationMgr:     param.ApplicationManager,
-		templateReleaseMgr: param.TemplateReleaseManager,
+		applicationMgr:     param.ApplicationMgr,
+		templateReleaseMgr: param.TemplateReleaseMgr,
 		envMgr:             param.EnvMgr,
 		envRegionMgr:       param.EnvRegionMgr,
 		regionMgr:          param.RegionMgr,

@@ -22,9 +22,9 @@ import (
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
@@ -61,9 +61,9 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 		pipelineMgr:        parameter.PipelineMgr,
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
-		templateReleaseMgr: parameter.TemplateReleaseManager,
-		applicationMgr:     parameter.ApplicationManager,
-		userMgr:            parameter.UserManager,
+		templateReleaseMgr: parameter.TemplateReleaseMgr,
+		applicationMgr:     parameter.ApplicationMgr,
+		userMgr:            parameter.UserMgr,
 	}
 }
 
@@ -112,7 +112,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// format Pipeline results
-	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
+	pipelineResult := tekton.FormatPipelineResults(wpr.PipelineRun)
 
 	// todo remove codes below in the future
 	err = c.handleJibBuild(ctx, pipelineResult, horizonMetaData)
@@ -121,7 +121,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// 4. observe metrics
-	metrics.Observe(pipelineResult, horizonMetaData)
+	tekton.Observe(pipelineResult, horizonMetaData)
 
 	// 5. insert pipeline into db
 	err = c.pipelineMgr.Create(ctx, pipelineResult, horizonMetaData)
@@ -134,7 +134,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 
 // TODO remove this function in the future
 // check cluster's build type, change tasks' and steps' values if needed
-func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults,
+func (c *controller) handleJibBuild(ctx context.Context, result *tekton.PipelineResults,
 	data *global.HorizonMetaData) error {
 	clusterID := data.ClusterID
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)

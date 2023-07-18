@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -33,7 +35,6 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	templatesvc "github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	"github.com/stretchr/testify/assert"
 )
 
 // nolint
@@ -312,7 +313,7 @@ func Test(t *testing.T) {
 		}, nil).AnyTimes()
 
 	envMgr := manager.EnvMgr
-	applicationMgr := manager.ApplicationManager
+	applicationMgr := manager.ApplicationMgr
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
@@ -377,7 +378,7 @@ func TestV2(t *testing.T) {
 		}, nil).AnyTimes()
 
 	envMgr := manager.EnvMgr
-	applicationMgr := manager.ApplicationManager
+	applicationMgr := manager.ApplicationMgr
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,

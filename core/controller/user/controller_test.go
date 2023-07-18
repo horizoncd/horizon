@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
@@ -30,7 +32,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/user/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	linkmodels "github.com/horizoncd/horizon/pkg/userlink/models"
-	"gorm.io/gorm"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -62,8 +63,8 @@ func createContext() {
 func Test(t *testing.T) {
 	createContext()
 
-	userMgr := mgr.UserManager
-	linkMgr := mgr.UserLinksManager
+	userMgr := mgr.UserMgr
+	linkMgr := mgr.UserLinksMgr
 	ctrl := NewController(&param.Param{Manager: mgr})
 
 	users := []*models.User{

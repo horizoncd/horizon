@@ -22,12 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/horizoncd/horizon/lib/orm"
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 var (
@@ -60,7 +61,7 @@ func Test_manager_Create(t *testing.T) {
 		PipelinerunID: 1,
 	}
 	type args struct {
-		results *metrics.PipelineResults
+		results *tekton.PipelineResults
 	}
 	tests := []struct {
 		name    string
@@ -71,11 +72,11 @@ func Test_manager_Create(t *testing.T) {
 			name:    "1",
 			wantErr: false,
 			args: args{
-				results: &metrics.PipelineResults{
-					Metadata: &metrics.PrMetadata{
+				results: &tekton.PipelineResults{
+					Metadata: &tekton.PrMetadata{
 						Pipeline: "horizon-pipeline",
 					},
-					PrResult: &metrics.PrResult{
+					PrResult: &tekton.PrResult{
 						DurationSeconds: 0,
 						Result:          "failed",
 						StartTime:       startTime,
@@ -83,7 +84,7 @@ func Test_manager_Create(t *testing.T) {
 							Time: time.Now(),
 						},
 					},
-					TrResults: metrics.TrResults{
+					TrResults: tekton.TrResults{
 						{
 							Task: "build",
 							StartTime: &metav1.Time{
@@ -96,7 +97,7 @@ func Test_manager_Create(t *testing.T) {
 							Result:          "failed",
 						},
 					},
-					StepResults: metrics.StepResults{
+					StepResults: tekton.StepResults{
 						{
 							Step: "git",
 							Task: "build",

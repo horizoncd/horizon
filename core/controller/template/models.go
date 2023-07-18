@@ -84,6 +84,7 @@ type UpdateTemplateRequest struct {
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
 	OnlyOwner   bool   `json:"onlyOwner"`
+	Type        string `json:"type"`
 	WithoutCI   bool   `json:"withoutCI"`
 }
 
@@ -103,6 +104,7 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Description: c.Description,
 		Repository:  c.Repository,
 		OnlyOwner:   &c.OnlyOwner,
+		Type:        c.Type,
 		WithoutCI:   c.WithoutCI,
 	}
 	return t, nil

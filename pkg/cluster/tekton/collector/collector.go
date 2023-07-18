@@ -18,13 +18,14 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
+
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 )
 
@@ -68,7 +69,7 @@ type Log struct {
 }
 
 func NewObjectMeta(horizonMetaData *global.HorizonMetaData, pr *v1beta1.PipelineRun) *ObjectMeta {
-	wrappedPr := &metrics.WrappedPipelineRun{
+	wrappedPr := &tekton.WrappedPipelineRun{
 		PipelineRun: pr,
 	}
 	prMetadata := wrappedPr.ResolveMetadata()

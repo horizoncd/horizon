@@ -102,12 +102,12 @@ func NewController(param *param.Param, repo templaterepo.TemplateRepo) Controlle
 	return &controller{
 		gitgetter:            param.GitGetter,
 		templateMgr:          param.TemplateMgr,
-		templateReleaseMgr:   param.TemplateReleaseManager,
+		templateReleaseMgr:   param.TemplateReleaseMgr,
 		templateSchemaGetter: param.TemplateSchemaGetter,
 		templateRepo:         repo,
-		memberMgr:            param.MemberManager,
+		memberMgr:            param.MemberMgr,
 		memberSvc:            param.MemberService,
-		groupMgr:             param.GroupManager,
+		groupMgr:             param.GroupMgr,
 	}
 }
 

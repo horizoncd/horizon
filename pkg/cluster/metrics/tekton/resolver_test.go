@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package tekton
 
 import (
 	"encoding/json"
@@ -20,11 +20,12 @@ import (
 	"testing"
 	"time"
 
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 )
 
 const _layout = "2006-01-02T15:04:05Z"

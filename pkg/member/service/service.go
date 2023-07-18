@@ -79,17 +79,17 @@ type service struct {
 func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
 	manager *managerparam.Manager) Service {
 	return &service{
-		memberManager:             manager.MemberManager,
-		groupManager:              manager.GroupManager,
-		applicationManager:        manager.ApplicationManager,
+		memberManager:             manager.MemberMgr,
+		groupManager:              manager.GroupMgr,
+		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
 		pipelineManager:           manager.PipelinerunMgr,
-		templateReleaseManager:    manager.TemplateReleaseManager,
+		templateReleaseManager:    manager.TemplateReleaseMgr,
 		templateManager:           manager.TemplateMgr,
 		roleService:               roleService,
 		oauthManager:              oauthManager,
-		userManager:               manager.UserManager,
-		webhookManager:            manager.WebhookManager,
+		userManager:               manager.UserMgr,
+		webhookManager:            manager.WebhookMgr,
 	}
 }
 

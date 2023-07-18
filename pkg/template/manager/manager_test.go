@@ -19,6 +19,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
@@ -29,8 +32,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -131,7 +132,7 @@ func Test(t *testing.T) {
 		Template: template1.Name,
 		Name:     "test",
 	}
-	_, err = params.ApplicationManager.Create(ctx, app, map[string]string{})
+	_, err = params.ApplicationMgr.Create(ctx, app, map[string]string{})
 	assert.Nil(t, err)
 
 	cluster := &clustermodel.Cluster{

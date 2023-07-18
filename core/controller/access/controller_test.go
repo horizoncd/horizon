@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -35,7 +37,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/rbac"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -86,7 +87,7 @@ func TestMain(m *testing.M) {
 			"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
 	c = NewController(rbacAuthorizer, skippers)
 
-	group, err = manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err = manager.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name:            "group",
 		Path:            "/group",
 		VisibilityLevel: "private",
@@ -94,7 +95,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	application, _ = manager.ApplicationManager.Create(ctx, &applicationmodels.Application{
+	application, _ = manager.ApplicationMgr.Create(ctx, &applicationmodels.Application{
 		Name:    "application",
 		GroupID: group.ID,
 	}, nil)
@@ -109,7 +110,7 @@ func TestMain(m *testing.M) {
 
 // nolint
 func TestController_GetAccesses_Guest(t *testing.T) {
-	guest, err := manager.UserManager.Create(ctx, &usermodels.User{
+	guest, err := manager.UserMgr.Create(ctx, &usermodels.User{
 		Name: "guest",
 	})
 
@@ -165,7 +166,7 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Owner(t *testing.T) {
-	owner, err := manager.UserManager.Create(ctx, &usermodels.User{
+	owner, err := manager.UserMgr.Create(ctx, &usermodels.User{
 		Name: "owner",
 	})
 
@@ -173,7 +174,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 		ID: owner.ID,
 	})
 
-	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberMgr.Create(ctx, &membermodels.Member{
 		ResourceType: "groups",
 		ResourceID:   group.ID,
 		Role:         "owner",
@@ -215,7 +216,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Admin(t *testing.T) {
-	admin, err := manager.UserManager.Create(ctx, &usermodels.User{
+	admin, err := manager.UserMgr.Create(ctx, &usermodels.User{
 		Name: "admin",
 	})
 

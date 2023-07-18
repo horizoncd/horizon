@@ -39,7 +39,7 @@ type service struct {
 func NewService(groupSvc groupsvc.Service, manager *managerparam.Manager) Service {
 	return &service{
 		groupSvc: groupSvc,
-		appMgr:   manager.ApplicationManager,
+		appMgr:   manager.ApplicationMgr,
 	}
 }
 

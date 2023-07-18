@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	usercommon "github.com/horizoncd/horizon/core/common"
 	coreconfig "github.com/horizoncd/horizon/core/config"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
@@ -56,7 +58,6 @@ import (
 	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	linkmodels "github.com/horizoncd/horizon/pkg/userlink/models"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -92,7 +93,7 @@ func createUser(t *testing.T) {
 	)
 
 	method := uint8(idpmodels.ClientSecretSentAsPost)
-	idp, err := manager.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+	idp, err := manager.IdpMgr.Create(ctx, &idpmodels.IdentityProvider{
 		Model:                   global.Model{ID: 1},
 		Name:                    "netease",
 		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
@@ -101,7 +102,7 @@ func createUser(t *testing.T) {
 	assert.Equal(t, uint(1), idp.ID)
 	assert.Equal(t, "netease", idp.Name)
 
-	mgr := manager.UserManager
+	mgr := manager.UserMgr
 
 	u, err := mgr.Create(ctx, &usermodels.User{
 		Name:  name,
@@ -110,7 +111,7 @@ func createUser(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
-	link, err := manager.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
+	link, err := manager.UserLinksMgr.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
 		Sub:   "netease",
 		Name:  name,
 		Email: email,
@@ -209,5 +210,5 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		BatchInterval: 0 * time.Second,
 		BatchSize:     20,
 		SupportedEnvs: []string{"dev"},
-	}, manager.UserManager, clrCtl, prCtl)
+	}, manager.UserMgr, clrCtl, prCtl)
 }

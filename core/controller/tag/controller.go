@@ -48,9 +48,9 @@ type controller struct {
 func NewController(param *param.Param) Controller {
 	return &controller{
 		clusterMgr:     param.ClusterMgr,
-		tagMgr:         param.TagManager,
+		tagMgr:         param.TagMgr,
 		clusterGitRepo: param.ClusterGitRepo,
-		applicationMgr: param.ApplicationManager,
+		applicationMgr: param.ApplicationMgr,
 	}
 }
 

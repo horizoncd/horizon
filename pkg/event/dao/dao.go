@@ -18,9 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -55,7 +56,7 @@ func (d *dao) CreateEvent(ctx context.Context, events ...*models.Event) ([]*mode
 
 func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Event, error) {
 	var events []*models.Event
-	statement := d.db.WithContext(ctx).Debug().Order("id asc")
+	statement := d.db.WithContext(ctx).Order("id asc")
 	for k, v := range query.Keywords {
 		switch k {
 		case common.Offset:

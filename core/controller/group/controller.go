@@ -88,12 +88,12 @@ type controller struct {
 // NewController initializes a new group controller
 func NewController(param *param.Param) Controller {
 	return &controller{
-		groupManager:       param.GroupManager,
-		applicationManager: param.ApplicationManager,
+		groupManager:       param.GroupMgr,
+		applicationManager: param.ApplicationMgr,
 		clusterManager:     param.ClusterMgr,
 		memberSvc:          param.MemberService,
 		templateMgr:        param.TemplateMgr,
-		templateReleaseMgr: param.TemplateReleaseManager,
+		templateReleaseMgr: param.TemplateReleaseMgr,
 	}
 }
 

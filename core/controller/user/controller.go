@@ -45,8 +45,8 @@ type controller struct {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		userMgr:  param.UserManager,
-		linksMgr: param.UserLinksManager,
+		userMgr:  param.UserMgr,
+		linksMgr: param.UserLinksMgr,
 	}
 }
 

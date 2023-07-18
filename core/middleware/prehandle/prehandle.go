@@ -20,9 +20,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/pkg/auth"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -109,7 +110,7 @@ func constructRBACParam(c *gin.Context) (*auth.AttributesRecord, error) {
 
 func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
-	app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
+	app, err := mgr.ApplicationMgr.GetByName(c, authRecord.Name)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -171,7 +172,7 @@ func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 		return
 	}
 
-	release, err := mgr.TemplateReleaseManager.
+	release, err := mgr.TemplateReleaseMgr.
 		GetByTemplateNameAndRelease(c, authRecord.Name, requestInfo.Parts[3])
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateReleaseInDB {

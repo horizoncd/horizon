@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -32,7 +34,6 @@ import (
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	"github.com/stretchr/testify/assert"
 )
 
 func testGetClusterStatusV2(t *testing.T) {
@@ -54,7 +55,7 @@ func testGetClusterStatusV2(t *testing.T) {
 		cd:             mockCD,
 	}
 
-	_, err := manager.RegistryManager.Create(ctx, &registrymodels.Registry{
+	_, err := manager.RegistryMgr.Create(ctx, &registrymodels.Registry{
 		Model: global.Model{ID: 1},
 	})
 	assert.Nil(t, err)

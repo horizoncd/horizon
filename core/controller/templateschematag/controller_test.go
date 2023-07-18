@@ -19,6 +19,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -28,8 +31,6 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	templateschemamodels "github.com/horizoncd/horizon/pkg/templateschematag/models"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -57,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	appMgr := manager.ApplicationManager
+	appMgr := manager.ApplicationMgr
 	clusterMgr := manager.ClusterMgr
 
 	// init data

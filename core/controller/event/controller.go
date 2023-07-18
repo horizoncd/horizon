@@ -32,7 +32,7 @@ type controller struct {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		eventMgr: param.EventManager,
+		eventMgr: param.EventMgr,
 	}
 }
 

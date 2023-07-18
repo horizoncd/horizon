@@ -17,12 +17,13 @@ package oauthapp
 import (
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"golang.org/x/net/context"
 )
 
 type CreateOauthAPPRequest struct {
@@ -60,7 +61,7 @@ var _ Controller = &controller{}
 func NewController(param *param.Param) Controller {
 	return &controller{
 		oauthManager: param.OauthManager,
-		userManager:  param.UserManager,
+		userManager:  param.UserMgr,
 	}
 }
 

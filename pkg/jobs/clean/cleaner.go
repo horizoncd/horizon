@@ -104,7 +104,7 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 				common.OrderBy: "l.id",
 			},
 		}
-		webhooklogs, _, err := c.mgr.WebhookManager.ListWebhookLogs(ctx, query, nil)
+		webhooklogs, _, err := c.mgr.WebhookMgr.ListWebhookLogs(ctx, query, nil)
 		if err != nil {
 			log.Errorf(ctx, "failed to list webhooklogs: %v", err)
 			time.Sleep(5 * time.Second)
@@ -137,7 +137,7 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 		}
 
 		log.Infof(ctx, "need to delete webhooklogs: %v", needDeleted)
-		_, _ = c.mgr.WebhookManager.DeleteWebhookLogs(ctx, needDeleted...)
+		_, _ = c.mgr.WebhookMgr.DeleteWebhookLogs(ctx, needDeleted...)
 	}
 }
 
@@ -148,7 +148,7 @@ func (c *Cleaner) eventNeedClean(ctx context.Context, event *models.Event, curre
 			continue
 		}
 		m := make(map[string]interface{})
-		if event.Extra != nil && *event.Extra != "" {
+		if event.EventType == models.ClusterKubernetesEvent && event.Extra != nil && *event.Extra != "" {
 			err := json.Unmarshal([]byte(*event.Extra), &m)
 			if err != nil {
 				log.Errorf(ctx, "failed to unmarshal event extra: %v", err)
@@ -157,7 +157,11 @@ func (c *Cleaner) eventNeedClean(ctx context.Context, event *models.Event, curre
 			if rule.Reason != "" && rule.Reason != m["reason"] {
 				continue
 			}
-			involvedObject := m["involvedObject"].(map[string]interface{})
+			involvedObject, ok := m["involvedObject"].(map[string]interface{})
+			if !ok {
+				log.Warningf(ctx, "failed to get involvedObject from event extra: %v", err)
+				return false
+			}
 			if involvedObject != nil {
 				if rule.APIVersion != "" && rule.APIVersion != involvedObject["apiVersion"] {
 					continue
@@ -195,7 +199,7 @@ func (c *Cleaner) eventClean(ctx context.Context, current time.Time) {
 			return
 		default:
 		}
-		events, err := c.mgr.EventManager.ListEvents(ctx, &q.Query{Keywords: q.KeyWords{
+		events, err := c.mgr.EventMgr.ListEvents(ctx, &q.Query{Keywords: q.KeyWords{
 			common.Limit:   c.Batch,
 			common.StartID: int(c.eventCursor),
 		}})
@@ -223,6 +227,6 @@ func (c *Cleaner) eventClean(ctx context.Context, current time.Time) {
 			continue
 		}
 		log.Infof(ctx, "need to delete event: %v", needDeleted)
-		_, _ = c.mgr.EventManager.DeleteEvents(ctx, needDeleted...)
+		_, _ = c.mgr.EventMgr.DeleteEvents(ctx, needDeleted...)
 	}
 }

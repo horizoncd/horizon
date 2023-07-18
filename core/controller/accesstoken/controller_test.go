@@ -21,13 +21,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/pkg/config/token"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
@@ -107,7 +108,7 @@ func TestMain(m *testing.M) {
 
 	ctx = context.TODO()
 
-	user, err := manager.UserManager.Create(ctx, &usermodels.User{
+	user, err := manager.UserMgr.Create(ctx, &usermodels.User{
 		Name: "test",
 	})
 	if err != nil {
@@ -118,7 +119,7 @@ func TestMain(m *testing.M) {
 		ID:   user.ID,
 	})
 
-	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "test",
 	})
 	if err != nil {

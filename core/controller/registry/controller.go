@@ -40,7 +40,7 @@ type Controller interface {
 }
 
 func NewController(param *param.Param) Controller {
-	return &controller{registryManager: param.RegistryManager}
+	return &controller{registryManager: param.RegistryMgr}
 }
 
 type controller struct {

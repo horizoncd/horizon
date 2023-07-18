@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_service_CheckUsersExists(t *testing.T) {
-	userManger := manager.UserManager
+	userManger := manager.UserMgr
 	_, err := userManger.Create(ctx, &models.User{
 		Name:  "tony",
 		Email: "tony@corp.com",
