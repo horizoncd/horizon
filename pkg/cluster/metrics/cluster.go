@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -75,19 +74,6 @@ func (c *Collector) getClusters() []*item {
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{ID: 0})
 
-	_, deletedClusters, err := c.managers.ClusterMgr.List(ctx, &q.Query{
-		Keywords: q.KeyWords{
-			common.ClusterQueryUpdatedAfter: time.Now().Add(-15 * time.Minute),
-			common.ClusterQueryOnlyDeleted:  true,
-		},
-		Sorts:             []*q.Sort{{Key: "c.created_at", DESC: true}},
-		WithoutPagination: true,
-	})
-	if err != nil {
-		log.Errorf(ctx, "Failed to get deleted clusters: %v", err)
-		return []*item{}
-	}
-
 	_, clusters, err := c.managers.ClusterMgr.List(ctx, &q.Query{
 		Sorts:             []*q.Sort{{Key: "c.created_at", DESC: true}},
 		WithoutPagination: true,
@@ -96,8 +82,6 @@ func (c *Collector) getClusters() []*item {
 		log.Errorf(ctx, "Failed to get clusters: %v", err)
 		return []*item{}
 	}
-
-	clusters = append(clusters, deletedClusters...)
 
 	clusterIDs := make([]uint, 0)
 	m := make(map[uint]struct{})
