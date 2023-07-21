@@ -32,23 +32,23 @@ const (
 	RefreshTokenPrefix                      = "hr_"
 )
 
-func NewAuthorizeGenerator() AuthorizationCodeGenerator {
+func NewAuthorizeGenerator() CodeGenerator {
 	return &AuthorizeGenerator{}
 }
 
-func NewHorizonAppUserToServerAccessGenerator() AccessTokenCodeGenerator {
+func NewHorizonAppUserToServerAccessGenerator() CodeGenerator {
 	return &BasicAccessTokenGenerator{prefix: HorizonAppUserToServerAccessTokenPrefix}
 }
 
-func NewOauthAccessGenerator() AccessTokenCodeGenerator {
+func NewOauthAccessGenerator() CodeGenerator {
 	return &BasicAccessTokenGenerator{prefix: OauthAPPAccessTokenPrefix}
 }
 
-func NewGeneralAccessTokenGenerator() AccessTokenCodeGenerator {
+func NewGeneralAccessTokenGenerator() CodeGenerator {
 	return &GeneralAccessTokenGenerator{prefix: AccessTokenPrefix}
 }
 
-func NewRefreshTokenGenerator() RefreshTokenCodeGenerator {
+func NewRefreshTokenGenerator() CodeGenerator {
 	return &BasicRefreshTokenGenerator{prefix: RefreshTokenPrefix}
 }
 

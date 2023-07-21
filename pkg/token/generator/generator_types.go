@@ -25,14 +25,6 @@ type CodeGenerateInfo struct {
 	Request *http.Request
 }
 
-type AuthorizationCodeGenerator interface {
-	Generate(info *CodeGenerateInfo) string
-}
-
-type AccessTokenCodeGenerator interface {
-	Generate(info *CodeGenerateInfo) string
-}
-
-type RefreshTokenCodeGenerator interface {
+type CodeGenerator interface {
 	Generate(info *CodeGenerateInfo) string
 }

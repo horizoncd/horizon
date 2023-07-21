@@ -51,8 +51,8 @@ type OauthTokensRequest struct {
 
 	Request *http.Request
 
-	AccessTokenGenerator  generator.AccessTokenCodeGenerator
-	RefreshTokenGenerator generator.RefreshTokenCodeGenerator
+	AccessTokenGenerator  generator.CodeGenerator
+	RefreshTokenGenerator generator.CodeGenerator
 }
 
 type OauthTokensResponse struct {
@@ -96,7 +96,7 @@ type Manager interface {
 var _ Manager = &OauthManager{}
 
 func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
-	gen generator.AuthorizationCodeGenerator,
+	gen generator.CodeGenerator,
 	authorizeCodeExpireTime,
 	accessTokenExpireTime,
 	refreshTokenExpireTime time.Duration) *OauthManager {
@@ -114,7 +114,7 @@ func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
 type OauthManager struct {
 	oauthAppDAO                oauthdao.DAO
 	tokenStorage               tokenstorage.Storage
-	authorizationCodeGenerator generator.AuthorizationCodeGenerator
+	authorizationCodeGenerator generator.CodeGenerator
 	authorizeCodeExpireTime    time.Duration
 	accessTokenExpireTime      time.Duration
 	refreshTokenExpireTime     time.Duration

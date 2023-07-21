@@ -79,7 +79,7 @@ func (s *service) CreateAccessToken(ctx context.Context, name, expiresAtStr stri
 	return token, nil
 }
 
-func (s *service) genAccessToken(gen generator.AccessTokenCodeGenerator, name string, userID uint,
+func (s *service) genAccessToken(gen generator.CodeGenerator, name string, userID uint,
 	scopes []string, createdAt time.Time, expiresIn time.Duration) (*tokenmodels.Token, error) {
 	code := gen.Generate(&generator.CodeGenerateInfo{
 		Token: tokenmodels.Token{UserID: userID},

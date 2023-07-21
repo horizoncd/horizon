@@ -114,12 +114,12 @@ func (c *controller) GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*
 }
 
 func (c *controller) getAccessTokenGenerator(ctx context.Context,
-	clientID string) (generator.AccessTokenCodeGenerator, error) {
+	clientID string) (generator.CodeGenerator, error) {
 	app, err := c.oauthManager.GetOAuthApp(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
-	var gen generator.AccessTokenCodeGenerator
+	var gen generator.CodeGenerator
 	switch app.AppType {
 	case oauthmodel.HorizonOAuthAPP:
 		gen = generator.NewHorizonAppUserToServerAccessGenerator()
