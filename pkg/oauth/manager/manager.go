@@ -342,7 +342,7 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 	authorizationCodeToken, err := m.tokenStorage.GetByCode(ctx, req.Code)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			return nil, herrors.ErrOAuthAuthorizationCodeNotExist
+			return nil, perror.Wrap(err, "authorization code not exist")
 		}
 		return nil, err
 	}
@@ -438,7 +438,7 @@ func (m *OauthManager) checkRefreshToken(ctx context.Context,
 	token, err := m.tokenStorage.GetByCode(ctx, refreshToken)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			return nil, herrors.ErrOAuthRefreshTokenNotExist
+			return nil, perror.Wrap(err, "refresh token not exist")
 		}
 		return nil, err
 	}

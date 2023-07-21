@@ -191,11 +191,11 @@ func TestServer(t *testing.T) {
 	// nolint
 	state := "98237dhka21dasd"
 	data := url.Values{
-		oauthserver.ClientID:    {clientID},
-		oauthserver.Scope:       {scope},
-		oauthserver.State:       {state},
-		oauthserver.RedirectURI: {createReq.RedirectURI},
-		oauthserver.Authorize:   {oauthserver.Authorized},
+		oauthserver.KeyClientID:    {clientID},
+		oauthserver.KeyScope:       {scope},
+		oauthserver.KeyState:       {state},
+		oauthserver.KeyRedirectURI: {createReq.RedirectURI},
+		oauthserver.KeyAuthorize:   {oauthserver.Authorized},
 	}
 	authorizeURI := oauthserver.BasicPath + oauthserver.AuthorizePath
 
@@ -213,16 +213,16 @@ func TestServer(t *testing.T) {
 
 	parsedURL, err := url.Parse(urlErr.URL)
 	assert.Nil(t, err)
-	authorizeCode := parsedURL.Query().Get(oauthserver.Code)
+	authorizeCode := parsedURL.Query().Get(oauthserver.KeyCode)
 	t.Logf("code = %s", authorizeCode)
 
 	// get the access token
 	accessTokenReqData := url.Values{
-		oauthserver.GrantType:    {oauthserver.GrantTypeAuthCode},
-		oauthserver.Code:         {authorizeCode},
-		oauthserver.ClientID:     {clientID},
-		oauthserver.ClientSecret: {secret.ClientSecret},
-		oauthserver.RedirectURI:  {createReq.RedirectURI},
+		oauthserver.KeyGrantType:    {oauthserver.GrantTypeAuthCode},
+		oauthserver.KeyCode:         {authorizeCode},
+		oauthserver.KeyClientID:     {clientID},
+		oauthserver.KeyClientSecret: {secret.ClientSecret},
+		oauthserver.KeyRedirectURI:  {createReq.RedirectURI},
 	}
 
 	accessTokenURI := oauthserver.BasicPath + oauthserver.AccessTokenPath
@@ -249,11 +249,11 @@ func TestServer(t *testing.T) {
 
 	// refresh token
 	refreshTokenReqData := url.Values{
-		oauthserver.GrantType:    {oauthserver.GrantTypeRefreshToken},
-		oauthserver.RefreshToken: {tokenResponse.RefreshToken},
-		oauthserver.ClientID:     {clientID},
-		oauthserver.ClientSecret: {secret.ClientSecret},
-		oauthserver.RedirectURI:  {createReq.RedirectURI},
+		oauthserver.KeyGrantType:    {oauthserver.GrantTypeRefreshToken},
+		oauthserver.KeyRefreshToken: {tokenResponse.RefreshToken},
+		oauthserver.KeyClientID:     {clientID},
+		oauthserver.KeyClientSecret: {secret.ClientSecret},
+		oauthserver.KeyRedirectURI:  {createReq.RedirectURI},
 	}
 	resp, err = http.PostForm("http://localhost"+ListenPort+accessTokenURI, refreshTokenReqData)
 	assert.Nil(t, err)

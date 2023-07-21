@@ -48,7 +48,7 @@ func NewGeneralAccessTokenGenerator() AccessTokenCodeGenerator {
 	return &GeneralAccessTokenGenerator{prefix: AccessTokenPrefix}
 }
 
-func NewBasicRefreshTokenGenerator() RefreshTokenCodeGenerator {
+func NewRefreshTokenGenerator() RefreshTokenCodeGenerator {
 	return &BasicRefreshTokenGenerator{prefix: RefreshTokenPrefix}
 }
 

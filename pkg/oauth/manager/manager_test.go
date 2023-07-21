@@ -236,7 +236,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		RedirectURL:           codeToken.RedirectURI,
 		Request:               nil,
 		AccessTokenGenerator:  generator.NewHorizonAppUserToServerAccessGenerator(),
-		RefreshTokenGenerator: generator.NewBasicRefreshTokenGenerator(),
+		RefreshTokenGenerator: generator.NewRefreshTokenGenerator(),
 	}
 
 	case1Request := *accessTokenRequest
@@ -271,7 +271,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	case5Request := *accessTokenRequest
 	_, err = oauthManager.GenOauthTokens(ctx, &case5Request)
 	assert.NotNil(t, err)
-	if perror.Cause(err) != herrors.ErrOAuthAuthorizationCodeNotExist {
+	if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok || e.Source != herrors.TokenInDB {
 		assert.Fail(t, "error is not found")
 	}
 
@@ -297,7 +297,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		RedirectURL:           codeToken.RedirectURI,
 		Request:               nil,
 		AccessTokenGenerator:  generator.NewHorizonAppUserToServerAccessGenerator(),
-		RefreshTokenGenerator: generator.NewBasicRefreshTokenGenerator(),
+		RefreshTokenGenerator: generator.NewRefreshTokenGenerator(),
 	}
 	case6Request := *accessTokenRequest
 	oauthTokens, err = oauthManager.GenOauthTokens(ctx, &case6Request)
@@ -379,7 +379,7 @@ func TestRefreshOauthToken(t *testing.T) {
 		RedirectURL:           authorizeCode.RedirectURI,
 		Request:               nil,
 		AccessTokenGenerator:  generator.NewOauthAccessGenerator(),
-		RefreshTokenGenerator: generator.NewBasicRefreshTokenGenerator(),
+		RefreshTokenGenerator: generator.NewRefreshTokenGenerator(),
 	}
 	oauthTokens, err := oauthManager.GenOauthTokens(ctx, oauthTokensRequest)
 	assert.Nil(t, err)
@@ -398,7 +398,9 @@ func TestRefreshOauthToken(t *testing.T) {
 	testReq2 := *oauthTokensRequest
 	testReq2.RefreshToken = "wrong-refresh-token"
 	_, err = oauthManager.RefreshOauthTokens(ctx, &testReq2)
-	assert.Equal(t, perror.Cause(err), herrors.ErrOAuthRefreshTokenNotExist)
+	if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok || e.Source != herrors.TokenInDB {
+		assert.Fail(t, "error is not found")
+	}
 
 	// case 3: redirectURL of refresh token is mismatched
 	testReq3 := *oauthTokensRequest
@@ -422,7 +424,7 @@ func TestRefreshOauthToken(t *testing.T) {
 		RedirectURL:           authorizeCode.RedirectURI,
 		Request:               nil,
 		AccessTokenGenerator:  generator.NewOauthAccessGenerator(),
-		RefreshTokenGenerator: generator.NewBasicRefreshTokenGenerator(),
+		RefreshTokenGenerator: generator.NewRefreshTokenGenerator(),
 	}
 	oauthTokens, err = oauthManager.GenOauthTokens(ctx, oauthTokensRequest)
 	assert.Nil(t, err)
@@ -449,7 +451,7 @@ func TestRefreshOauthToken(t *testing.T) {
 		RedirectURL:           authorizeCode.RedirectURI,
 		Request:               nil,
 		AccessTokenGenerator:  generator.NewOauthAccessGenerator(),
-		RefreshTokenGenerator: generator.NewBasicRefreshTokenGenerator(),
+		RefreshTokenGenerator: generator.NewRefreshTokenGenerator(),
 	}
 	oauthTokens, err = oauthManager.GenOauthTokens(ctx, oauthTokensRequest)
 	assert.Nil(t, err)

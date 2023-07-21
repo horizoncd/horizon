@@ -137,7 +137,7 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenGenerator := generator.NewBasicRefreshTokenGenerator()
+	refreshTokenGenerator := generator.NewRefreshTokenGenerator()
 
 	tokens, err := c.oauthManager.GenOauthTokens(ctx, &manager.OauthTokensRequest{
 		ClientID:              req.ClientID,
@@ -166,7 +166,7 @@ func (c *controller) RefreshToken(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenGenerator := generator.NewBasicRefreshTokenGenerator()
+	refreshTokenGenerator := generator.NewRefreshTokenGenerator()
 
 	tokens, err := c.oauthManager.RefreshOauthTokens(ctx, &manager.OauthTokensRequest{
 		ClientID:              req.ClientID,
