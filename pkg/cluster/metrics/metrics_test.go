@@ -65,6 +65,23 @@ func Test(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
+	err = mgr.TagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, app.ID, []*tagmodels.TagBasic{
+		{Key: "name", Value: "app1"},
+		{Key: "test/app1", Value: "test_app1"},
+	})
+	assert.Nil(t, err)
+
+	app2, err := mgr.ApplicationMgr.Create(ctx, &appmodels.Application{
+		Name:    "app2",
+		GroupID: group.ID,
+	}, nil)
+	assert.Nil(t, err)
+
+	err = mgr.TagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, app2.ID, []*tagmodels.TagBasic{
+		{Key: "name", Value: "app2"},
+	})
+	assert.Nil(t, err)
+
 	region, err := mgr.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
@@ -109,7 +126,11 @@ func Test(t *testing.T) {
 
 	collector := &Collector{mgr}
 
-	strReader := strings.NewReader(`# HELP horizon_cluster_info A metric with a constant '1' value labeled by cluster, application, group, etc.
+	strReader := strings.NewReader(`# HELP horizon_application_labels A metric with a constant '1' value labeled by application and tags
+# TYPE horizon_application_labels gauge
+horizon_application_labels{application="app2",label_name="app2"} 1
+horizon_application_labels{application="app1",label_name="app1",label_test_app1="test_app1"} 1
+# HELP horizon_cluster_info A metric with a constant '1' value labeled by cluster, application, group, etc.
 # TYPE horizon_cluster_info gauge
 horizon_cluster_info{application="app1",cluster="cluster1",environment="dev",group="group1",region="hz",template="javaapp"} 1
 horizon_cluster_info{application="app1",cluster="cluster2",environment="dev",group="group1",region="hz",template="javaapp"} 1
