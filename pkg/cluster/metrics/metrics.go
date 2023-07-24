@@ -223,15 +223,15 @@ func (collector *Collector) CollectAppLabel(app *appWithTags, ch chan<- promethe
 	tagLabels, tagLabelKeys := collector.tagsToMetrics(app.Tags)
 	tagLabels["application"] = app.Name
 
-	horizonClusterLabels := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	horizonAppLabels := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: horizonAppLabels,
 		Help: "A metric with a constant '1' value labeled by application and tags",
 	},
 		append([]string{"application"}, tagLabelKeys...),
 	)
 
-	horizonClusterLabels.With(tagLabels).Set(1)
-	horizonClusterLabels.Collect(ch)
+	horizonAppLabels.With(tagLabels).Set(1)
+	horizonAppLabels.Collect(ch)
 }
 
 func (*Collector) CollectClusterInfo(itm *item, ch chan<- prometheus.Metric) {
