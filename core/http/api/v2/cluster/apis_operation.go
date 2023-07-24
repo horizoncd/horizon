@@ -20,6 +20,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/cluster"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -28,7 +30,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const JWTTokenHeader = "X-Horizon-JWT-Token"
@@ -122,7 +123,7 @@ func (a *API) GetResourceTree(c *gin.Context) {
 
 	resp, err := a.clusterCtl.GetResourceTree(c, uint(clusterID))
 	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
