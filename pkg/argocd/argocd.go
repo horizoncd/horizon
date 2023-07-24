@@ -407,6 +407,10 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, herrors.NewErrNotFound(herrors.ApplicationInArgo,
+			fmt.Sprintf("application %s not found", application))
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}

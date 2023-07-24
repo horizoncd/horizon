@@ -26,11 +26,12 @@ import (
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutv1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
+	"github.com/stretchr/testify/assert"
+	"k8s.io/kubernetes/pkg/apis/apps"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/argocd/mock"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"k8s.io/kubernetes/pkg/apis/apps"
 
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
@@ -242,6 +243,12 @@ func SharedTestApplication(ctx context.Context, argoClient *helper, t *testing.T
 	// if err != nil && errors.Status(err) != http.StatusNotFound {
 	// 	t.Fatal(err)
 	// }
+
+	if _, err := argoClient.GetApplicationTree(ctx, "notfound"); err == nil {
+		assert.NotNil(t, err)
+		_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+		assert.True(t, ok)
+	}
 
 	if tree, err := argoClient.GetApplicationTree(ctx, _cluster2); err != nil {
 		t.Fatal(err)

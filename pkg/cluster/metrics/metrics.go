@@ -20,6 +20,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
+var (
+	replacer = strings.NewReplacer("-", "_", ".", "_", "/", "_")
+	pattern  = regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]{0,239}`)
+)
+
 func NewMetrics(
 	managers *managerparam.Manager,
 ) {
@@ -33,11 +38,20 @@ type groupWithFullPath struct {
 	FullPath string
 }
 
+type appWithTags struct {
+	*amodels.Application
+	Tags []*tagmodels.Tag
+}
+
+type clusterWithTags struct {
+	*cmodels.Cluster
+	Tags []*tagmodels.Tag
+}
+
 type item struct {
-	app         *amodels.Application
-	cluster     *cmodels.Cluster
-	group       *groupWithFullPath
-	clusterTags []*tagmodels.Tag
+	app     *amodels.Application
+	cluster *clusterWithTags
+	group   *groupWithFullPath
 }
 
 type Collector struct {
@@ -47,9 +61,10 @@ type Collector struct {
 const (
 	horizonClusterInfo   = "horizon_cluster_info"
 	horizonClusterLabels = "horizon_cluster_labels"
+	horizonAppLabels     = "horizon_application_labels"
 )
 
-func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
+func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 	clusterInfo := prometheus.NewDesc(
 		horizonClusterInfo,
 		"A metric with a constant '1' value labeled by cluster, application, group, etc.",
@@ -65,68 +80,85 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 		nil,
 	)
 	ch <- clusterLabels
+
+	appLabels := prometheus.NewDesc(
+		horizonAppLabels,
+		"A metric with a constant '1' value labeled by application and tags",
+		[]string{},
+		nil,
+	)
+	ch <- appLabels
 }
 
-func (c *Collector) getClusters() []*item {
-	ctx := context.Background()
-
-	// dummy user
-	// nolint
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{ID: 0})
-
-	_, clusters, err := c.managers.ClusterMgr.List(ctx, &q.Query{
-		Sorts:             []*q.Sort{{Key: "c.created_at", DESC: true}},
-		WithoutPagination: true,
-	})
+func (collector *Collector) getTagsMap(resourceIDs []uint, resourceType string) (map[uint][]*tagmodels.Tag, error) {
+	tags, err := collector.managers.TagMgr.ListByResourceTypeIDs(context.Background(),
+		resourceType, resourceIDs, false)
 	if err != nil {
-		log.Errorf(ctx, "Failed to get clusters: %v", err)
-		return []*item{}
-	}
-
-	clusterIDs := make([]uint, 0)
-	m := make(map[uint]struct{})
-	appIDs := make([]uint, 0)
-	for _, cluster := range clusters {
-		clusterIDs = append(clusterIDs, cluster.ID)
-		if _, ok := m[cluster.ApplicationID]; ok {
-			continue
-		}
-		m[cluster.ApplicationID] = struct{}{}
-		appIDs = append(appIDs, cluster.ApplicationID)
-	}
-
-	tags, err := c.managers.TagMgr.ListByResourceTypeIDs(ctx, common.ResourceCluster, clusterIDs, false)
-	if err != nil {
-		log.Errorf(ctx, "Failed to get tags: %v", err)
-		return []*item{}
+		return nil, err
 	}
 
 	tagsMap := make(map[uint][]*tagmodels.Tag)
 	for _, tag := range tags {
 		tagsMap[tag.ResourceID] = append(tagsMap[tag.ResourceID], tag)
 	}
+	return tagsMap, nil
+}
 
-	_, apps, err := c.managers.ApplicationMgr.List(ctx, []uint{}, &q.Query{
-		Keywords: q.KeyWords{
-			common.ApplicationQueryID:          appIDs,
-			common.ApplicationQueryWithDeleted: true,
-		},
+func (collector *Collector) getClustersAndApps() ([]*item, []*appWithTags) {
+	ctx := context.Background()
+
+	// dummy user
+	// nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{ID: 0})
+
+	_, clusters, err := collector.managers.ClusterMgr.List(ctx, &q.Query{
+		Sorts:             []*q.Sort{{Key: "collector.created_at", DESC: true}},
+		WithoutPagination: true,
+	})
+	if err != nil {
+		log.Errorf(ctx, "Failed to get clusters: %v", err)
+		return []*item{}, []*appWithTags{}
+	}
+
+	clusterIDs := make([]uint, 0)
+	for _, cluster := range clusters {
+		clusterIDs = append(clusterIDs, cluster.ID)
+	}
+
+	clusterTagsMap, err := collector.getTagsMap(clusterIDs, common.ResourceCluster)
+	if err != nil {
+		log.Errorf(ctx, "Failed to get tags: %v", err)
+		return []*item{}, []*appWithTags{}
+	}
+
+	_, apps, err := collector.managers.ApplicationMgr.List(ctx, []uint{}, &q.Query{
 		WithoutPagination: true,
 	})
 	if err != nil {
 		log.Errorf(ctx, "Failed to get applications: %v", err)
-		return []*item{}
+		return []*item{}, []*appWithTags{}
 	}
 
+	appIDs := make([]uint, 0)
 	appMap := make(map[uint]*amodels.Application)
 	for _, app := range apps {
+		appIDs = append(appIDs, app.ID)
+		if _, ok := appMap[app.ID]; ok {
+			continue
+		}
 		appMap[app.ID] = app
 	}
 
-	groups, err := c.managers.GroupMgr.GetAll(ctx)
+	appTagsMap, err := collector.getTagsMap(appIDs, common.ResourceApplication)
+	if err != nil {
+		log.Errorf(ctx, "Failed to get tags: %v", err)
+		return []*item{}, []*appWithTags{}
+	}
+
+	groups, err := collector.managers.GroupMgr.GetAll(ctx)
 	if err != nil {
 		log.Errorf(ctx, "Failed to get groups: %v", err)
-		return []*item{}
+		return []*item{}, []*appWithTags{}
 	}
 
 	groupMap := make(map[uint]*gmodels.Group)
@@ -149,24 +181,57 @@ func (c *Collector) getClusters() []*item {
 			g.genFullPath(groupMap)
 		}
 		itm := &item{
-			app:         app,
-			cluster:     cluster.Cluster,
-			group:       g,
-			clusterTags: tagsMap[cluster.ID],
+			app: app,
+			cluster: &clusterWithTags{
+				Cluster: cluster.Cluster,
+				Tags:    clusterTagsMap[cluster.ID],
+			},
+			group: g,
 		}
 		items = append(items, itm)
 	}
-	return items
+
+	appsWithTags := make([]*appWithTags, 0, len(apps))
+	for _, app := range apps {
+		appsWithTags = append(appsWithTags, &appWithTags{
+			Application: app,
+			Tags:        appTagsMap[app.ID],
+		})
+	}
+	return items, appsWithTags
 }
 
-func (c *Collector) Collect(ch chan<- prometheus.Metric) {
-	items := c.getClusters()
+func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
+	clusters, apps := collector.getClustersAndApps()
 
-	for _, item := range items {
-		c.CollectClusterInfo(item, ch)
+	for _, item := range clusters {
+		collector.CollectClusterInfo(item, ch)
 
-		c.CollectClusterLabel(item, ch)
+		collector.CollectClusterLabel(item, ch)
 	}
+
+	for _, app := range apps {
+		collector.CollectAppLabel(app, ch)
+	}
+}
+
+func (collector *Collector) CollectAppLabel(app *appWithTags, ch chan<- prometheus.Metric) {
+	if app == nil || app.Application == nil {
+		return
+	}
+
+	tagLabels, tagLabelKeys := collector.tagsToMetrics(app.Tags)
+	tagLabels["application"] = app.Name
+
+	horizonAppLabels := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: horizonAppLabels,
+		Help: "A metric with a constant '1' value labeled by application and tags",
+	},
+		append([]string{"application"}, tagLabelKeys...),
+	)
+
+	horizonAppLabels.With(tagLabels).Set(1)
+	horizonAppLabels.Collect(ch)
 }
 
 func (*Collector) CollectClusterInfo(itm *item, ch chan<- prometheus.Metric) {
@@ -196,22 +261,28 @@ func (*Collector) CollectClusterInfo(itm *item, ch chan<- prometheus.Metric) {
 	horizonClusterLabels.Collect(ch)
 }
 
-func (*Collector) CollectClusterLabel(itm *item, ch chan<- prometheus.Metric) {
-	replacer := strings.NewReplacer("-", "_", ".", "_", "/", "_")
-	pattern := regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]{0,239}`)
-	validLabel := func(value string) bool {
-		return pattern.FindString(value) == value
-	}
-
+func (collector *Collector) CollectClusterLabel(itm *item, ch chan<- prometheus.Metric) {
 	c, a, g := itm.cluster, itm.app, itm.group
 	if c == nil || a == nil || g == nil {
 		return
 	}
-	tagLabels := prometheus.Labels{
-		"cluster":     c.Name,
-		"application": a.Name,
-	}
-	for _, tag := range itm.clusterTags {
+	tagLabels, tagLabelKeys := collector.tagsToMetrics(c.Tags)
+	tagLabels["cluster"] = c.Name
+	tagLabels["application"] = a.Name
+	horizonClusterLabels := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: horizonClusterLabels,
+		Help: "A metric with a constant '1' value labeled by cluster and tags",
+	},
+		append([]string{"cluster", "application"}, tagLabelKeys...),
+	)
+
+	horizonClusterLabels.With(tagLabels).Set(1)
+	horizonClusterLabels.Collect(ch)
+}
+
+func (*Collector) tagsToMetrics(tags []*tagmodels.Tag) (prometheus.Labels, []string) {
+	tagLabels := prometheus.Labels{}
+	for _, tag := range tags {
 		label := fmt.Sprintf("label_%s", tag.Key)
 		label = replacer.Replace(label)
 		if !validLabel(label) {
@@ -224,15 +295,7 @@ func (*Collector) CollectClusterLabel(itm *item, ch chan<- prometheus.Metric) {
 	for k := range tagLabels {
 		tagLabelKeys = append(tagLabelKeys, k)
 	}
-	horizonClusterLabels := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: horizonClusterLabels,
-		Help: "A metric with a constant '1' value labeled by cluster and tags",
-	},
-		tagLabelKeys,
-	)
-
-	horizonClusterLabels.With(tagLabels).Set(1)
-	horizonClusterLabels.Collect(ch)
+	return tagLabels, tagLabelKeys
 }
 
 func (g *groupWithFullPath) genFullPath(groups map[uint]*gmodels.Group) {
@@ -256,4 +319,8 @@ func (g *groupWithFullPath) genFullPath(groups map[uint]*gmodels.Group) {
 		}
 	}
 	g.FullPath = builder.String()
+}
+
+func validLabel(value string) bool {
+	return pattern.FindString(value) == value
 }
