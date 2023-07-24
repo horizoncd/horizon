@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 // ref: https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
@@ -29,35 +30,36 @@ const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"
 	AccessTokenPrefix                       = "ha_"
+	RefreshTokenPrefix                      = "hr_"
 )
 
-func NewAuthorizeGenerator() AuthorizationCodeGenerator {
-	return &AuthorizeGenerator{}
+func NewAuthorizeGenerator() CodeGenerator {
+	return &authorizationCodeGenerator{}
 }
 
-func NewHorizonAppUserToServerAccessGenerator() AccessTokenCodeGenerator {
-	return &BasicAccessTokenGenerator{prefix: HorizonAppUserToServerAccessTokenPrefix}
+func NewHorizonAppUserToServerAccessGenerator() CodeGenerator {
+	return &basicTokenGenerator{prefix: HorizonAppUserToServerAccessTokenPrefix}
 }
 
-func NewOauthAccessGenerator() AccessTokenCodeGenerator {
-	return &BasicAccessTokenGenerator{prefix: OauthAPPAccessTokenPrefix}
+func NewOauthAccessGenerator() CodeGenerator {
+	return &basicTokenGenerator{prefix: OauthAPPAccessTokenPrefix}
 }
 
-func NewGeneralAccessTokenGenerator() AccessTokenCodeGenerator {
-	return &GeneralAccessTokenGenerator{prefix: AccessTokenPrefix}
+func NewGeneralAccessTokenGenerator() CodeGenerator {
+	return &basicTokenGenerator{prefix: AccessTokenPrefix}
 }
 
-type AuthorizeGenerator struct{}
+func NewRefreshTokenGenerator() CodeGenerator {
+	return &basicTokenGenerator{prefix: RefreshTokenPrefix}
+}
 
-type BasicAccessTokenGenerator struct {
+type authorizationCodeGenerator struct{}
+
+type basicTokenGenerator struct {
 	prefix string
 }
 
-type GeneralAccessTokenGenerator struct {
-	prefix string
-}
-
-func (g *AuthorizeGenerator) GenCode(info *CodeGenerateInfo) string {
+func (g *authorizationCodeGenerator) Generate(info *CodeGenerateInfo) string {
 	buf := bytes.NewBufferString(info.Token.ClientID)
 	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	token := uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes())
@@ -66,19 +68,16 @@ func (g *AuthorizeGenerator) GenCode(info *CodeGenerateInfo) string {
 	return code
 }
 
-func (g *BasicAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
-	buf := bytes.NewBufferString(info.Token.ClientID)
+func (g *basicTokenGenerator) Generate(info *CodeGenerateInfo) string {
+	clientID := func(info *CodeGenerateInfo) string {
+		if info.Token.ClientID != "" {
+			return info.Token.ClientID
+		}
+		return rand.String(20)
+	}(info)
+	buf := bytes.NewBufferString(clientID)
 	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
-	buf.WriteString(strconv.FormatInt(info.Token.CreatedAt.UnixNano(), 10))
+	buf.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 	access := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
-	access = g.prefix + strings.ToUpper(strings.TrimRight(access, "="))
-	return access
-}
-
-func (g *GeneralAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
-	buf := bytes.NewBufferString(time.Now().String())
-	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
-	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
-	code = g.prefix + strings.ToUpper(strings.TrimRight(code, "="))
-	return code
+	return g.prefix + strings.ToUpper(strings.TrimRight(access, "="))
 }

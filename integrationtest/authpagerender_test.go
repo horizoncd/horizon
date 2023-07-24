@@ -47,7 +47,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/rbac/types"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
-	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	tokenstore "github.com/horizoncd/horizon/pkg/token/store"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -65,6 +65,7 @@ var (
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Second * 3
+	refreshTokenExpireIn  = time.Minute * 30
 	manager               *managerparam.Manager
 )
 
@@ -118,10 +119,10 @@ func TestServer(t *testing.T) {
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenStorage := tokenstorage.NewStorage(db)
+	tokenStore := tokenstore.NewStore(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
-		authorizeCodeExpireIn, accessTokenExpireIn)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStore, generator.NewAuthorizeGenerator(),
+		authorizeCodeExpireIn, accessTokenExpireIn, refreshTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
 		return clientID
@@ -190,11 +191,11 @@ func TestServer(t *testing.T) {
 	// nolint
 	state := "98237dhka21dasd"
 	data := url.Values{
-		oauthserver.ClientID:    {clientID},
-		oauthserver.Scope:       {scope},
-		oauthserver.State:       {state},
-		oauthserver.RedirectURI: {createReq.RedirectURI},
-		oauthserver.Authorize:   {oauthserver.Authorized},
+		oauthserver.KeyClientID:    {clientID},
+		oauthserver.KeyScope:       {scope},
+		oauthserver.KeyState:       {state},
+		oauthserver.KeyRedirectURI: {createReq.RedirectURI},
+		oauthserver.KeyAuthorize:   {oauthserver.Authorized},
 	}
 	authorizeURI := oauthserver.BasicPath + oauthserver.AuthorizePath
 
@@ -212,15 +213,16 @@ func TestServer(t *testing.T) {
 
 	parsedURL, err := url.Parse(urlErr.URL)
 	assert.Nil(t, err)
-	authorizeCode := parsedURL.Query().Get(oauthserver.Code)
+	authorizeCode := parsedURL.Query().Get(oauthserver.KeyCode)
 	t.Logf("code = %s", authorizeCode)
 
-	// get  the access token
+	// get the access token
 	accessTokenReqData := url.Values{
-		oauthserver.Code:         {authorizeCode},
-		oauthserver.ClientID:     {clientID},
-		oauthserver.ClientSecret: {secret.ClientSecret},
-		oauthserver.RedirectURI:  {createReq.RedirectURI},
+		oauthserver.KeyGrantType:    {oauthserver.GrantTypeAuthCode},
+		oauthserver.KeyCode:         {authorizeCode},
+		oauthserver.KeyClientID:     {clientID},
+		oauthserver.KeyClientSecret: {secret.ClientSecret},
+		oauthserver.KeyRedirectURI:  {createReq.RedirectURI},
 	}
 
 	accessTokenURI := oauthserver.BasicPath + oauthserver.AccessTokenPath
@@ -243,8 +245,29 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
+	assert.True(t, strings.HasPrefix(tokenResponse.RefreshToken, generator.RefreshTokenPrefix))
 
-	//  token expired
+	// refresh token
+	refreshTokenReqData := url.Values{
+		oauthserver.KeyGrantType:    {oauthserver.GrantTypeRefreshToken},
+		oauthserver.KeyRefreshToken: {tokenResponse.RefreshToken},
+		oauthserver.KeyClientID:     {clientID},
+		oauthserver.KeyClientSecret: {secret.ClientSecret},
+		oauthserver.KeyRedirectURI:  {createReq.RedirectURI},
+	}
+	resp, err = http.PostForm("http://localhost"+ListenPort+accessTokenURI, refreshTokenReqData)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	bytes, err = ioutil.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	tokenResponse = oauth.AccessTokenResponse{}
+	assert.Nil(t, json.Unmarshal(bytes, &tokenResponse))
+	t.Logf("%v", tokenResponse)
+
+	// token expired
 	time.Sleep(accessTokenExpireIn)
 	resourceURI := "/apis/core/v1/clusters/123"
 	req, err := http.NewRequest("GET", "http://localhost"+ListenPort+resourceURI, nil)

@@ -267,14 +267,14 @@ var (
 	ErrOAuthSecretNotValid = errors.New("secret not valid")
 
 	// ErrOAuthCodeExpired oauth authorization code  or access token expire
-	ErrOAuthCodeExpired               = errors.New("code expired")
-	ErrOAuthAccessTokenExpired        = errors.New("Access Token Expired")
-	ErrOAuthReqNotValid               = errors.New("oauth request not valid")
-	ErrOAuthAuthorizationCodeNotExist = errors.New("authorization code not exist")
-	ErrOAuthInternal                  = errors.New("oauth internal error")
-	ErrAuthorizationHeaderNotFound    = errors.New("AuthorizationHeader not found")
-	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
-	ErrOAuthNotGroupOwnerType         = errors.New("not group oauth app")
+	ErrOAuthCodeExpired            = errors.New("code expired")
+	ErrOAuthAccessTokenExpired     = errors.New("access token expired")
+	ErrOAuthRefreshTokenExpired    = errors.New("refresh token expired")
+	ErrOAuthReqNotValid            = errors.New("oauth request not valid")
+	ErrOAuthInternal               = errors.New("oauth internal error")
+	ErrAuthorizationHeaderNotFound = errors.New("AuthorizationHeader not found")
+	ErrOAuthTokenFormatError       = errors.New("Oauth token format error")
+	ErrOAuthNotGroupOwnerType      = errors.New("not group oauth app")
 
 	// ErrRegistryUsedByRegions used when deleting a registry that is still used by regions
 	ErrRegistryUsedByRegions = errors.New("cannot delete a registry when used by regions")

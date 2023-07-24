@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package store
 
 import (
 	"context"
@@ -24,22 +24,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type storage struct {
+type store struct {
 	db *gorm.DB
 }
 
-func NewStorage(db *gorm.DB) Storage {
-	return &storage{db: db}
+func NewStore(db *gorm.DB) Store {
+	return &store{db: db}
 }
 
-func (d *storage) Create(ctx context.Context, token *models.Token) (*models.Token, error) {
-	result := d.db.WithContext(ctx).Create(token)
+func (s *store) Create(ctx context.Context, token *models.Token) (*models.Token, error) {
+	result := s.db.WithContext(ctx).Create(token)
 	return token, result.Error
 }
 
-func (d *storage) GetByID(ctx context.Context, id uint) (*models.Token, error) {
+func (s *store) GetByID(ctx context.Context, id uint) (*models.Token, error) {
 	var token models.Token
-	result := d.db.WithContext(ctx).Model(token).Where("id = ?", id).First(&token)
+	result := s.db.WithContext(ctx).Model(token).Where("id = ?", id).First(&token)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.TokenInDB, result.Error.Error())
@@ -49,9 +49,9 @@ func (d *storage) GetByID(ctx context.Context, id uint) (*models.Token, error) {
 	return &token, nil
 }
 
-func (d *storage) GetByCode(ctx context.Context, code string) (*models.Token, error) {
+func (s *store) GetByCode(ctx context.Context, code string) (*models.Token, error) {
 	var token models.Token
-	result := d.db.WithContext(ctx).Model(token).Where("code = ?", code).First(&token)
+	result := s.db.WithContext(ctx).Model(token).Where("code = ?", code).First(&token)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.TokenInDB, result.Error.Error())
@@ -61,17 +61,33 @@ func (d *storage) GetByCode(ctx context.Context, code string) (*models.Token, er
 	return &token, nil
 }
 
-func (d *storage) DeleteByID(ctx context.Context, id uint) error {
-	result := d.db.WithContext(ctx).Exec(common.DeleteTokenByID, id)
+func (s *store) UpdateByID(ctx context.Context, id uint, token *models.Token) error {
+	tokenInDB, err := s.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	// can only update code, created_at and ref_id
+	tokenInDB.Code = token.Code
+	tokenInDB.CreatedAt = token.CreatedAt
+	tokenInDB.RefID = token.RefID
+	result := s.db.WithContext(ctx).Save(tokenInDB)
+	if result.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.TokenInDB, result.Error.Error())
+	}
+	return nil
+}
+
+func (s *store) DeleteByID(ctx context.Context, id uint) error {
+	result := s.db.WithContext(ctx).Exec(common.DeleteTokenByID, id)
 	return result.Error
 }
 
-func (d *storage) DeleteByCode(ctx context.Context, code string) error {
-	result := d.db.WithContext(ctx).Exec(common.DeleteByCode, code)
+func (s *store) DeleteByCode(ctx context.Context, code string) error {
+	result := s.db.WithContext(ctx).Exec(common.DeleteByCode, code)
 	return result.Error
 }
 
-func (d *storage) DeleteByClientID(ctx context.Context, clientID string) error {
-	result := d.db.WithContext(ctx).Exec(common.DeleteByClientID, clientID)
+func (s *store) DeleteByClientID(ctx context.Context, clientID string) error {
+	result := s.db.WithContext(ctx).Exec(common.DeleteByClientID, clientID)
 	return result.Error
 }

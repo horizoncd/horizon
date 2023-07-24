@@ -33,17 +33,20 @@ import (
 )
 
 const (
-	ClientID    = "client_id"
-	Scope       = "scope"
-	State       = "state"
-	RedirectURI = "redirect_uri"
-	Authorize   = "authorize"
+	KeyClientID    = "client_id"
+	KeyScope       = "scope"
+	KeyState       = "state"
+	KeyRedirectURI = "redirect_uri"
+	KeyAuthorize   = "authorize"
 
-	Code         = "code"
-	ClientSecret = "client_secret"
-)
+	KeyCode         = "code"
+	KeyRefreshToken = "refresh_token"
+	KeyClientSecret = "client_secret"
 
-const (
+	KeyGrantType          = "grant_type"
+	GrantTypeAuthCode     = "authorization_code"
+	GrantTypeRefreshToken = "refresh_token"
+
 	Authorized = "1"
 )
 
@@ -83,9 +86,9 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 	var err error
 	checkReq := func() bool {
 		keys := []string{
-			ClientID,
-			State,
-			RedirectURI,
+			KeyClientID,
+			KeyState,
+			KeyRedirectURI,
 		}
 		for _, key := range keys {
 			if _, ok := c.GetQuery(key); !ok {
@@ -101,7 +104,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return
 	}
 
-	appBasicInfo, err := a.oauthAppController.Get(c, c.Query(ClientID))
+	appBasicInfo, err := a.oauthAppController.Get(c, c.Query(KeyClientID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.OAuthInDB {
@@ -113,7 +116,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		response.AbortWithInternalError(c, err.Error())
 		return
 	}
-	scopeRules := a.scopeService.GetRulesByScope(strings.Split(c.Query(Scope), " "))
+	scopeRules := a.scopeService.GetRulesByScope(strings.Split(c.Query(KeyScope), " "))
 	scopeInfo := func() []ScopeBasic {
 		scopeBasics := make([]ScopeBasic, 0)
 		for _, scope := range scopeRules {
@@ -134,11 +137,11 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 	params := AuthorizationPageParams{
 		UserName:    currentUser.GetName(),
 		ClientName:  appBasicInfo.AppName,
-		ClientID:    c.Query(ClientID),
+		ClientID:    c.Query(KeyClientID),
 		HomeURL:     appBasicInfo.HomeURL,
-		State:       c.Query(State),
-		Scope:       c.Query(Scope),
-		RedirectURL: c.Query(RedirectURI),
+		State:       c.Query(KeyState),
+		Scope:       c.Query(KeyScope),
+		RedirectURL: c.Query(KeyRedirectURI),
 		ScopeBasic:  scopeInfo(),
 	}
 	authTemplate, err := template.ParseFiles(a.oauthHTMLLocation)
@@ -159,9 +162,9 @@ func (a *API) HandleAuthorizationReq(c *gin.Context) {
 	var err error
 	checkReq := func() bool {
 		keys := []string{
-			ClientID,
-			State,
-			RedirectURI,
+			KeyClientID,
+			KeyState,
+			KeyRedirectURI,
 		}
 		for _, key := range keys {
 			if _, ok := c.GetPostForm(key); !ok {
@@ -186,21 +189,21 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
 		return
 	}
-	value, ok := c.GetPostForm(Authorize)
+	value, ok := c.GetPostForm(KeyAuthorize)
 	if !ok || value != Authorized {
 		const DenyKey = "error"
 		const DenyDesc = "the user has denied your application access"
 		q := url.Values{}
 		q.Set(DenyKey, DenyDesc)
-		q.Set(State, c.PostForm(State))
-		location := url.URL{Path: c.PostForm(RedirectURI), RawQuery: q.Encode()}
+		q.Set(KeyState, c.PostForm(KeyState))
+		location := url.URL{Path: c.PostForm(KeyRedirectURI), RawQuery: q.Encode()}
 		c.Redirect(http.StatusFound, location.RequestURI())
 	} else {
 		resp, err := a.oAuthServer.GenAuthorizeCode(c, &oauth.AuthorizeReq{
-			ClientID:     c.PostForm(ClientID),
-			Scope:        c.PostForm(Scope),
-			RedirectURL:  c.PostForm(RedirectURI),
-			State:        c.PostForm(State),
+			ClientID:     c.PostForm(KeyClientID),
+			Scope:        c.PostForm(KeyScope),
+			RedirectURL:  c.PostForm(KeyRedirectURI),
+			State:        c.PostForm(KeyState),
 			UserIdentity: user.GetID(),
 			Request:      c.Request,
 		})
@@ -222,8 +225,8 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 			}
 		} else {
 			q := url.Values{}
-			q.Set(Code, resp.Code)
-			q.Set(State, resp.State)
+			q.Set(KeyCode, resp.Code)
+			q.Set(KeyState, resp.State)
 			location := url.URL{Path: resp.RedirectURL, RawQuery: q.Encode()}
 			c.Redirect(http.StatusFound, location.RequestURI())
 		}
@@ -231,14 +234,30 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 }
 
 func (a *API) HandleAccessTokenReq(c *gin.Context) {
+	// check grant type
+	grantType, ok := c.GetPostForm(KeyGrantType)
+	if !ok {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "grant_type not exist")
+		return
+	}
+
+	keys := []string{
+		KeyClientID,
+		KeyClientSecret,
+		KeyRedirectURI,
+	}
+	if grantType == GrantTypeAuthCode {
+		keys = append(keys, KeyCode)
+	} else if grantType == GrantTypeRefreshToken {
+		keys = append(keys, KeyRefreshToken)
+	} else {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "grant_type not supported")
+		return
+	}
+
+	// check post form keys exist
 	var err error
-	checkReq := func() bool {
-		keys := []string{
-			ClientID,
-			ClientSecret,
-			RedirectURI,
-			Code,
-		}
+	checkKeysExist := func(keys []string) bool {
 		for _, key := range keys {
 			if _, ok := c.GetPostForm(key); !ok {
 				err = fmt.Errorf("%s not exist", key)
@@ -248,35 +267,42 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		}
 		return true
 	}
-	if !checkReq() {
+	if !checkKeysExist(keys) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
-	tokenResponse, err := a.oAuthServer.GenAccessToken(c, &oauth.AccessTokenReq{
-		ClientID:     c.PostForm(ClientID),
-		ClientSecret: c.PostForm(ClientSecret),
-		Code:         c.PostForm(Code),
-		RedirectURL:  c.PostForm(RedirectURI),
+	var tokenResponse *oauth.AccessTokenResponse
+	baseTokenReq := oauth.BaseTokenReq{
+		ClientID:     c.PostForm(KeyClientID),
+		ClientSecret: c.PostForm(KeyClientSecret),
+		RedirectURL:  c.PostForm(KeyRedirectURI),
 		Request:      c.Request,
-	})
+	}
+	if grantType == GrantTypeAuthCode {
+		tokenResponse, err = a.oAuthServer.GenAccessToken(c, &oauth.AccessTokenReq{
+			BaseTokenReq: baseTokenReq,
+			Code:         c.PostForm(KeyCode),
+		})
+	} else {
+		tokenResponse, err = a.oAuthServer.RefreshToken(c, &oauth.RefreshTokenReq{
+			BaseTokenReq: baseTokenReq,
+			RefreshToken: c.PostForm(KeyRefreshToken),
+		})
+	}
 	if err != nil {
 		causeErr := perror.Cause(err)
 		log.Warning(c, err.Error())
 		switch causeErr {
-		case herrors.ErrOAuthSecretNotValid:
-			fallthrough
-		case herrors.ErrOAuthReqNotValid:
-			fallthrough
-		case herrors.ErrOAuthAuthorizationCodeNotExist:
+		case herrors.ErrOAuthSecretNotValid, herrors.ErrOAuthReqNotValid:
 			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
 			return
-		case herrors.ErrOAuthCodeExpired:
+		case herrors.ErrOAuthCodeExpired, herrors.ErrOAuthRefreshTokenExpired:
 			response.AbortWithUnauthorized(c, common.CodeExpired, err.Error())
 			return
 		default:
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-				if e.Source == herrors.OAuthInDB {
+				if e.Source == herrors.OAuthInDB || e.Source == herrors.TokenInDB {
 					response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
 					return
 				}

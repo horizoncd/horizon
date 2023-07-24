@@ -121,7 +121,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	tokenstore "github.com/horizoncd/horizon/pkg/token/store"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/workload"
 
@@ -370,9 +370,12 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
-	tokenStorage := tokenstorage.NewStorage(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
-		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
+	tokenStore := tokenstore.NewStore(mysqlDB)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStore,
+		generator.NewAuthorizeGenerator(),
+		coreConfig.Oauth.AuthorizeCodeExpireIn,
+		coreConfig.Oauth.AccessTokenExpireIn,
+		coreConfig.Oauth.RefreshTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {

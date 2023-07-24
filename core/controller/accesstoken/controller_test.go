@@ -28,7 +28,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	tokenstore "github.com/horizoncd/horizon/pkg/token/store"
 
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
@@ -94,11 +94,12 @@ func TestMain(m *testing.M) {
 
 	authorizeCodeExpireIn := time.Second * 3
 	accessTokenExpireIn := time.Hour * 24
+	refreshTokenExpireIn := time.Hour * 24 * 30
 
-	tokenStorage := tokenstorage.NewStorage(db)
+	tokenStore := tokenstore.NewStore(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
-		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
+	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStore, generator.NewAuthorizeGenerator(),
+		authorizeCodeExpireIn, accessTokenExpireIn, refreshTokenExpireIn)
 
 	parameter := &param.Param{
 		Manager:       manager,

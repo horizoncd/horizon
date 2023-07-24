@@ -90,7 +90,9 @@ paths:
 
   /login/oauth/access_token:
     post:
-      description: get an Access Token based on the used granted Authorization code
+      description: |
+        get access token and refresh token based on the granted authorization code, 
+        or refresh the tokens using the refresh token
       tags:
         - oauth
       operationId: retrieveHorizonUserAccessToken
@@ -121,7 +123,7 @@ components:
       required:
         - client_id
         - client_secret
-        - code
+        - grant_type
         - redirect_uri
       properties:
         client_id:
@@ -129,13 +131,16 @@ components:
         client_secret:
           type: string
           description: the secret of and oauth app
-        code:
-          type: string
-          description: "the authorize code get from Authorization Request"
         redirect_uri:
           $ref: "common.yaml#/components/schemas/URL"
-        state:
-          $ref: "#/components/schemas/State"
+        grant_type:
+          type: string
+          description: "the grant type, support authorization_code and refresh_token"
+        code:
+          type: string
+          description: "the authorization code got from authorization request"
+        refresh_token:
+          $ref: "#/components/schemas/Refresh_Token"
 
     RequestHorizonUserIdentityForm:
       type: object
@@ -159,6 +164,8 @@ components:
       properties:
         access_token:
           $ref: "#/components/schemas/Access_Token"
+        refresh_token:
+          $ref: "#/components/schemas/Refresh_Token"
         expires_in:
           description: "The lifetime in seconds of the access token."
           type: number
@@ -171,6 +178,10 @@ components:
     Access_Token:
       type: string
       description: The access token issued by the authorization server.
+
+    Refresh_Token:
+      type: string
+      description: The refresh token issued by the authorization server.
 
     Client_ID:
       type: string

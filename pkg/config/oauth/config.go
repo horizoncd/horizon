@@ -28,4 +28,5 @@ type Server struct {
 	OauthHTMLLocation     string        `yaml:"oauthHTMLLocation"`
 	AuthorizeCodeExpireIn time.Duration `yaml:"authorizeCodeExpireIn"`
 	AccessTokenExpireIn   time.Duration `yaml:"accessTokenExpireIn"`
+	RefreshTokenExpireIn  time.Duration `yaml:"refreshTokenExpireIn"`
 }

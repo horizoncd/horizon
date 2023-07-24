@@ -34,7 +34,7 @@ import (
 var (
 	db                       *gorm.DB
 	tokenManager             Manager
-	userAccessTokenGenerator generator.AccessTokenCodeGenerator
+	userAccessTokenGenerator generator.CodeGenerator
 	aUser                    userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
 		FullName: "alias",
@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 
 func TestTokenBasic(t *testing.T) {
 	// create
-	code := userAccessTokenGenerator.GenCode(&generator.CodeGenerateInfo{
+	code := userAccessTokenGenerator.Generate(&generator.CodeGenerateInfo{
 		Token: tokenmodels.Token{UserID: aUser.GetID()},
 	})
 	token := &tokenmodels.Token{
