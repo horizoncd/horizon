@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package store
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/token/models"
 )
 
-type Storage interface {
+type Store interface {
 	Create(ctx context.Context, token *models.Token) (*models.Token, error)
 	GetByID(ctx context.Context, id uint) (*models.Token, error)
 	GetByCode(ctx context.Context, code string) (*models.Token, error)

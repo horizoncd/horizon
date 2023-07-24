@@ -34,13 +34,13 @@ import (
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
-	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	tokenstore "github.com/horizoncd/horizon/pkg/token/store"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 )
 
 var (
 	db           *gorm.DB
-	tokenStorage tokenstorage.Storage
+	tokenStore   tokenstore.Store
 	oauthAppDAO  oauthdao.DAO
 	oauthManager Manager
 	tokenManager tokenmanager.Manager
@@ -500,7 +500,7 @@ func TestUpdateToken(t *testing.T) {
 	tokenInDB.Code = newCode
 	tokenInDB.CreatedAt = createdAt
 	tokenInDB.RefID = refID
-	err = tokenStorage.UpdateByID(ctx, tokenInDB.ID, tokenInDB)
+	err = tokenStore.UpdateByID(ctx, tokenInDB.ID, tokenInDB)
 	assert.Nil(t, err)
 	tokenUpdated, err := tokenManager.LoadTokenByID(ctx, tokenInDB.ID)
 	assert.Nil(t, err)
@@ -521,9 +521,9 @@ func TestMain(m *testing.M) {
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenStorage = tokenstorage.NewStorage(db)
+	tokenStore = tokenstore.NewStore(db)
 	oauthAppDAO = oauthdao.NewDAO(db)
-	oauthManager = NewManager(oauthAppDAO, tokenStorage, generator.NewOauthAccessGenerator(),
+	oauthManager = NewManager(oauthAppDAO, tokenStore, generator.NewOauthAccessGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn, refreshTokenExpireIn)
 	tokenManager = tokenmanager.New(db)
 	os.Exit(m.Run())

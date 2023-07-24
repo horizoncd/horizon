@@ -26,7 +26,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
-	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	tokenstore "github.com/horizoncd/horizon/pkg/token/store"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -95,14 +95,14 @@ type Manager interface {
 
 var _ Manager = &OauthManager{}
 
-func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
+func NewManager(oauthAppDAO oauthdao.DAO, tokenStore tokenstore.Store,
 	gen generator.CodeGenerator,
 	authorizeCodeExpireTime,
 	accessTokenExpireTime,
 	refreshTokenExpireTime time.Duration) *OauthManager {
 	return &OauthManager{
 		oauthAppDAO:                oauthAppDAO,
-		tokenStorage:               tokenStorage,
+		tokenStore:                 tokenStore,
 		authorizationCodeGenerator: gen,
 		authorizeCodeExpireTime:    authorizeCodeExpireTime,
 		accessTokenExpireTime:      accessTokenExpireTime,
@@ -113,7 +113,7 @@ func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
 
 type OauthManager struct {
 	oauthAppDAO                oauthdao.DAO
-	tokenStorage               tokenstorage.Storage
+	tokenStore                 tokenstore.Store
 	authorizationCodeGenerator generator.CodeGenerator
 	authorizeCodeExpireTime    time.Duration
 	accessTokenExpireTime      time.Duration
@@ -170,7 +170,7 @@ func (m *OauthManager) GetOAuthApp(ctx context.Context, clientID string) (*model
 
 func (m *OauthManager) DeleteOAuthApp(ctx context.Context, clientID string) error {
 	// revoke all the token
-	if err := m.tokenStorage.DeleteByClientID(ctx, clientID); err != nil {
+	if err := m.tokenStore.DeleteByClientID(ctx, clientID); err != nil {
 		return err
 	}
 
@@ -316,7 +316,7 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context,
 	}
 
 	authorizationToken := m.NewAuthorizationToken(req)
-	_, err = m.tokenStorage.Create(ctx, authorizationToken)
+	_, err = m.tokenStore.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
 
@@ -339,7 +339,7 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 	}
 
 	// get authorize token, and check by it
-	authorizationCodeToken, err := m.tokenStorage.GetByCode(ctx, req.Code)
+	authorizationCodeToken, err := m.tokenStore.GetByCode(ctx, req.Code)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			return nil, perror.Wrap(err, "authorization code not exist")
@@ -349,7 +349,7 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 
 	if err := m.checkByAuthorizationCode(req, authorizationCodeToken); err != nil {
 		if perror.Cause(err) == herrors.ErrOAuthCodeExpired {
-			if delErr := m.tokenStorage.DeleteByCode(ctx, req.Code); delErr != nil {
+			if delErr := m.tokenStore.DeleteByCode(ctx, req.Code); delErr != nil {
 				log.Warningf(ctx, "delete expired code error, err = %v", delErr)
 			}
 		}
@@ -358,7 +358,7 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 
 	// generate access token and store
 	accessToken := m.NewAccessToken(authorizationCodeToken, req)
-	accessTokenInDB, err := m.tokenStorage.Create(ctx, accessToken)
+	accessTokenInDB, err := m.tokenStore.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -366,13 +366,13 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 	// generate refresh token, store and associate with the access token
 	refreshToken := m.NewRefreshToken(accessToken, req)
 	refreshToken.RefID = accessTokenInDB.ID
-	refreshTokenInDB, err := m.tokenStorage.Create(ctx, refreshToken)
+	refreshTokenInDB, err := m.tokenStore.Create(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// delete authorize code
-	err = m.tokenStorage.DeleteByCode(ctx, req.Code)
+	err = m.tokenStore.DeleteByCode(ctx, req.Code)
 	if err != nil {
 		log.Warningf(ctx, "Delete Authorization token error, code = %s, error = %v", req.Code, err)
 	}
@@ -409,7 +409,7 @@ func (m *OauthManager) RefreshOauthTokens(ctx context.Context,
 		Request: req.Request,
 	})
 	refreshToken.RefID = accessToken.ID
-	err = m.tokenStorage.UpdateByID(ctx, refreshToken.ID, refreshToken)
+	err = m.tokenStore.UpdateByID(ctx, refreshToken.ID, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +435,7 @@ func (m *OauthManager) checkClientSecret(ctx context.Context, req *OauthTokensRe
 
 func (m *OauthManager) checkRefreshToken(ctx context.Context,
 	refreshToken, redirectURL string) (*tokenmodels.Token, error) {
-	token, err := m.tokenStorage.GetByCode(ctx, refreshToken)
+	token, err := m.tokenStore.GetByCode(ctx, refreshToken)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			return nil, perror.Wrap(err, "refresh token not exist")
@@ -454,7 +454,7 @@ func (m *OauthManager) checkRefreshToken(ctx context.Context,
 
 func (m *OauthManager) refreshAccessToken(ctx context.Context, refreshToken *tokenmodels.Token,
 	req *OauthTokensRequest) (*tokenmodels.Token, error) {
-	accessToken, err := m.tokenStorage.GetByID(ctx, refreshToken.RefID)
+	accessToken, err := m.tokenStore.GetByID(ctx, refreshToken.RefID)
 	accessTokenNotFound := false
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -471,7 +471,7 @@ func (m *OauthManager) refreshAccessToken(ctx context.Context, refreshToken *tok
 			Scope:  refreshToken.Scope,
 			UserID: refreshToken.UserID,
 		}, req)
-		accessToken, err = m.tokenStorage.Create(ctx, token)
+		accessToken, err = m.tokenStore.Create(ctx, token)
 		if err != nil {
 			return nil, err
 		}
@@ -482,7 +482,7 @@ func (m *OauthManager) refreshAccessToken(ctx context.Context, refreshToken *tok
 			Request: req.Request,
 		})
 		accessToken.CreatedAt = time.Now()
-		err = m.tokenStorage.UpdateByID(ctx, accessToken.ID, accessToken)
+		err = m.tokenStore.UpdateByID(ctx, accessToken.ID, accessToken)
 		if err != nil {
 			return nil, err
 		}
