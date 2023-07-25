@@ -394,10 +394,16 @@ func TestRefreshOauthToken(t *testing.T) {
 	_, err = oauthManager.RefreshOauthTokens(ctx, &testReq1)
 	assert.Equal(t, perror.Cause(err), herrors.ErrOAuthSecretNotValid)
 
-	// case 2: refresh token is wrong
-	testReq2 := *oauthTokensRequest
-	testReq2.RefreshToken = "wrong-refresh-token"
-	_, err = oauthManager.RefreshOauthTokens(ctx, &testReq2)
+	// case 2.1: refresh token is not valid
+	testReq21 := *oauthTokensRequest
+	testReq21.RefreshToken = oauthTokens.AccessToken.Code
+	_, err = oauthManager.RefreshOauthTokens(ctx, &testReq21)
+	assert.Equal(t, perror.Cause(err), herrors.ErrOAuthReqNotValid)
+
+	// case 2.2: refresh token is not exist
+	testReq22 := *oauthTokensRequest
+	testReq22.RefreshToken = "hr_wrong-refresh-token"
+	_, err = oauthManager.RefreshOauthTokens(ctx, &testReq22)
 	if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok || e.Source != herrors.TokenInDB {
 		assert.Fail(t, "error is not found")
 	}

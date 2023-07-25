@@ -435,6 +435,10 @@ func (m *OauthManager) checkClientSecret(ctx context.Context, req *OauthTokensRe
 
 func (m *OauthManager) checkRefreshToken(ctx context.Context,
 	refreshToken, redirectURL string) (*tokenmodels.Token, error) {
+	if !strings.HasPrefix(refreshToken, generator.RefreshTokenPrefix) {
+		return nil, perror.Wrapf(herrors.ErrOAuthReqNotValid,
+			"refresh token not valid")
+	}
 	token, err := m.tokenStore.GetByCode(ctx, refreshToken)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {

@@ -474,7 +474,7 @@ CREATE TABLE `tb_token`
     `scope`        varchar(256)                 DEFAULT NULL,
     `user_id`      bigint(20) unsigned NOT NULL DEFAULT '0',
     `created_by`   bigint(20) unsigned NOT NULL DEFAULT '0',
-    `ref_id`       bigint(20) unsigned null COMMENT 'id associated to the access token for refresh token',
+    `ref_id`       bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'id associated to the access token for refresh token',
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_code` (`code`),
     KEY `idx_client_id` (`client_id`),
