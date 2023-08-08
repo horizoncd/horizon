@@ -103,7 +103,7 @@ Within NetEase Cloud Music, the platform team delivers a variety of service temp
 We welcome contributions from the community! Here are some ways you can help make this project better:
 
 * **Report bugs and request new features** by opening an issue in our [issue tracker](https://github.com/horizoncd/horizon/issues).
-* **Submit code contributions** by opening a pull request. Before submitting, please make sure to follow our [contribution guidelines](./CONTRIBUTING.md) and [code of conduct](./CODE-OF-CONDUCT.md).
+* **Submit code contributions** by opening a pull request. Before submitting, please make sure to follow our [contribution guidelines](./CONTRIBUTING.md) and [code of conduct](./CODE-OF-CONDUCT.md). [Development guide](./DEVELOPMENT.md) could help to debug horizon locally.
 * **Improve documentation** by suggesting changes or submitting pull requests.
 
 Thank you to all of our [contributors](https://github.com/horizoncd/horizon/contributors) for helping to make this project a success!
