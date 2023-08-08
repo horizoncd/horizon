@@ -75,7 +75,7 @@ export default {
   dev: {
     '/apis/': {
       // target: 'http://localhost:8080',
-      target: 'http://horizon.h8r.site'
+      target: 'http://horizon.localtest.me',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
