@@ -17,10 +17,14 @@ package cluster
 import (
 	"time"
 
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/admission"
+	admissionmodels "github.com/horizoncd/horizon/pkg/admission/models"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
@@ -97,11 +101,13 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
+	env, region string) *models.ClusterWithTags {
 	var (
 		// r.Git cannot be nil
-		gitURL       = r.Git.URL
-		gitSubfolder = r.Git.Subfolder
+		gitURL          = r.Git.URL
+		gitSubfolder    = r.Git.Subfolder
+		templateName    = ""
+		templateRelease = ""
 	)
 	// if gitURL or gitSubfolder is empty, use application's gitURL or gitSubfolder
 	if gitURL == "" {
@@ -110,19 +116,22 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 	if gitSubfolder == "" {
 		gitSubfolder = application.GitSubfolder
 	}
+	if r.Template != nil {
+		templateName = r.Template.Name
+		templateRelease = r.Template.Release
+	}
 	cluster := &models.Cluster{
 		ApplicationID:   application.ID,
 		Name:            r.Name,
-		EnvironmentName: er.EnvironmentName,
-		RegionName:      er.RegionName,
+		EnvironmentName: env,
+		RegionName:      region,
 		Description:     r.Description,
-		ExpireSeconds:   expireSeconds,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
 		GitRef:          r.Git.Ref(),
 		GitRefType:      r.Git.RefType(),
-		Template:        r.Template.Name,
-		TemplateRelease: r.Template.Release,
+		Template:        templateName,
+		TemplateRelease: templateRelease,
 	}
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
@@ -131,11 +140,60 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 			Value: tag.Value,
 		})
 	}
-	return cluster, tags
+	return &models.ClusterWithTags{
+		Cluster: cluster,
+		Tags:    tags,
+	}
 }
 
-func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
+func (r *CreateClusterRequest) toAdmissionRequest(
+	app *appmodels.Application,
+	env, region string,
+	mergePatch bool) *admission.Request {
+	if r.Template == nil {
+		r.Template = &Template{
+			Name:    app.Template,
+			Release: app.TemplateRelease,
+		}
+	}
+	cluster := r.toClusterModel(app, env, region)
+	admissionCluster := &Cluster{
+		Cluster:       cluster.Cluster,
+		TemplateInput: r.TemplateInput,
+		Tags:          r.Tags,
+	}
+
+	return &admission.Request{
+		Operation: admissionmodels.OperationCreate,
+		Resource:  common.ResourceCluster,
+		Version:   common.Version1,
+		Object:    admissionCluster,
+		OldObject: nil,
+		Options: map[string]interface{}{
+			"mergePatch": mergePatch,
+		},
+	}
+}
+
+func clusterFromAdmission(req *admission.Request) (*Cluster, []*tagmodels.Tag, error) {
+	admissionCluster, ok := req.Object.(*Cluster)
+	if !ok {
+		return nil, nil, perror.Wrap(herrors.ErrParamInvalid, "could not convert admission request to cluster")
+	}
+	if admissionCluster.Tags == nil {
+		return admissionCluster, nil, nil
+	}
+	tags := make([]*tagmodels.Tag, 0)
+	for _, tag := range admissionCluster.Tags {
+		tags = append(tags, &tagmodels.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	return admissionCluster, tags, nil
+}
+
+func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster) (*models.Cluster, []*tagmodels.Tag) {
 	var gitURL, gitSubfolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
@@ -148,6 +206,9 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 	}
 
 	tags := make([]*tagmodels.Tag, 0)
+	if r.Tags == nil {
+		tags = nil
+	}
 	for _, tag := range r.Tags {
 		tags = append(tags, &tagmodels.Tag{
 			Key:   tag.Key,
@@ -155,9 +216,27 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		})
 	}
 
+	var templateRelease string
+	if r.Template == nil || r.Template.Release == "" {
+		templateRelease = cluster.TemplateRelease
+	} else {
+		templateRelease = r.Template.Release
+	}
+
+	env := cluster.EnvironmentName
+	region := cluster.RegionName
+	if r.Environment != "" {
+		env = r.Environment
+	}
+	if r.Region != "" {
+		region = r.Region
+	}
+
 	return &models.Cluster{
-		EnvironmentName: er.EnvironmentName,
-		RegionName:      er.RegionName,
+		ApplicationID:   cluster.ApplicationID,
+		Name:            cluster.Name,
+		EnvironmentName: env,
+		RegionName:      region,
 		Description:     r.Description,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
@@ -168,6 +247,43 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		Status:          cluster.Status,
 		ExpireSeconds:   cluster.ExpireSeconds,
 	}, tags
+}
+
+func (r *UpdateClusterRequest) toAdmissionRequest(
+	oldCluster *models.Cluster,
+	oldTags []*tagmodels.Tag,
+	mergePatch bool,
+) *admission.Request {
+	newCluster, _ := r.toClusterModel(oldCluster)
+	newAdmissionCluster := &Cluster{
+		Cluster:       newCluster,
+		TemplateInput: r.TemplateInput,
+		Tags:          r.Tags,
+	}
+
+	oldBasicTag := make([]*tagmodels.TagBasic, 0)
+	for _, tag := range oldTags {
+		oldBasicTag = append(oldBasicTag, &tagmodels.TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+
+	oldAdmCluster := &Cluster{
+		Cluster: oldCluster,
+		Tags:    oldBasicTag,
+	}
+
+	return &admission.Request{
+		Operation: admissionmodels.OperationUpdate,
+		Resource:  common.ResourceCluster,
+		Version:   common.Version1,
+		Object:    newAdmissionCluster,
+		OldObject: oldAdmCluster,
+		Options: map[string]interface{}{
+			"mergePatch": mergePatch,
+		},
+	}
 }
 
 func getUserFromMap(id uint, userMap map[uint]*usermodels.User) *usermodels.User {

@@ -27,6 +27,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/admission"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
@@ -437,35 +438,29 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		return nil, err
 	}
 
-	// 2. validate
-	exists, err := c.clusterMgr.CheckClusterExists(ctx, r.Name)
+	// 6. create cluster, after created, params.Cluster is the newest cluster
+	admissionReq := r.toAdmissionRequest(application, environment,
+		region, mergePatch)
+
+	admissionReq, err = admission.Mutating(ctx, admissionReq)
+	if err != nil {
+		return nil, perror.Wrap(herrors.ErrMutatingFailed, err.Error())
+	}
+	admissionCluster, tags, err := clusterFromAdmission(admissionReq)
 	if err != nil {
 		return nil, err
 	}
-	if exists {
-		return nil, perror.Wrap(herrors.ErrNameConflict,
-			"a cluster with the same name already exists, please do not create it again")
-	}
-	if err := c.validateCreate(r); err != nil {
-		return nil, err
-	}
-
-	if err := c.customizeTemplateInfo(ctx, r, application, environment, mergePatch); err != nil {
-		return nil, err
-	}
-	if err := c.validateTemplateInput(ctx, r.Template.Name,
-		r.Template.Release, r.TemplateInput, nil); err != nil {
-		return nil, err
-	}
+	admissionCluster.Status = common.ClusterStatusCreating
 
 	// 3. get environmentRegion
-	er, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environment, region)
+	_, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx,
+		admissionCluster.EnvironmentName, admissionCluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
 
 	// 4. get regionEntity
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, admissionCluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -476,27 +471,51 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 
 	// transfer expireTime to expireSeconds and verify environment.
 	// expireTime's format is e.g. "300ms", "-1.5h" or "2h45m".
-	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, admissionCluster.EnvironmentName)
 	if err != nil {
 		return nil, err
 	}
+	admissionCluster.ExpireSeconds = expireSeconds
 
-	// 5. get templateRelease
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
+	// 2. validate
+	exists, err := c.clusterMgr.CheckClusterExists(ctx, admissionCluster.Name)
 	if err != nil {
 		return nil, err
 	}
+	if exists {
+		return nil, perror.Wrap(herrors.ErrNameConflict,
+			"a cluster with the same name already exists, please do not create it again")
+	}
+	if err := c.validateBuilding(admissionCluster); err != nil {
+		return nil, err
+	}
 
-	// 6. create cluster, after created, params.Cluster is the newest cluster
-	cluster, tags := r.toClusterModel(application, er, expireSeconds)
-	cluster.Status = common.ClusterStatusCreating
+	if err := c.customizeTemplateInfo(ctx, admissionCluster, application, environment, mergePatch); err != nil {
+		return nil, err
+	}
+	if err := c.validateTemplateInput(ctx, admissionCluster.Template,
+		admissionCluster.TemplateRelease, admissionCluster.TemplateInput, nil); err != nil {
+		return nil, err
+	}
 
 	if err := tagmanager.ValidateUpsert(tags); err != nil {
 		return nil, err
 	}
 
+	err = admission.Validating(ctx, admissionReq)
+	if err != nil {
+		return nil, err
+	}
+
 	// 7. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster, tags, r.ExtraMembers)
+	cluster, err := c.clusterMgr.Create(ctx, admissionCluster.Cluster, tags, r.ExtraMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. get templateRelease
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		admissionCluster.Template, admissionCluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
@@ -507,16 +526,16 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		BaseParams: &gitrepo.BaseParams{
 			ClusterID:           cluster.ID,
 			Cluster:             cluster.Name,
-			PipelineJSONBlob:    r.TemplateInput.Pipeline,
-			ApplicationJSONBlob: r.TemplateInput.Application,
+			PipelineJSONBlob:    admissionCluster.TemplateInput.Pipeline,
+			ApplicationJSONBlob: admissionCluster.TemplateInput.Application,
 			TemplateRelease:     tr,
 			Application:         application,
-			Environment:         environment,
+			Environment:         admissionCluster.EnvironmentName,
 			RegionEntity:        regionEntity,
 			Namespace:           r.Namespace,
 		},
 		Tags:  tags,
-		Image: r.Image,
+		Image: admissionCluster.Image,
 	})
 	if err != nil {
 		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts
@@ -550,7 +569,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	}
 
 	ret := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application)
+		admissionCluster.TemplateInput.Pipeline, admissionCluster.TemplateInput.Application)
 
 	// 11. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
@@ -583,6 +602,34 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
+	tagsInDB, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.ExpireTime != "" {
+		env := r.Environment
+		if env == "" {
+			env = cluster.EnvironmentName
+		}
+		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, env)
+		if err != nil {
+			return nil, err
+		}
+		cluster.ExpireSeconds = expireSeconds
+	}
+
+	req := r.toAdmissionRequest(cluster, tagsInDB, mergePatch)
+	req, err = admission.Mutating(ctx, req)
+	if err != nil {
+		return nil, perror.Wrap(herrors.ErrMutatingFailed, err.Error())
+	}
+
+	admissionCluster, tags, err := clusterFromAdmission(req)
+	if err != nil {
+		return nil, err
+	}
+
 	// 3. get environmentRegion/namespace for this cluster
 	var (
 		er               *emvregionmodels.EnvironmentRegion
@@ -590,18 +637,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		namespace        string
 		namespaceChanged bool
 	)
-
-	if r.ExpireTime != "" {
-		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, cluster.EnvironmentName)
-		if err != nil {
-			return nil, err
-		}
-		cluster.ExpireSeconds = expireSeconds
-	}
-
 	// can only update environment/region when the cluster has been freed
-	if cluster.Status == common.ClusterStatusFreed && r.Environment != "" && r.Region != "" {
-		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+	if cluster.Status == common.ClusterStatusFreed &&
+		(admissionCluster.EnvironmentName != cluster.EnvironmentName ||
+			admissionCluster.RegionName != cluster.RegionName) {
+		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx,
+			admissionCluster.EnvironmentName, admissionCluster.RegionName)
 		if err != nil {
 			return nil, err
 		}
@@ -628,51 +669,58 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		namespaceChanged = true
 	}
 
-	var templateRelease string
-	if r.Template == nil || r.Template.Release == "" {
-		templateRelease = cluster.TemplateRelease
-	} else {
-		templateRelease = r.Template.Release
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		admissionCluster.Template, admissionCluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterModel, tags := r.toClusterModel(cluster, templateRelease, er)
+	files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, err
+	}
 
+	templateInputChanged := false
 	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
-	if r.TemplateInput != nil {
+	if admissionCluster.TemplateInput != nil {
 		// merge cluster config and request config
 		// merge patch allows users to pass only some fields
 		if mergePatch {
-			files, err := c.clusterGitRepo.GetCluster(ctx, application.Name,
-				cluster.Name, cluster.Template)
+			admissionCluster.TemplateInput.Application, err = mergemap.Merge(files.ApplicationJSONBlob,
+				admissionCluster.TemplateInput.Application)
 			if err != nil {
 				return nil, err
 			}
 
-			r.TemplateInput.Application, err = mergemap.Merge(files.ApplicationJSONBlob,
-				r.TemplateInput.Application)
-			if err != nil {
-				return nil, err
-			}
-
-			r.TemplateInput.Pipeline, err = mergemap.Merge(files.PipelineJSONBlob,
-				r.TemplateInput.Pipeline)
+			admissionCluster.TemplateInput.Pipeline, err = mergemap.Merge(files.PipelineJSONBlob,
+				admissionCluster.TemplateInput.Pipeline)
 			if err != nil {
 				return nil, err
 			}
 		}
+		templateInputChanged = true
+	} else {
+		admissionCluster.TemplateInput = &TemplateInput{
+			Application: files.ApplicationJSONBlob,
+			Pipeline:    files.PipelineJSONBlob,
+		}
+	}
 
+	req.Object = admissionCluster
+	err = admission.Validating(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if templateInputChanged {
 		// validate template input
 		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
 		if err != nil {
 			return nil, err
 		}
 		if err := c.validateTemplateInput(ctx,
-			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
+			admissionCluster.Template, admissionCluster.TemplateRelease,
+			admissionCluster.TemplateInput, renderValues); err != nil {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"request body validate err: %v", err)
 		}
@@ -692,31 +740,19 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		}); err != nil {
 			return nil, err
 		}
-	} else {
-		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
-		if err != nil {
-			return nil, err
-		}
-		r.TemplateInput = &TemplateInput{
-			Application: files.ApplicationJSONBlob,
-			Pipeline:    files.PipelineJSONBlob,
-		}
 	}
 
 	// 5. update cluster in db
 	// todo: atomicity
-	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
+	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, admissionCluster.Cluster)
 	if err != nil {
 		return nil, err
 	}
 
 	// 7. update cluster tags
-	tagsInDB, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
-	if err != nil {
-		return nil, err
-	}
-	if r.Tags != nil && !tagmodels.Tags(tags).Eq(tagsInDB) {
-		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
+	if tags != nil && !tagmodels.Tags(tags).Eq(tagsInDB) {
+		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name,
+			cluster.Template, tags); err != nil {
 			return nil, err
 		}
 		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, r.Tags); err != nil {
@@ -751,7 +787,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application, tags...), nil
+		admissionCluster.TemplateInput.Pipeline, admissionCluster.TemplateInput.Application, tags...), nil
 }
 
 func (c *controller) GetClusterByName(ctx context.Context,
@@ -1029,21 +1065,14 @@ func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, env
 	return expireSeconds, nil
 }
 
-func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateClusterRequest,
+func (c *controller) customizeTemplateInfo(ctx context.Context, cluster *Cluster,
 	application *models.Application, environment string, mergePatch bool) error {
 	// 1. if template is empty, set it with application's template
-	if r.Template == nil {
-		r.Template = &Template{
-			Name:    application.Template,
-			Release: application.TemplateRelease,
-		}
-	} else {
-		if r.Template.Name == "" {
-			r.Template.Name = application.Template
-		}
-		if r.Template.Release == "" {
-			r.Template.Release = application.TemplateRelease
-		}
+	if cluster.Template == "" {
+		cluster.Template = application.Template
+	}
+	if cluster.TemplateRelease == "" {
+		cluster.TemplateRelease = application.TemplateRelease
 	}
 
 	// 2. if templateInput is empty, set it with application's env template
@@ -1054,25 +1083,27 @@ func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateCluster
 	}
 	pipelineJSONBlob := appGitRepo.BuildConf
 	applicationJSONBlob := appGitRepo.TemplateConf
-	if r.TemplateInput == nil {
-		r.TemplateInput = &TemplateInput{}
-		r.TemplateInput.Application = applicationJSONBlob
-		r.TemplateInput.Pipeline = pipelineJSONBlob
+	if cluster.TemplateInput == nil {
+		cluster.TemplateInput = &TemplateInput{
+			Application: applicationJSONBlob,
+			Pipeline:    pipelineJSONBlob,
+		}
 	} else if mergePatch {
 		// merge patch allows users to pass only some fields
 		applicationJSONBlob, err := mergemap.Merge(applicationJSONBlob,
-			r.TemplateInput.Application)
+			cluster.TemplateInput.Application)
 		if err != nil {
 			return err
 		}
 		pipelineJSONBlob, err := mergemap.Merge(pipelineJSONBlob,
-			r.TemplateInput.Pipeline)
+			cluster.TemplateInput.Pipeline)
 		if err != nil {
 			return err
 		}
-		r.TemplateInput = &TemplateInput{}
-		r.TemplateInput.Application = applicationJSONBlob
-		r.TemplateInput.Pipeline = pipelineJSONBlob
+		cluster.TemplateInput = &TemplateInput{
+			Application: applicationJSONBlob,
+			Pipeline:    pipelineJSONBlob,
+		}
 	}
 	return nil
 }
@@ -1089,18 +1120,18 @@ func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) 
 	return renderValues, nil
 }
 
-// validateCreate validate for create cluster
-func (c *controller) validateCreate(r *CreateClusterRequest) error {
-	if err := validateClusterName(r.Name); err != nil {
+// validateBuilding validate for create cluster
+func (c *controller) validateBuilding(cluster *Cluster) error {
+	if err := validateClusterName(cluster.Name); err != nil {
 		return err
 	}
-	if r.Git == nil || r.Git.Ref() == "" || r.Git.RefType() == "" {
+	if cluster.GitRef == "" || cluster.GitRefType == "" {
 		return perror.Wrap(herrors.ErrParamInvalid, "git ref cannot be empty")
 	}
-	if r.TemplateInput != nil && r.TemplateInput.Application == nil {
+	if cluster.TemplateInput != nil && cluster.TemplateInput.Application == nil {
 		return perror.Wrap(herrors.ErrParamInvalid, "application config for template cannot be empty")
 	}
-	if r.TemplateInput != nil && r.TemplateInput.Pipeline == nil {
+	if cluster.TemplateInput != nil && cluster.TemplateInput.Pipeline == nil {
 		return perror.Wrap(herrors.ErrParamInvalid, "pipeline config for template cannot be empty")
 	}
 	return nil

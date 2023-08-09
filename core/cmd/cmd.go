@@ -107,8 +107,10 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	"github.com/horizoncd/horizon/pkg/admission"
 	"github.com/horizoncd/horizon/pkg/cd"
 	clustermetrcis "github.com/horizoncd/horizon/pkg/cluster/metrics"
+	admissionconfig "github.com/horizoncd/horizon/pkg/config/admission"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
@@ -223,6 +225,10 @@ func ParseFlags() *Flags {
 
 	flag.Parse()
 	return &flags
+}
+
+func InitAdmissionWebhook(config admissionconfig.Admission) {
+	admission.NewHTTPWebhooks(config)
 }
 
 func InitLog(flags *Flags) {
@@ -719,6 +725,8 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+
+	InitAdmissionWebhook(configs.Admission)
 
 	// enable pprof
 	runPProfServer(&configs.PProf)

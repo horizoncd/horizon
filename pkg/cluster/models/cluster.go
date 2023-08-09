@@ -20,25 +20,48 @@ import (
 )
 
 type Cluster struct {
-	global.Model
+	global.Model `json:"-"`
 
-	ApplicationID   uint
-	Name            string
-	EnvironmentName string
-	RegionName      string
-	Description     string
+	ApplicationID   uint    `json:"application_id"`
+	Name            string  `json:"name"`
+	EnvironmentName string  `json:"environment_name"`
+	RegionName      string  `json:"region_name"`
+	Description     string  `json:"description"`
 	Type            *string `gorm:"->"`
-	GitURL          string
-	GitSubfolder    string
-	GitRef          string
-	GitRefType      string
-	Image           string
-	Template        string
-	TemplateRelease string
-	Status          string
-	CreatedBy       uint
-	UpdatedBy       uint
-	ExpireSeconds   uint
+	GitURL          string  `json:"git_url"`
+	GitSubfolder    string  `json:"git_subfolder"`
+	GitRef          string  `json:"git_ref"`
+	GitRefType      string  `json:"git_ref_type"`
+	Image           string  `json:"image"`
+	Template        string  `json:"template"`
+	TemplateRelease string  `json:"template_release"`
+	Status          string  `json:"status"`
+	CreatedBy       uint    `json:"-"`
+	UpdatedBy       uint    `json:"-"`
+	ExpireSeconds   uint    `json:"-"`
+}
+
+func (c *Cluster) Copy() *Cluster {
+	newCluster := &Cluster{
+		Model: global.Model{
+			ID: c.ID,
+		},
+		ApplicationID:   c.ApplicationID,
+		Name:            c.Name,
+		EnvironmentName: c.EnvironmentName,
+		RegionName:      c.RegionName,
+		Description:     c.Description,
+		GitURL:          c.GitURL,
+		GitSubfolder:    c.GitSubfolder,
+		GitRef:          c.GitRef,
+		GitRefType:      c.GitRefType,
+		Image:           c.Image,
+		Template:        c.Template,
+		TemplateRelease: c.TemplateRelease,
+		Status:          c.Status,
+		ExpireSeconds:   c.ExpireSeconds,
+	}
+	return newCluster
 }
 
 type ClusterWithTags struct {

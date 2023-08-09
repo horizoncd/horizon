@@ -15,6 +15,7 @@
 package config
 
 import (
+	"github.com/horizoncd/horizon/pkg/config/admission"
 	"io/ioutil"
 	"strings"
 
@@ -59,6 +60,7 @@ type Config struct {
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
+	Admission              admission.Admission     `yaml:",inline"`
 	KubeConfig             string                  `yaml:"kubeconfig"`
 	WebhookConfig          webhook.Config          `yaml:"webhook"`
 	EventHandlerConfig     eventhandler.Config     `yaml:"eventHandler"`

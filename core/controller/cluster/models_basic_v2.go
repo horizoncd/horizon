@@ -17,11 +17,14 @@ package cluster
 import (
 	"time"
 
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+
 	"github.com/horizoncd/horizon/core/common"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	"github.com/horizoncd/horizon/pkg/admission"
+	admissionmodels "github.com/horizoncd/horizon/pkg/admission/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 )
 
@@ -51,64 +54,48 @@ type CreateClusterParamsV2 struct {
 	MergePatch bool
 }
 
-func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
-	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
-	cluster := &models.Cluster{
-		ApplicationID:   application.ID,
-		Name:            r.Name,
-		EnvironmentName: er.EnvironmentName,
-		RegionName:      er.RegionName,
-		Description:     r.Description,
-		ExpireSeconds:   expireSeconds,
-		Template:        info.TemplateInfo.Name,
-		TemplateRelease: info.TemplateInfo.Release,
-		Status:          common.ClusterStatusCreating,
+func (r *CreateClusterParamsV2) toAdmissionRequest(info *BuildTemplateInfo) *admission.Request {
+	var gitURL, gitRef, gitSubfolder, gitRefType, image, templateName, templateRelease string
+	if r.Git != nil {
+		gitURL = r.Git.URL
+		gitRef = r.Git.Ref()
+		gitSubfolder = r.Git.Subfolder
+		gitRefType = r.Git.RefType()
 	}
-	if cluster.Template == application.Template {
-		cluster.GitURL = func() string {
-			if r.Git == nil {
-				return application.GitURL
-			}
-			if r.Git.URL == "" && application.GitURL != "" {
-				return application.GitURL
-			}
-			// if URL is empty string, this means this cluster not depends on build from git
-			return r.Git.URL
-		}()
-		cluster.GitSubfolder = func() string {
-			if r.Git == nil || r.Git.Subfolder == "" {
-				return application.GitSubfolder
-			}
-			return r.Git.Subfolder
-		}()
-		cluster.GitRef = func() string {
-			if r.Git == nil {
-				return application.GitRef
-			}
-			return r.Git.Ref()
-		}()
-		cluster.GitRefType = func() string {
-			if r.Git == nil {
-				return application.GitRefType
-			}
-			return r.Git.RefType()
-		}()
-		cluster.Image = func() string {
-			if r.Image == nil {
-				return application.Image
-			}
-			return *r.Image
-		}()
+	if r.Image != nil {
+		image = *r.Image
 	}
-	tags := make([]*tagmodels.Tag, 0)
-	for _, tag := range r.Tags {
-		tags = append(tags, &tagmodels.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
+	if info.TemplateInfo != nil {
+		templateName = info.TemplateInfo.Name
+		templateRelease = info.TemplateInfo.Release
 	}
-	return cluster, tags
+	cluster := &Clusterv2{
+		Cluster: &models.Cluster{
+			ApplicationID:   r.ApplicationID,
+			Name:            r.Name,
+			EnvironmentName: r.Environment,
+			RegionName:      r.Region,
+			Description:     r.Description,
+			GitURL:          gitURL,
+			GitSubfolder:    gitSubfolder,
+			GitRef:          gitRef,
+			GitRefType:      gitRefType,
+			Image:           image,
+			Template:        templateName,
+			TemplateRelease: templateRelease,
+		},
+		TemplateConfig: info.TemplateConfig,
+		BuildConfig:    info.BuildConfig,
+		Tags:           r.Tags,
+	}
+	return &admission.Request{
+		Operation: admissionmodels.OperationCreate,
+		Resource:  common.ResourceCluster,
+		Version:   common.Version1,
+		Object:    cluster,
+		OldObject: nil,
+		Options:   map[string]interface{}{},
+	}
 }
 
 type CreateClusterResponseV2 struct {
@@ -120,6 +107,24 @@ type CreateClusterResponseV2 struct {
 	Application   *Application `json:"application"`
 	CreatedAt     time.Time    `json:"createdAt"`
 	UpdatedAt     time.Time    `json:"updatedAt"`
+}
+
+func clusterV2FromAdmission(req *admission.Request) (*Clusterv2, []*tagmodels.Tag, error) {
+	admissionCluster, ok := req.Object.(*Clusterv2)
+	if !ok {
+		return nil, nil, perror.Wrap(herrors.ErrParamInvalid, "could not convert admission request to cluster")
+	}
+	if admissionCluster.Tags == nil {
+		return admissionCluster, nil, nil
+	}
+	tags := make([]*tagmodels.Tag, 0)
+	for _, tag := range admissionCluster.Tags {
+		tags = append(tags, &tagmodels.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	return admissionCluster, tags, nil
 }
 
 type UpdateClusterRequestV2 struct {
@@ -143,45 +148,73 @@ type UpdateClusterRequestV2 struct {
 	TemplateConfig map[string]interface{}   `json:"templateConfig"`
 }
 
-func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireSeconds uint, environmentName,
-	regionName, templateName, templateRelease string) (*models.Cluster, []*tagmodels.Tag) {
-	var gitURL, gitSubFolder, gitRef, gitRefType, image string
+func (r *UpdateClusterRequestV2) toAdmissionRequest(
+	oldCluster *models.Cluster,
+) *admission.Request {
+	var gitURL, gitSubFolder, gitRef, gitRefType,
+		image, region, env, templateName, templateRelease string
+
 	if r.Git != nil {
 		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,
 			r.Git.Subfolder, r.Git.RefType(), r.Git.Ref()
 	} else {
-		gitURL = cluster.GitURL
-		gitSubFolder = cluster.GitSubfolder
-		gitRefType = cluster.GitRefType
-		gitRef = cluster.GitRef
+		gitURL = oldCluster.GitURL
+		gitSubFolder = oldCluster.GitSubfolder
+		gitRefType = oldCluster.GitRefType
+		gitRef = oldCluster.GitRef
 	}
 	if r.Image != nil {
 		image = *r.Image
+	}
+	if r.Region != nil {
+		region = *r.Region
 	} else {
-		image = cluster.Image
+		region = oldCluster.RegionName
+	}
+	if r.Environment != nil {
+		env = *r.Environment
+	} else {
+		env = oldCluster.EnvironmentName
 	}
 
-	tags := make([]*tagmodels.Tag, 0)
-	for _, tag := range r.Tags {
-		tags = append(tags, &tagmodels.Tag{
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
+	if r.TemplateInfo != nil {
+		templateName = r.TemplateInfo.Name
+		templateRelease = r.TemplateInfo.Release
+	} else {
+		templateName = oldCluster.Template
+		templateRelease = oldCluster.TemplateRelease
 	}
 
-	return &models.Cluster{
-		EnvironmentName: environmentName,
-		RegionName:      regionName,
-		Description:     r.Description,
-		ExpireSeconds:   expireSeconds,
-		GitURL:          gitURL,
-		GitSubfolder:    gitSubFolder,
-		GitRef:          gitRef,
-		GitRefType:      gitRefType,
-		Image:           image,
-		Template:        templateName,
-		TemplateRelease: templateRelease,
-	}, tags
+	cluster := &Clusterv2{
+		Cluster: &models.Cluster{
+			ApplicationID:   oldCluster.ApplicationID,
+			EnvironmentName: env,
+			RegionName:      region,
+			Description:     r.Description,
+			GitURL:          gitURL,
+			GitSubfolder:    gitSubFolder,
+			GitRef:          gitRef,
+			GitRefType:      gitRefType,
+			Image:           image,
+			Template:        templateName,
+			TemplateRelease: templateRelease,
+		},
+		TemplateInfo:   &codemodels.TemplateInfo{Name: templateName, Release: templateRelease},
+		TemplateConfig: r.TemplateConfig,
+		BuildConfig:    r.BuildConfig,
+		Tags:           r.Tags,
+	}
+
+	return &admission.Request{
+		Operation: admissionmodels.OperationUpdate,
+		Resource:  common.ResourceCluster,
+		Version:   common.Version1,
+		Object:    cluster,
+		OldObject: &Clusterv2{
+			Cluster: oldCluster,
+		},
+		Options: map[string]interface{}{},
+	}
 }
 
 type GetClusterResponseV2 struct {

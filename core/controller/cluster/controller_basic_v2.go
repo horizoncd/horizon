@@ -22,13 +22,13 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/admission"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -101,33 +101,6 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	const op = "cluster controller: create cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// 1. check exist
-	exists, err := c.clusterMgr.CheckClusterExists(ctx, params.Name)
-	if err != nil {
-		return nil, err
-	}
-	if exists {
-		return nil, perror.Wrap(herrors.ErrNameConflict,
-			"a cluster with the same name already exists, please do not create it again")
-	}
-
-	// 2. validate create req
-	if err := validateClusterName(params.Name); err != nil {
-		return nil, err
-	}
-	if params.Git != nil {
-		if params.Git.URL != "" {
-			if err := validate.CheckGitURL(params.Git.URL); err != nil {
-				return nil, err
-			}
-		}
-	}
-	if params.Image != nil {
-		if err := validate.CheckImageURL(*params.Image); err != nil {
-			return nil, err
-		}
-	}
-
 	// 3. get application
 	application, err := c.applicationMgr.GetByID(ctx, params.ApplicationID)
 	if err != nil {
@@ -144,8 +117,44 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 		return nil, err
 	}
 
+	req := params.toAdmissionRequest(buildTemplateInfo)
+	req, err = admission.Mutating(ctx, req)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrMutatingFailed, "admission mutating failed: %v", err)
+	}
+
+	admissionCluster, tags, err := clusterV2FromAdmission(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// 1. check exist
+	exists, err := c.clusterMgr.CheckClusterExists(ctx, admissionCluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, perror.Wrap(herrors.ErrNameConflict,
+			"a cluster with the same name already exists, please do not create it again")
+	}
+
+	// 2. validate create req
+	if err := validateClusterName(admissionCluster.Name); err != nil {
+		return nil, err
+	}
+	if admissionCluster.GitURL != "" {
+		if err := validate.CheckGitURL(admissionCluster.GitURL); err != nil {
+			return nil, err
+		}
+	}
+	if admissionCluster.Image != "" {
+		if err := validate.CheckImageURL(admissionCluster.Image); err != nil {
+			return nil, err
+		}
+	}
+
 	// 5. get environment and region
-	envEntity, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx,
+	_, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx,
 		params.Environment, params.Region)
 	if err != nil {
 		return nil, err
@@ -160,21 +169,27 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 6. transfer expireTime to expireSeconds and verify environment.
-	expireSeconds, err := c.toExpireSeconds(ctx, params.ExpireTime, params.Environment)
+	expireSeconds, err := c.toExpireSeconds(ctx, params.ExpireTime, admissionCluster.EnvironmentName)
 	if err != nil {
 		return nil, err
 	}
+
+	admissionCluster.ExpireSeconds = expireSeconds
 
 	// 7. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
-		buildTemplateInfo.TemplateInfo.Name, buildTemplateInfo.TemplateInfo.Release)
+		admissionCluster.Template, admissionCluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
 
+	err = admission.Validating(ctx, req)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrValidatingFailed, "admission validating failed: %v", err)
+	}
+
 	// 8. customize db infos
-	cluster, tags := params.toClusterModel(application,
-		envEntity, buildTemplateInfo, expireSeconds)
+	cluster := admissionCluster.toClusterModel(application)
 
 	// 9. update db and tags
 	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, params.ExtraMembers)
@@ -187,8 +202,8 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 		BaseParams: &gitrepo.BaseParams{
 			ClusterID:           clusterResp.ID,
 			Cluster:             clusterResp.Name,
-			PipelineJSONBlob:    buildTemplateInfo.BuildConfig,
-			ApplicationJSONBlob: buildTemplateInfo.TemplateConfig,
+			PipelineJSONBlob:    admissionCluster.BuildConfig,
+			ApplicationJSONBlob: admissionCluster.TemplateConfig,
 			TemplateRelease:     tr,
 			Application:         application,
 			Environment:         params.Environment,
@@ -372,78 +387,13 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	const op = "cluster controller: update cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// validate request
-	if r.Git != nil && r.Git.URL != "" {
-		if err := validate.CheckGitURL(r.Git.URL); err != nil {
-			return err
-		}
-	}
-	if r.Image != nil && *r.Image != "" {
-		if err := validate.CheckImageURL(*r.Image); err != nil {
-			return err
-		}
-	}
-
 	// 1. get cluster and application from db
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return err
-	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	oldCluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return err
 	}
 
-	// 2. check if we should update region and env
-	var regionEntity *regionmodels.RegionEntity
-	environmentName := cluster.EnvironmentName
-	regionName := cluster.RegionName
-	if cluster.Status == common.ClusterStatusFreed &&
-		(r.Environment != nil && *r.Environment != environmentName) ||
-		(r.Region != nil && *r.Region != regionName) {
-		if r.Environment != nil {
-			environmentName = *r.Environment
-		}
-		if r.Region != nil {
-			regionName = *r.Region
-		}
-		regionEntity, err = c.regionMgr.GetRegionEntity(ctx, regionName)
-		if err != nil {
-			return err
-		}
-		_, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environmentName, regionName)
-		if err != nil {
-			return err
-		}
-	}
-
-	// 3. check and transfer ExpireTime
-	expireSeconds := cluster.ExpireSeconds
-	if r.ExpireTime != "" {
-		expireSeconds, err = c.toExpireSeconds(ctx, r.ExpireTime, environmentName)
-		if err != nil {
-			return err
-		}
-	}
-
-	// 4. customize template\build\template infos
-	templateInfo, templateRelease, err := func() (*codemodels.TemplateInfo, *models.TemplateRelease, error) {
-		var templateInfo *codemodels.TemplateInfo
-		if r.TemplateInfo == nil {
-			templateInfo = &codemodels.TemplateInfo{
-				Name:    cluster.Template,
-				Release: cluster.TemplateRelease,
-			}
-		} else {
-			templateInfo = r.TemplateInfo
-		}
-		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
-			templateInfo.Name, templateInfo.Release)
-		if err != nil {
-			return nil, nil, err
-		}
-		return templateInfo, tr, nil
-	}()
+	application, err := c.applicationMgr.GetByID(ctx, oldCluster.ApplicationID)
 	if err != nil {
 		return err
 	}
@@ -452,13 +402,13 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		if r.BuildConfig == nil && r.TemplateConfig == nil {
 			return nil, nil, nil
 		}
-		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, oldCluster.Name, oldCluster.Template)
 		if err != nil {
 			return nil, nil, err
 		}
 		if files.Manifest == nil {
 			return nil, nil, perror.Wrapf(herrors.ErrParamInvalid, "git repo  %s not support v2 interface",
-				cluster.Name)
+				oldCluster.Name)
 		}
 
 		buildConfig := r.BuildConfig
@@ -480,6 +430,69 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	if err != nil {
 		return err
 	}
+	r.BuildConfig = buildConfig
+	r.TemplateConfig = templateConfig
+
+	req := r.toAdmissionRequest(oldCluster)
+	req, err = admission.Mutating(ctx, req)
+	if err != nil {
+		return err
+	}
+	admissionCluster, tags, err := clusterV2FromAdmission(req)
+	if err != nil {
+		return err
+	}
+
+	// validate request
+	if admissionCluster.GitURL != "" {
+		if err := validate.CheckGitURL(admissionCluster.GitURL); err != nil {
+			return err
+		}
+	}
+	if admissionCluster.Image != "" {
+		if err := validate.CheckImageURL(admissionCluster.Image); err != nil {
+			return err
+		}
+	}
+
+	// 2. check if we should update region and env
+	var regionEntity *regionmodels.RegionEntity
+	environmentName := oldCluster.EnvironmentName
+	regionName := oldCluster.RegionName
+	if oldCluster.Status == common.ClusterStatusFreed &&
+		(admissionCluster.EnvironmentName != environmentName) ||
+		(admissionCluster.RegionName != regionName) {
+		if admissionCluster.EnvironmentName != "" {
+			environmentName = admissionCluster.EnvironmentName
+		}
+		if admissionCluster.RegionName != "" {
+			regionName = admissionCluster.RegionName
+		}
+		regionEntity, err = c.regionMgr.GetRegionEntity(ctx, regionName)
+		if err != nil {
+			return err
+		}
+		_, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environmentName, regionName)
+		if err != nil {
+			return err
+		}
+	}
+
+	templateRelease, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		admissionCluster.Template, admissionCluster.TemplateRelease)
+	if err != nil {
+		return err
+	}
+
+	// 3. check and transfer ExpireTime
+	expireSeconds := oldCluster.ExpireSeconds
+	if r.ExpireTime != "" {
+		expireSeconds, err = c.toExpireSeconds(ctx, r.ExpireTime, admissionCluster.EnvironmentName)
+		if err != nil {
+			return err
+		}
+	}
+	admissionCluster.ExpireSeconds = expireSeconds
 
 	// 5. validate update Request
 	err = func() error {
@@ -488,9 +501,9 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 			return err
 		}
 		info := BuildTemplateInfo{
-			BuildConfig:    buildConfig,
-			TemplateInfo:   templateInfo,
-			TemplateConfig: templateConfig,
+			BuildConfig:    admissionCluster.BuildConfig,
+			TemplateInfo:   admissionCluster.TemplateInfo,
+			TemplateConfig: admissionCluster.TemplateConfig,
 		}
 		return info.Validate(ctx, c.templateSchemaGetter, renderValues, c.buildSchema)
 	}()
@@ -498,11 +511,16 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return err
 	}
 
+	err = admission.Validating(ctx, req)
+	if err != nil {
+		return perror.Wrapf(herrors.ErrValidatingFailed, "validating failed: %v", err)
+	}
+
 	// 6. update in git repo
 	if err = c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
-			ClusterID:           cluster.ID,
-			Cluster:             cluster.Name,
+			ClusterID:           oldCluster.ID,
+			Cluster:             oldCluster.Name,
 			PipelineJSONBlob:    buildConfig,
 			ApplicationJSONBlob: templateConfig,
 			TemplateRelease:     templateRelease,
@@ -519,15 +537,14 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
 			EventType:    eventmodels.ClusterUpdated,
-			ResourceID:   cluster.ID,
+			ResourceID:   oldCluster.ID,
 		},
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	// 8. update cluster in db
-	clusterModel, tags := r.toClusterModel(cluster, expireSeconds, environmentName,
-		regionName, templateInfo.Name, templateInfo.Release)
+	clusterModel := admissionCluster.toClusterModel(application)
 	_, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
 		return err
@@ -539,7 +556,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return err
 	}
 	if r.Tags != nil && !tagmodels.Tags(tags).Eq(tagsInDB) {
-		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
+		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, oldCluster.Name, oldCluster.Template, tags); err != nil {
 			return err
 		}
 		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, r.Tags); err != nil {

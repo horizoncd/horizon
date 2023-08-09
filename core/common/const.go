@@ -123,10 +123,9 @@ const (
 )
 
 const (
-	GitlabGitops   = "gitops"
-	GitlabTemplate = "template"
+	Version2 = "v2"
+	Version1 = "v1"
 )
-
 const (
 	ChartVersionFormat = "%s-%s"
 )

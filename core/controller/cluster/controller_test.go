@@ -25,7 +25,10 @@ import (
 	"time"
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
+	"github.com/horizoncd/horizon/pkg/admission"
+	admissionmodels "github.com/horizoncd/horizon/pkg/admission/models"
 	clustercd "github.com/horizoncd/horizon/pkg/cd"
+	admissionconfig "github.com/horizoncd/horizon/pkg/config/admission"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
 
 	v1 "k8s.io/api/core/v1"
@@ -510,8 +513,64 @@ func TestAll(t *testing.T) {
 	t.Run("TestGetClusterStatusV2", testGetClusterStatusV2)
 }
 
+type cancelFunc func()
+
+func newValidatingWebhooks() cancelFunc {
+	webhookServer := admission.NewDummyWebhookServer()
+
+	mutatingWebhookConfig := admissionconfig.Webhook{
+		Name:           "dummy-mutating-webhook",
+		Kind:           admissionmodels.KindMutating,
+		FailurePolicy:  admissionconfig.FailurePolicyFail,
+		TimeoutSeconds: 10,
+		Rules: []admissionconfig.Rule{
+			{
+				Resources: []string{common.ResourceCluster},
+				Operations: []admissionmodels.Operation{
+					admissionmodels.OperationCreate,
+					admissionmodels.OperationUpdate,
+				},
+				Versions: []string{"*"},
+			},
+		},
+		ClientConfig: admissionconfig.ClientConfig{
+			URL: webhookServer.MutatingURL(),
+		},
+	}
+
+	validatingWebhookConfig := admissionconfig.Webhook{
+		Name:           "dummy-mutating-webhook",
+		Kind:           admissionmodels.KindMutating,
+		FailurePolicy:  admissionconfig.FailurePolicyFail,
+		TimeoutSeconds: 10,
+		Rules: []admissionconfig.Rule{
+			{
+				Resources: []string{common.ResourceCluster},
+				Operations: []admissionmodels.Operation{
+					admissionmodels.OperationCreate,
+					admissionmodels.OperationUpdate,
+				},
+				Versions: []string{"*"},
+			},
+		},
+		ClientConfig: admissionconfig.ClientConfig{
+			URL: webhookServer.ValidatingURL(),
+		},
+	}
+
+	admission.Register(admissionmodels.KindMutating, admission.NewHTTPWebhook(mutatingWebhookConfig))
+	admission.Register(admissionmodels.KindValidating, admission.NewHTTPWebhook(validatingWebhookConfig))
+	return func() {
+		admission.Clear()
+		webhookServer.Stop()
+	}
+}
+
 // nolint
 func test(t *testing.T) {
+	cancel := newValidatingWebhooks()
+	defer cancel()
+
 	// for test
 	conf := config.Config{}
 	param := param.Param{
@@ -668,12 +727,12 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
-		"app-cluster", templateName).Return(&gitrepo.ClusterFiles{
+		"app-cluster-mutated", templateName).Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
-		"app-cluster-mergepatch", "javaapp").Return(&gitrepo.ClusterFiles{
+		"app-cluster-mergepatch-mutated", "javaapp").Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
@@ -716,20 +775,28 @@ func test(t *testing.T) {
 		ExpireTime: "24h0m0s",
 	}
 
+	// mutated, name = app-cluster-mutated
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	t.Logf("%v", resp.ExpireTime)
 
 	createClusterRequest.Name = "app-cluster-new"
+	// mutated, name = app-cluster-new-mutated
 	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
 
+	// denied by validating webhook
+	createClusterRequest.Name = "invalid-name"
+	_, err = c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
+	assert.NotNil(t, err)
+
 	assert.Equal(t, resp.Git.URL, gitURL)
 	assert.Equal(t, resp.Git.Branch, "develop")
 	assert.Equal(t, resp.Git.Subfolder, "/test")
-	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
+	// for mutating webhook
+	assert.Equal(t, resp.FullPath, "/group/app/app-cluster-mutated")
 	t.Logf("%v", resp.ExpireTime)
 
 	UpdateGitURL := "ssh://git@cloudnative.com:22222/demo/springboot-demo.git"
@@ -772,12 +839,20 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
-	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
+	assert.Equal(t, resp.FullPath, "/group/app/app-cluster-mutated")
 	// NOTE: template name cannot be edited! template release can be edited
 	assert.Equal(t, resp.Template.Name, "javaapp")
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
-	assert.Equal(t, 1, len(resp.Base.Tags))
+	// for mutating webhook
+	assert.Equal(t, 1+1, len(resp.Base.Tags))
 	assert.Equal(t, "value2", resp.Base.Tags[0].Value)
+
+	updateClusterRequest.Tags = append(updateClusterRequest.Tags, &tagmodels.TagBasic{
+		Key:   "invalid-key",
+		Value: "invalid-value",
+	})
+	_, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, false)
+	assert.NotNil(t, err)
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
@@ -785,7 +860,7 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
-	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
+	assert.Equal(t, resp.FullPath, "/group/app/app-cluster-mutated")
 	// NOTE: template name cannot be edited! template release can be edited
 	assert.Equal(t, resp.Template.Name, "javaapp")
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
@@ -841,7 +916,7 @@ func test(t *testing.T) {
 	t.Logf("%+v", respList[0].Scope)
 	t.Logf("%+v", respList[1].Scope)
 
-	getByName, err := c.GetClusterByName(ctx, "app-cluster")
+	getByName, err := c.GetClusterByName(ctx, "app-cluster-mutated")
 	assert.Nil(t, err)
 	t.Logf("%v", getByName)
 
@@ -1275,6 +1350,8 @@ func test(t *testing.T) {
 }
 
 func testV2(t *testing.T) {
+	cancel := newValidatingWebhooks()
+	defer cancel()
 	// for test
 	conf := config.Config{}
 	param := param.Param{
@@ -1299,7 +1376,7 @@ func testV2(t *testing.T) {
 			Pipeline: &trschema.Schema{
 				JSONSchema: pipelineSchema,
 			},
-		}, nil).Times(1)
+		}, nil).Times(2)
 
 	appMgr := manager.ApplicationMgr
 	trMgr := manager.TemplateReleaseMgr
@@ -1360,7 +1437,7 @@ func testV2(t *testing.T) {
 	t.Logf("%+v", group)
 	assert.Nil(t, err)
 	assert.NotNil(t, group)
-	gitURL := "ssh://git.com"
+	gitURL := "ssh://git.com/hello/world.git"
 
 	applicationName := "app2"
 	appGitSubFolder := "/test"
@@ -1413,7 +1490,7 @@ func testV2(t *testing.T) {
 			Manifest:     nil,
 			BuildConf:    pipelineJSONBlob,
 			TemplateConf: applicationJSONBlob,
-		}, nil).Times(1)
+		}, nil).Times(2)
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 
 	createClusterName := "app-cluster2"
@@ -1438,6 +1515,10 @@ func testV2(t *testing.T) {
 		TemplateConfig: applicationJSONBlob,
 		ExtraMembers:   nil,
 	}
+
+	// for mutating webhook
+	createClusterName += "-mutated"
+
 	resp, err := c.CreateClusterV2(ctx, &CreateClusterParamsV2{
 		CreateClusterRequestV2: createReq,
 		ApplicationID:          application.ID,
@@ -1450,6 +1531,17 @@ func testV2(t *testing.T) {
 	assert.Equal(t, resp.ApplicationID, application.ID)
 	assert.Equal(t, resp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 	t.Logf("%+v", resp)
+
+	// for validating webhook
+	createReq.Name = "invalid-name"
+	_, err = c.CreateClusterV2(ctx, &CreateClusterParamsV2{
+		CreateClusterRequestV2: createReq,
+		ApplicationID:          application.ID,
+		Environment:            "test2",
+		Region:                 "hz",
+		MergePatch:             false,
+	})
+	assert.NotNil(t, err)
 
 	// then get cluster
 	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
@@ -1474,8 +1566,9 @@ func testV2(t *testing.T) {
 	assert.Equal(t, getClusterResp.TemplateInfo.Release, templateVersion)
 	assert.Nil(t, getClusterResp.Manifest)
 	assert.Equal(t, getClusterResp.Status, "")
-	assert.Equal(t, 1, len(getClusterResp.Tags))
-	assert.Equal(t, getClusterResp.Tags[0].Value, "value1")
+	// for mutating webhook
+	assert.Equal(t, 1+1, len(getClusterResp.Tags))
+	assert.Equal(t, getClusterResp.Tags[1].Value, "value1")
 	t.Logf("%+v", getClusterResp)
 
 	// update v2
@@ -1511,7 +1604,7 @@ func testV2(t *testing.T) {
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 		Manifest:            manifest,
-	}, nil).Times(1)
+	}, nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
@@ -1522,10 +1615,18 @@ func testV2(t *testing.T) {
 			Pipeline: &trschema.Schema{
 				JSONSchema: pipelineSchema,
 			},
-		}, nil).Times(1)
+		}, nil).Times(2)
 	err = c.UpdateClusterV2(ctx, getClusterResp.ID, updateRequestV2, false)
 	t.Logf("%+v", err)
 	assert.Nil(t, err)
+
+	updateRequestV2.Tags = append(updateRequestV2.Tags, &tagmodels.TagBasic{
+		Key:   "invalid-key",
+		Value: "value2",
+	})
+	err = c.UpdateClusterV2(ctx, getClusterResp.ID, updateRequestV2, false)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "validating failed")
 
 	registry := registrymock.NewMockRegistry(mockCtl)
 	registryFty.EXPECT().GetRegistryByConfig(gomock.Any(), gomock.Any()).Return(registry, nil).Times(1)
