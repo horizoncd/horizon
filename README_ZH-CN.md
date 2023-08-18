@@ -7,6 +7,9 @@
 
 Horizon是一款云原生应用的持续交付（CD）平台。平台团队可以让开发人员轻松、高效、最佳实践地将其代码和中间件部署到云端和Kubernetes上。Horizon受到了ArgoCD和AWS Proton的启发。
 
+![horizon-platform](image/readme/horizon-basic.svg)
+
+
 ## 为什么选择Horizon
 
 1. **标准化**：Kubernetes灵活而强大，但也很复杂。让所有开发人员全面了解Kubernetes并实践最佳实践很难。因此，Horizon引入了模板系统，使最佳实践得到控制，并提供高效的交付。例如，平台团队可以提供默认的资源规格模板（如0.5核心、512MB的tiny、1核心、1GB的small、2核心、4GB的middle等），而无需为开发人员选择限制或请求资源。

@@ -8,6 +8,9 @@
 
 Horizon is a cloud-native application Continues Delivery (CD) platform. Platform team can let the developers deploy their code and MiddleWares to cloud and kubernetes easily, efficiency and with best practice. Horizon is inspired by ArgoCD and AWS Proton.
 
+![horizon-platform](image/readme/horizon-basic.svg)
+
+
 ## Why Horizon
 
 1. **standardized** : kubernetes is flexible and powerful, but it is complex. it's hard to let all the developers have a comprehensive understanding of kubernetes and practice best practice. so horizon introduce a template system to make the best practice under control, and also provide efficient delivery. For example, Platform Team can provide basic spec of resource tiny(0.5core, 512MB)、small(1core, 1GB), middle(2core, 4GB) etc. by default, not for the developer to select limit or request resource on common case.
