@@ -8,7 +8,8 @@
 
 Horizon is a cloud-native application Continues Delivery (CD) platform. Platform team can let the developers deploy their code and MiddleWares to cloud and kubernetes easily, efficiency and with best practice. Horizon is inspired by ArgoCD and AWS Proton.
 
-![horizon-basic](https://github.com/work-jlsun/horizon/assets/3689022/e5b6871c-b009-44b7-83bb-91b3a7c5dafd)
+<img width="806" alt="image" src="https://github.com/work-jlsun/horizon/assets/3689022/6946f1bb-4fe5-4bcc-a6a5-088702629112">
+
 
 
 
