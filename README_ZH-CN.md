@@ -7,7 +7,8 @@
 
 Horizon是一款云原生应用的持续交付（CD）平台。平台团队可以让开发人员轻松、高效、最佳实践地将其代码和中间件部署到云端和Kubernetes上。Horizon受到了ArgoCD和AWS Proton的启发。
 
-<img width="806" alt="image" src="https://github.com/work-jlsun/horizon/assets/3689022/6946f1bb-4fe5-4bcc-a6a5-088702629112">
+![horizon-platform](image/readme/horizon-basic.svg)
+
 
 ## 为什么选择Horizon
 
