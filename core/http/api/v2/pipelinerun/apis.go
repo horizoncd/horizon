@@ -36,6 +36,7 @@ const (
 	_pipelinerunIDParam = "pipelinerunID"
 	_clusterIDParam     = "clusterID"
 	_canRollbackParam   = "canRollback"
+	_pipelineStatus     = "status"
 )
 
 type API struct {
@@ -134,11 +135,18 @@ func (a *API) List(c *gin.Context) {
 	if err != nil {
 		canRollback = false
 	}
+	status := c.QueryArray(_pipelineStatus)
+	keywords := map[string]interface{}{}
+	if len(status) > 0 {
+		keywords[common.PipelineQueryByStatus] = status
+	}
 
-	total, pipelines, err := a.prCtl.ListPipelineruns(c, uint(clusterID), canRollback, q.Query{
+	query := q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
-	})
+		Keywords:   keywords,
+	}
+	total, pipelines, err := a.prCtl.ListPipelineruns(c, uint(clusterID), canRollback, query)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

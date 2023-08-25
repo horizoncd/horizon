@@ -24,10 +24,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"regexp"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/horizoncd/horizon/core/config"
@@ -734,22 +731,22 @@ func Run(flags *Flags) {
 
 // setTasksBeforeExit set stop funcs which will be executed after sigterm and sigint catched
 func setTasksBeforeExit(stopFuncs ...func()) {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		s := <-sig
-		log.Printf("got %s signal, stop tasks...\n", s)
-		if len(stopFuncs) == 0 {
-			return
-		}
-		wg := sync.WaitGroup{}
-		wg.Add(len(stopFuncs))
-		for _, stopFunc := range stopFuncs {
-			go func(stop func()) {
-				stop()
-			}(stopFunc)
-		}
-		wg.Wait()
-		log.Printf("all tasks stopped, exit now.")
-	}()
+	// sig := make(chan os.Signal, 1)
+	// signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+	// go func() {
+	// 	s := <-sig
+	// 	log.Printf("got %s signal, stop tasks...\n", s)
+	// 	if len(stopFuncs) == 0 {
+	// 		return
+	// 	}
+	// 	wg := sync.WaitGroup{}
+	// 	wg.Add(len(stopFuncs))
+	// 	for _, stopFunc := range stopFuncs {
+	// 		go func(stop func()) {
+	// 			stop()
+	// 		}(stopFunc)
+	// 	}
+	// 	wg.Wait()
+	// 	log.Printf("all tasks stopped, exit now.")
+	// }()
 }
