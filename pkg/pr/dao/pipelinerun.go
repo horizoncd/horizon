@@ -19,6 +19,7 @@ import (
 
 	"gorm.io/gorm"
 
+	corecommon "github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/common"
@@ -176,36 +177,37 @@ func (d *pipelinerunDAO) UpdateResultByID(ctx context.Context, pipelinerunID uin
 
 func (d *pipelinerunDAO) GetByClusterID(ctx context.Context, clusterID uint,
 	canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
-	offset := (query.PageNumber - 1) * query.PageSize
-	limit := query.PageSize
+	offset := query.Offset()
+	limit := query.Limit()
 
-	var pipelineruns []*models.Pipelinerun
-	queryScript := common.PipelinerunGetByClusterID
-	countScript := common.PipelinerunGetByClusterIDTotalCount
+	sql := d.db.WithContext(ctx).Table("tb_pipelinerun").Where("cluster_id = ?", clusterID).
+		Order("created_at desc")
 	if canRollback {
 		// remove the first canRollback pipelinerun
 		offset++
-		queryScript = common.PipelinerunCanRollbackGetByClusterID
-		countScript = common.PipelinerunCanRollbackGetByClusterIDTotalCount
-	}
-	result := d.db.WithContext(ctx).Raw(queryScript,
-		clusterID, limit, offset).Scan(&pipelineruns)
-	if result.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
-	}
-	var total int
-	result = d.db.WithContext(ctx).Raw(countScript,
-		clusterID).Scan(&total)
-
-	if total < 0 {
-		total = 0
+		sql = sql.Where("action = 'restart'").Where("status = 'ok'")
 	}
 
+	for k, v := range query.Keywords {
+		switch k {
+		case corecommon.PipelineQueryByStatus:
+			sql = sql.Where("status in (?)", v)
+		}
+	}
+
+	var total int64
+	result := sql.Count(&total)
 	if result.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
 
-	return total, pipelineruns, result.Error
+	var pipelineruns []*models.Pipelinerun
+	result = sql.Limit(limit).Offset(offset).Find(&pipelineruns)
+	if result.Error != nil {
+		return 0, nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+
+	return int(total), pipelineruns, result.Error
 }
 
 func (d *pipelinerunDAO) GetFirstCanRollbackPipelinerun(ctx context.Context,
