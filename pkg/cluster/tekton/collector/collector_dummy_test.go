@@ -20,10 +20,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 
 	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
 )

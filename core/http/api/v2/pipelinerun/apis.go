@@ -20,10 +20,13 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 
 	"github.com/gin-gonic/gin"
@@ -46,21 +49,17 @@ func NewAPI(prCtl prctl.Controller) *API {
 }
 
 func (a *API) Log(c *gin.Context) {
-	prIDStr := c.Param(_pipelinerunIDParam)
-	prID, err := strconv.ParseUint(prIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	l, err := a.prCtl.GetPipelinerunLog(c, uint(prID))
-	if err != nil {
-		l := &collector.Log{
-			LogBytes: []byte(errors.Message(err)),
+	a.withID(c, func(prID uint) {
+		l, err := a.prCtl.GetPipelinerunLog(c, uint(prID))
+		if err != nil {
+			l := &collector.Log{
+				LogBytes: []byte(errors.Message(err)),
+			}
+			a.writeLog(c, l)
+			return
 		}
 		a.writeLog(c, l)
-		return
-	}
-	a.writeLog(c, l)
+	})
 }
 
 func (a *API) writeLog(c *gin.Context, l *collector.Log) {
@@ -95,33 +94,25 @@ func (a *API) writeLog(c *gin.Context, l *collector.Log) {
 }
 
 func (a *API) GetDiff(c *gin.Context) {
-	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	diff, err := a.prCtl.GetDiff(c, uint(pipelinerunID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-	response.SuccessWithData(c, diff)
+	a.withID(c, func(pipelinerunID uint) {
+		diff, err := a.prCtl.GetDiff(c, uint(pipelinerunID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, diff)
+	})
 }
 
 func (a *API) Get(c *gin.Context) {
-	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	resp, err := a.prCtl.Get(c, uint(pipelinerunID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-	response.SuccessWithData(c, resp)
+	a.withID(c, func(pipelinerunID uint) {
+		resp, err := a.prCtl.GetPipelinerun(c, uint(pipelinerunID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, resp)
+	})
 }
 
 func (a *API) List(c *gin.Context) {
@@ -144,7 +135,7 @@ func (a *API) List(c *gin.Context) {
 		canRollback = false
 	}
 
-	total, pipelines, err := a.prCtl.List(c, uint(clusterID), canRollback, q.Query{
+	total, pipelines, err := a.prCtl.ListPipelineruns(c, uint(clusterID), canRollback, q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})
@@ -159,16 +150,123 @@ func (a *API) List(c *gin.Context) {
 }
 
 func (a *API) Stop(c *gin.Context) {
-	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	a.withID(c, func(prID uint) {
+		err := a.prCtl.StopPipelinerun(c, uint(prID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.Success(c)
+	})
+}
+
+func (a *API) ExecuteForce(c *gin.Context) {
+	a.execute(c, true)
+}
+
+func (a *API) Execute(c *gin.Context) {
+	a.execute(c, false)
+}
+
+func (a *API) execute(c *gin.Context, force bool) {
+	a.withID(c, func(prID uint) {
+		err := a.prCtl.Execute(c, prID, force)
+		if err != nil {
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
+		response.Success(c)
+	})
+}
+
+func (a *API) Cancel(c *gin.Context) {
+	a.withID(c, func(prID uint) {
+		err := a.prCtl.Cancel(c, prID)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.Success(c)
+	})
+}
+
+func (a *API) ListCheckRuns(c *gin.Context) {
+	a.withID(c, func(prID uint) {
+		checkRuns, err := a.prCtl.ListCheckRuns(c, prID)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, checkRuns)
+	})
+}
+
+func (a *API) CreateCheckRuns(c *gin.Context) {
+	var req prctl.CreateCheckRunRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	a.withID(c, func(prID uint) {
+		checkrun, err := a.prCtl.CreateCheckRun(c, prID, &req)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, checkrun)
+	})
+}
+
+func (a *API) CreatePrMessage(c *gin.Context) {
+	var req prctl.CreatePrMessageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	a.withID(c, func(prID uint) {
+		checkMessage, err := a.prCtl.CreatePRMessage(c, prID, &req)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, checkMessage)
+	})
+}
+
+func (a *API) ListPrMessages(c *gin.Context) {
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	err = a.prCtl.StopPipelinerun(c, uint(pipelinerunID))
+	query := &q.Query{
+		PageNumber: pageNumber,
+		PageSize:   pageSize,
+	}
+	a.withID(c, func(prID uint) {
+		count, messages, err := a.prCtl.ListPRMessages(c, prID, query)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, response.DataWithTotal{
+			Total: int64(count),
+			Items: messages,
+		})
+	})
+}
+
+func (a *API) withID(c *gin.Context, f func(pipelineRunID uint)) {
+	idStr := c.Param(_pipelinerunIDParam)
+	id, err := strconv.ParseUint(idStr, 10, 0)
 	if err != nil {
-		response.AbortWithError(c, err)
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	response.Success(c)
+	f(uint(id))
 }

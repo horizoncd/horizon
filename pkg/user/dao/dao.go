@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+
+	"gorm.io/gorm"
 
 	corecommon "github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -25,7 +28,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/common"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/user/models"
-	"gorm.io/gorm"
 )
 
 type DAO interface {
@@ -68,6 +70,12 @@ func (d *dao) List(ctx context.Context, query *q.Query) (int64, []*models.User, 
 				tx = tx.Where("name like ?", fmt.Sprintf("%%%v%%", v))
 			case corecommon.UserQueryType:
 				tx = tx.Where("user_type in ?", v)
+			case corecommon.UserQueryID:
+				if reflect.TypeOf(v).Kind() == reflect.Slice {
+					tx = tx.Where("id in ?", v)
+				} else {
+					tx = tx.Where("id = ?", v)
+				}
 			}
 		}
 	}

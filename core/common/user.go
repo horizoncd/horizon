@@ -28,6 +28,7 @@ import (
 const (
 	UserQueryName = "filter"
 	UserQueryType = "userType"
+	UserQueryID   = "id"
 )
 
 const (

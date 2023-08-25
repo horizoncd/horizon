@@ -314,7 +314,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob, tags...)
 
 	// 9. get latest deployed commit
-	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	latestPR, err := c.prMgr.PipelineRun.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -891,7 +891,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 				log.Errorf(newctx, "failed to delete members of cluster: %v, err: %v", cluster.Name, err)
 			}
 			// delete pipelinerun
-			if err := c.pipelinerunMgr.DeleteByClusterID(ctx, clusterID); err != nil {
+			if err := c.prMgr.PipelineRun.DeleteByClusterID(ctx, clusterID); err != nil {
 				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
 			}
 			// delete tag

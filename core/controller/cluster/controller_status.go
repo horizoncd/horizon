@@ -27,7 +27,7 @@ import (
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -257,7 +257,7 @@ func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState
 
 func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 	clusterID uint) (*prmodels.Pipelinerun, error) {
-	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, false, q.Query{
+	_, pipelineruns, err := c.prMgr.PipelineRun.GetByClusterID(ctx, clusterID, false, q.Query{
 		PageNumber: 1,
 		PageSize:   1,
 	})
@@ -569,7 +569,11 @@ func willExpireIn(ttl uint, tms ...time.Time) *uint {
 }
 
 func isNonRunningTask(latestPipelinerun *prmodels.Pipelinerun) bool {
-	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) {
+	if latestPipelinerun == nil ||
+		latestPipelinerun.Status == string(prmodels.StatusOK) ||
+		latestPipelinerun.Status == string(prmodels.StatusReady) ||
+		latestPipelinerun.Status == string(prmodels.StatusCancelled) ||
+		latestPipelinerun.Status == string(prmodels.StatusPending) {
 		return true
 	}
 	if latestPipelinerun.Action == prmodels.ActionRestart ||

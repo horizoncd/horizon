@@ -24,7 +24,7 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/pkg/pr/models"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +32,7 @@ import (
 var (
 	db, _ = orm.NewSqliteDB("")
 	ctx   context.Context
-	mgr   = New(db)
+	mgr   = NewPipelineRunManager(db)
 )
 
 func Test(t *testing.T) {

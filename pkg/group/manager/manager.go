@@ -17,9 +17,12 @@ package manager
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
+
+	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
@@ -30,8 +33,6 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	regiondao "github.com/horizoncd/horizon/pkg/region/dao"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
 )
 
 const (
@@ -251,12 +252,7 @@ func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 
 // FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
 func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
-	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]uint, len(splitIds))
-	for i, id := range splitIds {
-		ii, _ := strconv.Atoi(id)
-		ids[i] = uint(ii)
-	}
+	ids, _ := common.UnmarshalTraversalIDS(traversalIDs)
 	return ids
 }
 

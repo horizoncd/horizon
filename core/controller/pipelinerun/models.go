@@ -14,9 +14,7 @@
 
 package pipelinerun
 
-import (
-	"time"
-)
+import "time"
 
 type GetDiffResponse struct {
 	CodeInfo   *CodeInfo   `json:"codeInfo"`
@@ -42,49 +40,33 @@ type ConfigDiff struct {
 	Diff string `json:"diff"`
 }
 
-type PipelineBasic struct {
-	// ID pipelinerun id
-	ID    uint   `json:"id"`
-	Title string `json:"title"`
-	// Description of this pipelinerun
-	Description string `json:"description"`
-
-	// Action type, which can be builddeploy, deploy, restart, rollback
-	Action string `json:"action"`
-	// Status of this pipelinerun, which can be created, ok, failed, cancelled, unknown
-	Status string `json:"status"`
-	// Title of this pipelinerun
-
-	// GitURL the git url this pipelinerun to build with, can be empty when action is not builddeploy
-	GitURL string `json:"gitURL"`
-	// GitBranch the git branch this pipelinerun to build with, can be empty when action is not builddeploy
-	GitBranch string `json:"gitBranch,omitempty"`
-	// GitTag the git tag this pipelinerun to build with, can be empty when action is not builddeploy
-	GitTag string `json:"gitTag,omitempty"`
-	// GitCommit the git commit this pipelinerun to build with, can be empty when action is not builddeploy
-	GitCommit string `json:"gitCommit"`
-	// ImageURL image url of this pipelinerun to build image
-	ImageURL string `json:"imageURL"`
-
-	// LastConfigCommit config commit in master branch of this pipelinerun, can be empty when action is restart
-	LastConfigCommit string `json:"lastConfigCommit"`
-	// ConfigCommit config commit of this pipelinerun
-	ConfigCommit string `json:"configCommit"`
-	// CreatedAt create time of this pipelinerun
-	CreatedAt time.Time `json:"createdAt"`
-	// UpdatedAt update time of this pipelinerun
-	UpdatedAt time.Time `json:"updatedAt"`
-	// StartedAt start time of this pipelinerun
-	StartedAt *time.Time `json:"startedAt"`
-	// FinishedAt finish time of this pipelinerun
-	FinishedAt *time.Time `json:"finishedAt"`
-	// CanRollback can this pipelinerun be rollback, default is false
-	CanRollback bool `json:"canRollback"`
-	// createInfo
-	CreatedBy UserInfo `json:"createdBy"`
+type BuildDeployRequestGit struct {
+	Branch string `json:"branch"`
+	Tag    string `json:"tag"`
+	Commit string `json:"commit"`
 }
 
-type UserInfo struct {
-	UserID   uint   `json:"userID"`
-	UserName string `json:"userName"`
+type CreatePrMessageRequest struct {
+	Content string `json:"string"`
+}
+
+type User struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	UserType string `json:"userType,omitempty"`
+}
+
+type PrMessage struct {
+	Content   string    `json:"content"`
+	CreatedBy User      `json:"createdBy"`
+	UpdatedBy User      `json:"updatedBy"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type CreateCheckRunRequest struct {
+	Name      string `json:"name"`
+	CheckID   uint   `json:"checkId"`
+	Status    string `json:"status"`
+	Message   string `json:"message"`
+	DetailURL string `json:"detailUrl"`
 }

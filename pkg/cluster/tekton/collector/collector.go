@@ -23,7 +23,7 @@ import (
 
 	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"

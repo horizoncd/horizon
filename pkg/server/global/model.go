@@ -21,10 +21,10 @@ import (
 )
 
 type Model struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedTs soft_delete.DeletedAt
+	ID        uint                  `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time             `json:"createdAt"`
+	UpdatedAt time.Time             `json:"updatedAt"`
+	DeletedTs soft_delete.DeletedAt `json:"-"`
 }
 
 type HorizonMetaData struct {

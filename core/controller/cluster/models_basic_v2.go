@@ -219,3 +219,13 @@ type GetClusterResponseV2 struct {
 type WhetherLike struct {
 	IsFavorite bool `json:"isFavorite"`
 }
+
+type CreatePipelineRunRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Action      string `json:"action"`
+	// for build deploy
+	Git           *BuildDeployRequestGit `json:"git,omitempty"`
+	ImageTag      string                 `json:"imageTag,omitempty"`
+	PipelinerunID uint                   `json:"pipelinerunID,omitempty"`
+}

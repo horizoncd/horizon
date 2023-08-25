@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
@@ -32,14 +34,13 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -63,10 +64,10 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 
 	// 2. create pipeline record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.prMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionRestart,
-		Status:           string(prmodels.StatusCreated),
+		Status:           string(prmodels.StatusRunning),
 		Title:            prmodels.ActionRestart,
 		LastConfigCommit: lastConfigCommit.Master,
 		ConfigCommit:     lastConfigCommit.Master,
@@ -77,7 +78,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	if err != nil {
 		return nil, err
 	}
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, commit); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, prCreated.ID, commit); err != nil {
 		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
 			prCreated.ID, commit, err)
 	}
@@ -164,10 +165,10 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 2. create pipeline record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.prMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionDeploy,
-		Status:           string(prmodels.StatusCreated),
+		Status:           string(prmodels.StatusRunning),
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
@@ -234,7 +235,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	// update event id returned from tekton-trigger EventListener
 	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d",
 		ciEventID, prCreated.ID)
-	err = c.pipelinerunMgr.UpdateCIEventIDByID(ctx, prCreated.ID, ciEventID)
+	err = c.prMgr.PipelineRun.UpdateCIEventIDByID(ctx, prCreated.ID, ciEventID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +291,7 @@ func (c *controller) Rollback(ctx context.Context,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pipelinerun to rollback, and do some validation
-	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, err
 	}
@@ -323,10 +324,10 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 3. create record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.prMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionRollback,
-		Status:           string(prmodels.StatusCreated),
+		Status:           string(prmodels.StatusRunning),
 		Title:            prmodels.ActionRollback,
 		GitURL:           pipelinerun.GitURL,
 		GitRefType:       pipelinerun.GitRefType,
@@ -363,7 +364,7 @@ func (c *controller) Rollback(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, masterRevision); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, prCreated.ID, masterRevision); err != nil {
 		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
 			prCreated.ID, masterRevision, err)
 	}
@@ -724,10 +725,10 @@ func (c *controller) updatePipelineRunStatus(ctx context.Context,
 	action string, prID uint, pState prmodels.PipelineStatus, revision string) error {
 	var err error
 	if pState != prmodels.StatusOK {
-		err = c.pipelinerunMgr.UpdateStatusByID(ctx, prID, pState)
+		err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, prID, pState)
 	} else {
 		finishedAt := time.Now()
-		err = c.pipelinerunMgr.UpdateResultByID(ctx, prID, &prmodels.Result{
+		err = c.prMgr.PipelineRun.UpdateResultByID(ctx, prID, &prmodels.Result{
 			Result:     string(pState),
 			FinishedAt: &finishedAt,
 		})

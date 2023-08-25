@@ -30,7 +30,7 @@ import (
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"

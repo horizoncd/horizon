@@ -24,7 +24,7 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/metrics/tekton"
 	"github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	"github.com/horizoncd/horizon/pkg/pr/pipeline/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 )
 

@@ -40,7 +40,8 @@ import (
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	pipelinemodels "github.com/horizoncd/horizon/pkg/pr/models"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
@@ -725,7 +726,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		}, nil
 	}).AnyTimes()
 
-	pipelineMockManager := pipelinemock.NewMockManager(mockCtrl)
+	pipelineMockManager := pipelinemock.NewMockPipelineRunManager(mockCtrl)
 	pipelineMockManager.EXPECT().GetByID(gomock.Any(), pipelineRunID).Return(&pipelinemodels.Pipelinerun{
 		ID:        0,
 		ClusterID: cluster4ID,
@@ -737,9 +738,11 @@ func TestGetPipelinerunMember(t *testing.T) {
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
-		pipelineManager:           pipelineMockManager,
-		roleService:               roleSvc,
-		userManager:               manager.UserMgr,
+		prMgr: &prmanager.PRManager{
+			PipelineRun: pipelineMockManager,
+		},
+		roleService: roleSvc,
+		userManager: manager.UserMgr,
 	}
 	s = originService
 
@@ -822,7 +825,7 @@ func TestListTemplateMember(t *testing.T) {
 		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
 		templateManager:           manager.TemplateMgr,
-		pipelineManager:           manager.PipelinerunMgr,
+		prMgr:                     manager.PRMgr,
 		roleService:               nil,
 	}
 
@@ -904,7 +907,7 @@ func TestListWebhookMember(t *testing.T) {
 		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
 		templateManager:           manager.TemplateMgr,
-		pipelineManager:           manager.PipelinerunMgr,
+		prMgr:                     manager.PRMgr,
 		roleService:               nil,
 		webhookManager:            manager.WebhookMgr,
 	}

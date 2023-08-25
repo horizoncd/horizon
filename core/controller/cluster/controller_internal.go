@@ -25,7 +25,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -36,7 +36,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pr, and do some validate
-	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +80,11 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 4. update config commit and status
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 		return nil, err
 	}
 	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
-		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
+		if err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
 			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
 				pr.ID, pState, err)
 			return err
