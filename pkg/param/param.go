@@ -30,6 +30,7 @@ import (
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	prservice "github.com/horizoncd/horizon/pkg/pr/service"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	"github.com/horizoncd/horizon/core/controller/build"
@@ -53,6 +54,7 @@ type Param struct {
 	UserSvc        userservice.Service
 	TokenSvc       tokenservice.Service
 	RoleService    role.Service
+	PRService      *prservice.Service
 	ScopeService   scope.Service
 	GrafanaService grafana.Service
 

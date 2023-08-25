@@ -47,10 +47,11 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	"github.com/horizoncd/horizon/pkg/pr/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 
-	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 )
 
@@ -66,18 +67,18 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
 	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
 	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	mockUserManager := usermock.NewMockManager(mockCtl)
 	var ctl Controller = &controller{
-		pipelinerunMgr: mockPipelineManager,
+		prMgr:          &prmanager.PRManager{PipelineRun: mockPipelineManager},
 		clusterMgr:     mockClusterManager,
-		applicationMgr: mockApplicationMananger,
+		appMgr:         mockApplicationMananger,
 		envMgr:         nil,
 		tektonFty:      nil,
 		commitGetter:   mockCommitGetter,
 		clusterGitRepo: mockClusterGitRepo,
-		userManager:    mockUserManager,
+		userMgr:        mockUserManager,
 	}
 
 	// 1. test Get PipelineBasic
@@ -93,10 +94,10 @@ func TestGetAndListPipelinerun(t *testing.T) {
 		Name: UserName,
 	}, nil).Times(1)
 
-	pipelineBasic, err := ctl.Get(ctx, pipelineID)
+	pipelineBasic, err := ctl.GetPipelinerun(ctx, pipelineID)
 	assert.Nil(t, err)
 	assert.Equal(t, pipelineBasic.ID, pipelineID)
-	assert.Equal(t, pipelineBasic.CreatedBy, UserInfo{
+	assert.Equal(t, pipelineBasic.CreatedBy, models.UserInfo{
 		UserID:   createUser,
 		UserName: UserName,
 	})
@@ -129,7 +130,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 		PageNumber: 1,
 		PageSize:   10,
 	}
-	count, pipelineBasics, err := ctl.List(ctx, clusterID, false, query)
+	count, pipelineBasics, err := ctl.ListPipelineruns(ctx, clusterID, false, query)
 	assert.Nil(t, err)
 	assert.Equal(t, count, totalCount)
 	assert.Equal(t, len(pipelineBasics), 2)
@@ -145,13 +146,13 @@ func TestGetDiff(t *testing.T) {
 	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
 	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
 	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 
 	var ctl Controller = &controller{
-		pipelinerunMgr: mockPipelineManager,
+		prMgr:          &prmanager.PRManager{PipelineRun: mockPipelineManager},
 		clusterMgr:     mockClusterManager,
-		applicationMgr: mockApplicationMananger,
+		appMgr:         mockApplicationMananger,
 		envMgr:         nil,
 		tektonFty:      nil,
 		commitGetter:   mockCommitGetter,
@@ -265,7 +266,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, cluster)
 
-	pipelinerunMgr := manager.PipelinerunMgr
+	pipelinerunMgr := manager.PRMgr.PipelineRun
 	pipelinerun, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
@@ -279,10 +280,10 @@ func Test(t *testing.T) {
 	assert.NotNil(t, pipelinerun)
 
 	c := &controller{
-		pipelinerunMgr: pipelinerunMgr,
-		clusterMgr:     clusterMgr,
-		envMgr:         envMgr,
-		tektonFty:      tektonFty,
+		prMgr:      manager.PRMgr,
+		clusterMgr: clusterMgr,
+		envMgr:     envMgr,
+		tektonFty:  tektonFty,
 	}
 
 	logBytes := []byte("this is a log")
@@ -363,7 +364,7 @@ func Test(t *testing.T) {
 	pipelinerun, err = pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
-		Status:    string(prmodels.StatusCreated),
+		Status:    string(prmodels.StatusRunning),
 		S3Bucket:  "",
 		LogObject: "",
 		PrObject:  "",

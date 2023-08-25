@@ -70,7 +70,7 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrydao "github.com/horizoncd/horizon/pkg/registry/dao"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
@@ -645,7 +645,7 @@ func test(t *testing.T) {
 		regionMgr:            regionMgr,
 		autoFreeSvc:          param.AutoFreeSvc,
 		groupSvc:             groupservice.NewService(manager),
-		pipelinerunMgr:       manager.PipelinerunMgr,
+		prMgr:                manager.PRMgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
 		userManager:          manager.UserMgr,
@@ -977,7 +977,7 @@ func test(t *testing.T) {
 	assert.NotNil(t, resp)
 	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
-	pr, err := manager.PipelinerunMgr.GetByID(ctx, restartResp.PipelinerunID)
+	pr, err := manager.PRMgr.PipelineRun.GetByID(ctx, restartResp.PipelinerunID)
 	assert.Nil(t, err)
 	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
 	assert.NotNil(t, pr.FinishedAt)
@@ -1022,9 +1022,9 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
 
-	pr, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
+	pr, err = manager.PRMgr.PipelineRun.GetByID(ctx, deployResp.PipelinerunID)
 	assert.Nil(t, err)
-	assert.Equal(t, string(prmodels.StatusCreated), pr.Status)
+	assert.Equal(t, string(prmodels.StatusRunning), pr.Status)
 
 	// test next
 	k8sutil.EXPECT().ExecuteAction(ctx, gomock.Any()).Return(nil)
@@ -1088,7 +1088,7 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().GetManifest(ctx, application.Name, resp.Name, gomock.Any()).
 		Return(nil, herrors.NewErrNotFound(herrors.GitlabResource, "")).Times(2)
 	// update status to 'ok'
-	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
+	err = manager.PRMgr.PipelineRun.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
 		Result: string(prmodels.StatusOK),
 	})
 	assert.Nil(t, err)
@@ -1101,7 +1101,7 @@ func test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
-	pr, err = manager.PipelinerunMgr.GetByID(ctx, rollbackResp.PipelinerunID)
+	pr, err = manager.PRMgr.PipelineRun.GetByID(ctx, rollbackResp.PipelinerunID)
 	assert.Nil(t, err)
 	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
 	assert.NotNil(t, pr.FinishedAt)
@@ -1411,9 +1411,9 @@ func testV2(t *testing.T) {
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
 		groupSvc:             groupservice.NewService(manager),
-		pipelinerunMgr:       manager.PipelinerunMgr,
+		prMgr:                manager.PRMgr,
 		userManager:          manager.UserMgr,
-		autoFreeSvc:          service.New([]string{"dev2", "test2"}),
+		autoFreeSvc:          param.AutoFreeSvc,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
@@ -1636,7 +1636,7 @@ func testUpgrade(t *testing.T) {
 		envRegionMgr:          envRegionMgr,
 		regionMgr:             regionMgr,
 		groupSvc:              groupservice.NewService(manager),
-		pipelinerunMgr:        manager.PipelinerunMgr,
+		prMgr:                 manager.PRMgr,
 		userManager:           manager.UserMgr,
 		autoFreeSvc:           parameter.AutoFreeSvc,
 		userSvc:               userservice.NewService(manager),

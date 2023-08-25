@@ -49,6 +49,41 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Pattern:     fmt.Sprintf("/clusters/:%v/pipelineruns", _clusterIDParam),
 			HandlerFunc: api.List,
 		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/run", _pipelinerunIDParam),
+			HandlerFunc: api.Execute,
+		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/forcerun", _pipelinerunIDParam),
+			HandlerFunc: api.ExecuteForce,
+		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/cancel", _pipelinerunIDParam),
+			HandlerFunc: api.Cancel,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/checkrun", _pipelinerunIDParam),
+			HandlerFunc: api.ListCheckRuns,
+		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/checkrun", _pipelinerunIDParam),
+			HandlerFunc: api.CreateCheckRuns,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/message", _pipelinerunIDParam),
+			HandlerFunc: api.ListPrMessages,
+		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/message", _pipelinerunIDParam),
+			HandlerFunc: api.CreatePrMessage,
+		},
 	}
 
 	route.RegisterRoutes(apiGroup, routes)

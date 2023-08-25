@@ -40,8 +40,8 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	pipelinemodels "github.com/horizoncd/horizon/pkg/pr/pipeline/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 
@@ -267,7 +267,7 @@ func Test(t *testing.T) {
 		ApplicationID: application.ID,
 		Name:          "cluster",
 	}, nil, nil)
-	pipelinerunMgr := manager.PipelinerunMgr
+	pipelinerunMgr := manager.PRMgr.PipelineRun
 	_, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:   cluster.ID,
 		Action:      "builddeploy",

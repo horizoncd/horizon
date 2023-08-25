@@ -29,8 +29,8 @@ import (
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	idpmanager "github.com/horizoncd/horizon/pkg/idp/manager"
 	membermanager "github.com/horizoncd/horizon/pkg/member"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	pipelinemanager "github.com/horizoncd/horizon/pkg/pr/pipeline/manager"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	registrymanager "github.com/horizoncd/horizon/pkg/registry/manager"
 	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
@@ -60,7 +60,7 @@ type Manager struct {
 	TemplateMgr          templatemanager.Manager
 	EnvRegionMgr         environmentregionmanager.Manager
 	RegionMgr            regionmanager.Manager
-	PipelinerunMgr       prmanager.Manager
+	PRMgr                *prmanager.PRManager
 	PipelineMgr          pipelinemanager.Manager
 	EnvMgr               envmanager.Manager
 	GroupMgr             groupmanager.Manager
@@ -89,7 +89,7 @@ func InitManager(db *gorm.DB) *Manager {
 		TemplateMgr:          templatemanager.New(db),
 		EnvRegionMgr:         environmentregionmanager.New(db),
 		RegionMgr:            regionmanager.New(db),
-		PipelinerunMgr:       prmanager.New(db),
+		PRMgr:                prmanager.NewPRManager(db),
 		PipelineMgr:          pipelinemanager.New(db),
 		EnvMgr:               envmanager.New(db),
 		GroupMgr:             groupmanager.New(db),

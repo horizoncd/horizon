@@ -18,23 +18,36 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/config"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
+	"github.com/horizoncd/horizon/pkg/config/token"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	membermanager "github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	"github.com/horizoncd/horizon/pkg/pr/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	prservice "github.com/horizoncd/horizon/pkg/pr/service"
+	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
+	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -42,35 +55,62 @@ type Controller interface {
 	GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (*collector.Log, error)
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*collector.Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
-	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
-	List(ctx context.Context, clusterID uint, canRollback bool, query q.Query) (int, []*PipelineBasic, error)
+	GetPipelinerun(ctx context.Context, pipelinerunID uint) (*prmodels.PipelineBasic, error)
+	ListPipelineruns(ctx context.Context, clusterID uint, canRollback bool,
+		query q.Query) (int, []*prmodels.PipelineBasic, error)
 	StopPipelinerun(ctx context.Context, pipelinerunID uint) error
 	StopPipelinerunForCluster(ctx context.Context, clusterID uint) error
+
+	CreateCheck(ctx context.Context, check *models.Check) (*models.Check, error)
+	UpdateCheckRunByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error
+
+	ListMessagesByPipelinerun(ctx context.Context, pipelinerunID uint, query *q.Query) (int, []*models.PRMessage, error)
+	// Execute runs a pipelineRun only if its state is ready.
+	Execute(ctx context.Context, pipelinerunID uint, force bool) error
+	// Cancel withdraws a pipelineRun only if its state is pending.
+	Cancel(ctx context.Context, pipelinerunID uint) error
+
+	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
+	CreateCheckRun(ctx context.Context, pipelineRunID uint, request *CreateCheckRunRequest) (*models.CheckRun, error)
+	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
+	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*models.PRMessage, error)
 }
 
 type controller struct {
-	pipelinerunMgr prmanager.Manager
-	applicationMgr appmanager.Manager
-	clusterMgr     clustermanager.Manager
-	envMgr         envmanager.Manager
-	tektonFty      factory.Factory
-	commitGetter   code.GitGetter
-	clusterGitRepo gitrepo.ClusterGitRepo
-	userManager    usermanager.Manager
+	prMgr              *prmanager.PRManager
+	appMgr             appmanager.Manager
+	clusterMgr         clustermanager.Manager
+	envMgr             envmanager.Manager
+	prSvc              *prservice.Service
+	regionMgr          regionmanager.Manager
+	tektonFty          factory.Factory
+	tokenSvc           tokensvc.Service
+	tokenConfig        token.Config
+	memberMgr          membermanager.Manager
+	templateReleaseMgr trmanager.Manager
+	commitGetter       code.GitGetter
+	clusterGitRepo     gitrepo.ClusterGitRepo
+	userMgr            usermanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController(param *param.Param) Controller {
+func NewController(config *config.Config, param *param.Param) Controller {
 	return &controller{
-		pipelinerunMgr: param.PipelinerunMgr,
-		clusterMgr:     param.ClusterMgr,
-		envMgr:         param.EnvMgr,
-		tektonFty:      param.TektonFty,
-		commitGetter:   param.GitGetter,
-		applicationMgr: param.ApplicationMgr,
-		clusterGitRepo: param.ClusterGitRepo,
-		userManager:    param.UserMgr,
+		prMgr:              param.PRMgr,
+		prSvc:              param.PRService,
+		clusterMgr:         param.ClusterMgr,
+		envMgr:             param.EnvMgr,
+		tektonFty:          param.TektonFty,
+		tokenSvc:           param.TokenSvc,
+		tokenConfig:        config.TokenConfig,
+		commitGetter:       param.GitGetter,
+		appMgr:             param.ApplicationMgr,
+		memberMgr:          param.MemberMgr,
+		regionMgr:          param.RegionMgr,
+		clusterGitRepo:     param.ClusterGitRepo,
+		userMgr:            param.UserMgr,
+		templateReleaseMgr: param.TemplateReleaseMgr,
 	}
 }
 
@@ -78,7 +118,7 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -100,7 +140,7 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndActions(ctx, clusterID,
+	pr, err := c.prMgr.PipelineRun.GetLatestByClusterIDAndActions(ctx, clusterID,
 		prmodels.ActionBuildDeploy, prmodels.ActionDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -134,7 +174,7 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pipeline
-	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +184,7 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	if err != nil {
 		return nil, err
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	application, err := c.appMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
@@ -196,112 +236,55 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	}, nil
 }
 
-func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic, err error) {
+func (c *controller) GetPipelinerun(ctx context.Context, pipelineID uint) (_ *prmodels.PipelineBasic, err error) {
 	const op = "pipelinerun controller: get pipelinerun basic"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelineID)
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, pipelineID)
 	if err != nil {
 		return nil, err
 	}
-	firstCanRollbackPipelinerun, err := c.pipelinerunMgr.GetFirstCanRollbackPipelinerun(ctx, pipelinerun.ClusterID)
+	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, pipelinerun.ClusterID)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.ofPipelineBasic(ctx, pipelinerun, firstCanRollbackPipelinerun)
+	return c.prSvc.OfPipelineBasic(ctx, pipelinerun, firstCanRollbackPipelinerun)
 }
 
-func (c *controller) List(ctx context.Context,
-	clusterID uint, canRollback bool, query q.Query) (_ int, _ []*PipelineBasic, err error) {
+func (c *controller) ListPipelineruns(ctx context.Context,
+	clusterID uint, canRollback bool, query q.Query) (_ int, _ []*prmodels.PipelineBasic, err error) {
 	const op = "pipelinerun controller: list pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	totalCount, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, canRollback, query)
+	totalCount, pipelineruns, err := c.prMgr.PipelineRun.GetByClusterID(ctx, clusterID, canRollback, query)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	// remove the first pipelinerun than can be rollback
-	firstCanRollbackPipelinerun, err := c.pipelinerunMgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, clusterID)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	pipelineBasics, err := c.ofPipelineBasics(ctx, pipelineruns, firstCanRollbackPipelinerun)
+	pipelineBasics, err := c.prSvc.OfPipelineBasics(ctx, pipelineruns, firstCanRollbackPipelinerun)
 	if err != nil {
 		return 0, nil, err
 	}
 	return totalCount, pipelineBasics, nil
 }
 
-func (c *controller) ofPipelineBasic(ctx context.Context,
-	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*PipelineBasic, error) {
-	user, err := c.userManager.GetUserByID(ctx, pr.CreatedBy)
-	if err != nil {
-		return nil, err
-	}
-
-	canRollback := func() bool {
-		// set the firstCanRollbackPipelinerun that cannot rollback
-		if firstCanRollbackPipelinerun != nil && pr.ID == firstCanRollbackPipelinerun.ID {
-			return false
-		}
-		return pr.Action != prmodels.ActionRestart && pr.Status == string(prmodels.StatusOK)
-	}()
-
-	prBasic := &PipelineBasic{
-		ID:               pr.ID,
-		Title:            pr.Title,
-		Description:      pr.Description,
-		Action:           pr.Action,
-		Status:           pr.Status,
-		GitURL:           pr.GitURL,
-		GitCommit:        pr.GitCommit,
-		ImageURL:         pr.ImageURL,
-		LastConfigCommit: pr.LastConfigCommit,
-		ConfigCommit:     pr.ConfigCommit,
-		CreatedAt:        pr.CreatedAt,
-		UpdatedAt:        pr.UpdatedAt,
-		StartedAt:        pr.StartedAt,
-		FinishedAt:       pr.FinishedAt,
-		CanRollback:      canRollback,
-		CreatedBy: UserInfo{
-			UserID:   pr.CreatedBy,
-			UserName: user.Name,
-		},
-	}
-	switch pr.GitRefType {
-	case codemodels.GitRefTypeTag:
-		prBasic.GitTag = pr.GitRef
-	case codemodels.GitRefTypeBranch:
-		prBasic.GitBranch = pr.GitRef
-	}
-	return prBasic, nil
-}
-
-func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
-	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*PipelineBasic, error) {
-	var pipelineBasics []*PipelineBasic
-	for _, pr := range prs {
-		pipelineBasic, err := c.ofPipelineBasic(ctx, pr, firstCanRollbackPipelinerun)
-		if err != nil {
-			return nil, err
-		}
-		pipelineBasics = append(pipelineBasics, pipelineBasic)
-	}
-	return pipelineBasics, nil
-}
-
 func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (err error) {
 	const op = "pipelinerun controller: stop pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return errors.E(op, err)
 	}
-	if pipelinerun.Status != string(prmodels.StatusCreated) {
+	if pipelinerun.Status != string(prmodels.StatusCreated) &&
+		pipelinerun.Status != string(prmodels.StatusRunning) {
 		return errors.E(op, http.StatusBadRequest, errors.ErrorCode("BadRequest"), "pipelinerun is already completed")
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
@@ -325,10 +308,11 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 	// get cluster latest builddeploy pipelinerun
-	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndActions(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pipelinerun, err := c.prMgr.PipelineRun.GetLatestByClusterIDAndActions(ctx, clusterID, prmodels.ActionBuildDeploy)
 
 	// if pipelinerun.Status is not created, ignore, and return success
-	if pipelinerun.Status != string(prmodels.StatusCreated) {
+	if pipelinerun.Status != string(prmodels.StatusCreated) &&
+		pipelinerun.Status != string(prmodels.StatusRunning) {
 		return nil
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
@@ -342,4 +326,246 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 	}
 
 	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+}
+
+func (c *controller) CreateCheck(ctx context.Context, check *models.Check) (*models.Check, error) {
+	const op = "pipelinerun controller: create check"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	return c.prMgr.Check.Create(ctx, check)
+}
+
+func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error {
+	const op = "pipelinerun controller: update check run"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	return c.prMgr.Check.UpdateByID(ctx, checkRunID, newCheckRun)
+}
+
+func (c *controller) ListMessagesByPipelinerun(ctx context.Context,
+	pipelinerunID uint, query *q.Query) (int, []*models.PRMessage, error) {
+	const op = "pipelinerun controller: list pr message"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	return c.prMgr.Message.List(ctx, pipelinerunID, query)
+}
+
+func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool) error {
+	const op = "pipelinerun controller: execute pipelinerun"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return err
+	}
+
+	if !force {
+		if pr.Status != string(prmodels.StatusReady) {
+			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
+		}
+	}
+
+	return c.execute(ctx, pr)
+}
+
+func (c *controller) execute(ctx context.Context, pr *models.Pipelinerun) error {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 1. get cluster
+	cluster, err := c.clusterMgr.GetByID(ctx, pr.ClusterID)
+	if err != nil {
+		return err
+	}
+
+	// 2. get application
+	application, err := c.appMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return err
+	}
+
+	// 3. generate a JWT token for tekton callback
+	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
+		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(pr.ID))
+	if err != nil {
+		return err
+	}
+
+	// 4. create pipelinerun in k8s
+	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
+	if err != nil {
+		return err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return err
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return err
+	}
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx,
+		application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return err
+	}
+
+	prGit := tekton.PipelineRunGit{
+		URL:       cluster.GitURL,
+		Subfolder: cluster.GitSubfolder,
+		Commit:    pr.GitCommit,
+	}
+	switch pr.GitRefType {
+	case codemodels.GitRefTypeTag:
+		prGit.Tag = pr.GitRef
+	case codemodels.GitRefTypeBranch:
+		prGit.Branch = pr.GitRef
+	}
+
+	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
+		Action:           pr.Action,
+		Application:      application.Name,
+		ApplicationID:    application.ID,
+		Cluster:          cluster.Name,
+		ClusterID:        cluster.ID,
+		Environment:      cluster.EnvironmentName,
+		Git:              prGit,
+		ImageURL:         pr.ImageURL,
+		Operator:         currentUser.GetEmail(),
+		PipelinerunID:    pr.ID,
+		PipelineJSONBlob: clusterFiles.PipelineJSONBlob,
+		Region:           cluster.RegionName,
+		RegionID:         regionEntity.ID,
+		Template:         cluster.Template,
+		Token:            token,
+	})
+	if err != nil {
+		return err
+	}
+
+	// update event id returned from tekton-trigger EventListener
+	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d", ciEventID, pr.ID)
+	err = c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"ci_event_id": ciEventID,
+		"status":      prmodels.StatusRunning,
+	})
+	if err != nil {
+		return err
+	}
+	err = c.prMgr.PipelineRun.UpdateCIEventIDByID(ctx, pr.ID, ciEventID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
+	const op = "pipelinerun controller: cancel pipelinerun"
+	defer wlog.Start(ctx, op).StopPrint()
+	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
+}
+
+func (c *controller) ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error) {
+	const op = "pipelinerun controller: list check runs"
+	defer wlog.Start(context.Background(), op).StopPrint()
+	return c.prMgr.Check.ListCheckRuns(ctx, pipelineRunID)
+}
+
+func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
+	request *CreateCheckRunRequest) (*models.CheckRun, error) {
+	const op = "pipelinerun controller: create check run"
+	defer wlog.Start(context.Background(), op).StopPrint()
+
+	return c.prMgr.Check.CreateCheckRun(ctx, &models.CheckRun{
+		Name:          request.Name,
+		CheckID:       request.CheckID,
+		Status:        models.String2CheckRunStatus(request.Status),
+		Message:       request.Message,
+		PipilineRunID: pipelineRunID,
+		DetailURL:     request.DetailURL,
+	})
+}
+
+func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
+	request *CreatePrMessageRequest) (*models.PRMessage, error) {
+	const op = "pipelinerun controller: create pr message"
+	defer wlog.Start(context.Background(), op).StopPrint()
+
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.prMgr.Message.Create(ctx, &models.PRMessage{
+		PipelineRunID: pipelineRunID,
+		Content:       request.Content,
+		CreatedBy:     currentUser.GetID(),
+	})
+}
+
+func (c *controller) ListPRMessages(ctx context.Context,
+	pipelineRunID uint, query *q.Query) (int, []*PrMessage, error) {
+	const op = "pipelinerun controller: list pr messages"
+	defer wlog.Start(context.Background(), op).StopPrint()
+
+	count, messages, err := c.prMgr.Message.List(ctx, pipelineRunID, query)
+	if err != nil {
+		return 0, nil, err
+	}
+	userIDs := make([]uint, 0, len(messages))
+	m := make(map[uint]struct{}, 0)
+	for _, message := range messages {
+		if _, ok := m[message.CreatedBy]; !ok {
+			userIDs = append(userIDs, message.CreatedBy)
+			m[message.CreatedBy] = struct{}{}
+		}
+		if _, ok := m[message.UpdatedBy]; !ok {
+			userIDs = append(userIDs, message.UpdatedBy)
+			m[message.UpdatedBy] = struct{}{}
+		}
+	}
+	query = &q.Query{
+		WithoutPagination: true,
+		Keywords:          map[string]interface{}{common.UserQueryID: userIDs},
+	}
+	_, users, err := c.userMgr.List(ctx, query)
+	if err != nil {
+		return 0, nil, err
+	}
+	userMap := make(map[uint]*usermodels.User, 0)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+	result := make([]*PrMessage, 0, len(messages))
+	for _, message := range messages {
+		resultMsg := &PrMessage{
+			Content:   message.Content,
+			CreatedAt: message.CreatedAt,
+		}
+		if user, ok := userMap[message.CreatedBy]; ok {
+			resultMsg.CreatedBy = User{
+				ID:   user.ID,
+				Name: user.FullName,
+			}
+			if user.UserType == usermodels.UserTypeRobot {
+				resultMsg.CreatedBy.UserType = "bot"
+			}
+		}
+		if user, ok := userMap[message.UpdatedBy]; ok {
+			resultMsg.UpdatedBy = User{
+				ID:   user.ID,
+				Name: user.FullName,
+			}
+			if user.UserType == usermodels.UserTypeRobot {
+				resultMsg.CreatedBy.UserType = "bot"
+			}
+		}
+		result = append(result, resultMsg)
+	}
+	return count, result, nil
 }

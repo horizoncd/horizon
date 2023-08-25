@@ -32,7 +32,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/member/models"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	pipelinerunmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	templatemanager "github.com/horizoncd/horizon/pkg/template/manager"
 	templatereleasemanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
@@ -69,7 +69,7 @@ type service struct {
 	applicationClusterManager clustermanager.Manager
 	templateManager           templatemanager.Manager
 	templateReleaseManager    templatereleasemanager.Manager
-	pipelineManager           pipelinerunmanager.Manager
+	prMgr                     *prmanager.PRManager
 	roleService               roleservice.Service
 	oauthManager              oauthmanager.Manager
 	userManager               usermanager.Manager
@@ -83,7 +83,7 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 		groupManager:              manager.GroupMgr,
 		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
-		pipelineManager:           manager.PipelinerunMgr,
+		prMgr:                     manager.PRMgr,
 		templateReleaseManager:    manager.TemplateReleaseMgr,
 		templateManager:           manager.TemplateMgr,
 		roleService:               roleService,
@@ -175,7 +175,7 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := s.pipelineManager.GetByID(ctx, pipelinerunID)
+	pipeline, err := s.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 }
 
 func (s *service) listPipelinerunMember(ctx context.Context, pipelinerunID uint) ([]models.Member, error) {
-	pipeline, err := s.pipelineManager.GetByID(ctx, pipelinerunID)
+	pipeline, err := s.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, err
 	}

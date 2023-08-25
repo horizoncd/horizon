@@ -71,6 +71,9 @@ var (
 	WebhookInDB               = sourceType{name: "WebhookInDB"}
 	WebhookLogInDB            = sourceType{name: "WebhookLogInDB"}
 	MetatagInDB               = sourceType{name: "MetatagInDB"}
+	CheckInDB                 = sourceType{name: "CheckInDB"}
+	CheckRunInDB              = sourceType{name: "CheckRunInDB"}
+	PRMessageInDB             = sourceType{name: "PRMessageInDB"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}
