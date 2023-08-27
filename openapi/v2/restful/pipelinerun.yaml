@@ -227,9 +227,193 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/pipelineruns/{pipelinerunID}/run:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: runPipelinerun
+      summary: |
+        Run the specified pipelinerun.
+      responses:
+        "200":
+          description: Success
+  /apis/core/v2/pipelineruns/{pipelinerunID}/forcerun:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: forceRunPipelinerun
+      summary: |
+        Force run the specified pipelinerun.
+      responses:
+        "200":
+          description: Success
+  /apis/core/v2/pipelineruns/{pipelinerunID}/cancel:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: cancelPipelinerun
+      summary: |
+        Cancel the specified pipelinerun.
+      responses:
+        "200":
+          description: Success
+  /apis/core/v2/pipelineruns/{pipelinerunID}/checkrun:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: createCheckRun
+      summary: |
+          Create a check run for the specified pipelinerun.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "name of check run"
+                checkId:
+                  type: integer
+                  description: "check id of check run"
+                status:
+                  type: string
+                  description: "status of check run"
+                message:
+                  type: string
+                  description: "message of check run"
+                detailUrl:
+                  type: string
+                  description: "detail url of check run"
+      responses:
+        "200":
+            description: Success
+    get:
+      tags:
+          - pipelinerun
+      operationId: listCheckRuns
+      summary: |
+        List check runs of the specified pipelinerun.
+      responses:
+          "200":
+            description: Success
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      description: "total number of check runs"
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          properties:
+                              id:
+                                  type: integer
+                                  description: "id of check run"
+                              name:
+                                  type: string
+                                  description: "name of check run"
+                              checkId:
+                                  type: integer
+                                  description: "check id of check run"
+                              status:
+                                  type: string
+                                  description: "status of check run"
+                              pipilineRunId:
+                                  type: integer
+                                  description: "pipelinerun id of check run"
+                              detailUrl:
+                                  type: string
+                                  description: "detail url of check run"
+                              message:
+                                  type: string
+                                  description: "message of check run"
+                              createdAt:
+                                  type: string
+                              updatedAt:
+                                  type: string
+  /apis/core/v2/pipelineruns/{pipelinerunID}/message:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: createMessage
+      summary: |
+        Create a message for the specified pipelinerun.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: "content of check run"
+      responses:
+        200:
+          description: "Success"
+    get:
+      tags:
+          - pipelinerun
+      operationId: listMessage
+      summary: |
+        List message of the specified pipelinerun.
+      responses:
+          "200":
+            description: Success
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      description: "total number of message"
+                    data:
+                      type: array
+                      properties:
+                        id:
+                          type: integer
+                          description: "id of message"
+                        pipilineRunId:
+                          type: integer
+                          description: "pipelinerun id of message"
+                        content:
+                          type: string
+                          description: "content of message"
+                        createdAt:
+                          type: string
+                        createdBy:
+                            $ref: "#/components/schemas/MessageUser"
+                        updatedBy:
+                          $ref: "#/components/schemas/MessageUser"
+
+
 
 components:
   schemas:
+    MessageUser:
+      type: object
+      properties:
+          id:
+            type: integer
+          name:
+            type: string
+          userType:
+            type: string
     PipelineRun:
       type: object
       properties:

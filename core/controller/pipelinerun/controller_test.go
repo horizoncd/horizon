@@ -50,6 +50,7 @@ import (
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	"github.com/horizoncd/horizon/pkg/pr/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	prservice "github.com/horizoncd/horizon/pkg/pr/service"
 
 	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
@@ -71,9 +72,16 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	mockUserManager := usermock.NewMockManager(mockCtl)
 	var ctl Controller = &controller{
-		prMgr:          &prmanager.PRManager{PipelineRun: mockPipelineManager},
-		clusterMgr:     mockClusterManager,
-		appMgr:         mockApplicationMananger,
+		prMgr:      &prmanager.PRManager{PipelineRun: mockPipelineManager},
+		clusterMgr: mockClusterManager,
+		appMgr:     mockApplicationMananger,
+		prSvc: prservice.NewService(
+			&managerparam.Manager{
+				ApplicationMgr: mockApplicationMananger,
+				ClusterMgr:     mockClusterManager,
+				UserMgr:        mockUserManager,
+				PRMgr:          &prmanager.PRManager{PipelineRun: mockPipelineManager},
+			}),
 		envMgr:         nil,
 		tektonFty:      nil,
 		commitGetter:   mockCommitGetter,
