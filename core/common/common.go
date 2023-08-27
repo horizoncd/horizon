@@ -1,6 +1,6 @@
 package common
 
 type Resource struct {
-	ID   uint   `json:"resource_id" yaml:"resourceID"`
-	Type string `json:"resource_type" yaml:"resourceType"`
+	ResourceID uint   `json:"resource_id" yaml:"resourceID"`
+	Type       string `gorm:"column:resource_type" json:"resource_type" yaml:"resourceType"`
 }

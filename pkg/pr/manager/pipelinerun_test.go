@@ -21,8 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/pr/models"
 
@@ -36,6 +38,11 @@ var (
 )
 
 func Test(t *testing.T) {
+	// nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(1),
+	})
 	pr, err := mgr.Create(ctx, &models.Pipelinerun{
 		ID:               0,
 		ClusterID:        1,
@@ -235,7 +242,8 @@ func TestGetFirstCanRollbackPipelinerun(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&models.Pipelinerun{}); err != nil {
+	if err := db.AutoMigrate(&models.Pipelinerun{}, &models.Check{},
+		&models.CheckRun{}, &models.PRMessage{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()

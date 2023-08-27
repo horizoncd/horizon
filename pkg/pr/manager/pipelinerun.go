@@ -19,6 +19,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/pr/dao"
 	"github.com/horizoncd/horizon/pkg/pr/models"
@@ -60,6 +61,11 @@ func NewPipelineRunManager(db *gorm.DB) PipelineRunManager {
 }
 
 func (m *pipelinerunManager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pipelinerun.CreatedBy = currentUser.GetID()
 	return m.dao.Create(ctx, pipelinerun)
 }
 

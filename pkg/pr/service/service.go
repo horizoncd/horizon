@@ -99,8 +99,8 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 		}
 		id = cluster.ApplicationID
 		resources = append(resources, common.Resource{
-			ID:   cluster.ID,
-			Type: common.ResourceCluster,
+			ResourceID: cluster.ID,
+			Type:       common.ResourceCluster,
 		})
 		fallthrough
 	case common.ResourceApplication:
@@ -110,8 +110,8 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 		}
 		id = app.GroupID
 		resources = append(resources, common.Resource{
-			ID:   app.ID,
-			Type: common.ResourceApplication,
+			ResourceID: app.ID,
+			Type:       common.ResourceApplication,
 		})
 		fallthrough
 	case common.ResourceGroup:
@@ -126,8 +126,8 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 	}
 	for _, id := range ids {
 		resources = append(resources, common.Resource{
-			ID:   id,
-			Type: common.ResourceGroup,
+			ResourceID: id,
+			Type:       common.ResourceGroup,
 		})
 	}
 

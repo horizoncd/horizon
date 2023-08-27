@@ -19,8 +19,6 @@ type CheckDAO interface {
 	GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error)
 	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
 	CreateCheckRun(ctx context.Context, run *models.CheckRun) (*models.CheckRun, error)
-	ListMessage(ctx context.Context, pipelineRunID uint) ([]*models.PRMessage, error)
-	CreateMessage(ctx context.Context, message *models.PRMessage) (*models.PRMessage, error)
 }
 
 type checkDAO struct{ db *gorm.DB }
@@ -56,9 +54,9 @@ func (d *checkDAO) GetByResource(ctx context.Context, resources ...common.Resour
 		return []*models.Check{}, nil
 	}
 
-	sql = sql.Where(d.db.Where("resource_type = ?", resources[0].Type).Where("resource_id = ?", resources[0].ID))
+	sql = sql.Where(d.db.Where("resource_type = ?", resources[0].Type).Where("resource_id = ?", resources[0].ResourceID))
 	for _, resource := range resources[1:] {
-		sql = sql.Or(d.db.Where("resource_type = ?", resource.Type).Where("resource_id = ?", resource.ID))
+		sql = sql.Or(d.db.Where("resource_type = ?", resource.Type).Where("resource_id = ?", resource.ResourceID))
 	}
 
 	result := sql.Find(&checks)
@@ -94,29 +92,4 @@ func (d *checkDAO) CreateCheckRun(ctx context.Context, run *models.CheckRun) (*m
 	}
 
 	return run, result.Error
-}
-
-func (d *checkDAO) ListMessage(ctx context.Context, pipelineRunID uint) ([]*models.PRMessage, error) {
-	var messages []*models.PRMessage
-	result := d.db.WithContext(ctx).Where("pipeline_run_id = ?", pipelineRunID).
-		Order("updated_at asc").
-		Find(&messages)
-
-	if result.RowsAffected == 0 {
-		return []*models.PRMessage{}, nil
-	}
-	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.CheckRunInDB, result.Error.Error())
-	}
-	return messages, nil
-}
-
-func (d *checkDAO) CreateMessage(ctx context.Context, message *models.PRMessage) (*models.PRMessage, error) {
-	result := d.db.WithContext(ctx).Create(message)
-
-	if result.Error != nil {
-		return nil, herrors.NewErrInsertFailed(herrors.CheckRunInDB, result.Error.Error())
-	}
-
-	return message, result.Error
 }
