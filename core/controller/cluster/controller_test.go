@@ -1280,7 +1280,7 @@ func testV2(t *testing.T) {
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		AutoFreeSvc: service.New([]string{"dev", "test"}),
+		AutoFreeSvc: service.New([]string{"dev", "test2"}),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
