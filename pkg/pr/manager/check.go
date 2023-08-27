@@ -19,8 +19,6 @@ type CheckManager interface {
 	GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error)
 	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
 	CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error)
-	ListMessage(ctx context.Context, pipelineRunID uint) ([]*models.PRMessage, error)
-	CreateMessage(ctx context.Context, message *models.PRMessage) (*models.PRMessage, error)
 }
 
 type checkManager struct {
@@ -51,12 +49,4 @@ func (m *checkManager) ListCheckRuns(ctx context.Context, pipelineRunID uint) ([
 
 func (m *checkManager) CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error) {
 	return m.dao.CreateCheckRun(ctx, checkRun)
-}
-
-func (m *checkManager) ListMessage(ctx context.Context, pipelineRunID uint) ([]*models.PRMessage, error) {
-	return m.dao.ListMessage(ctx, pipelineRunID)
-}
-
-func (m *checkManager) CreateMessage(ctx context.Context, message *models.PRMessage) (*models.PRMessage, error) {
-	return m.dao.CreateMessage(ctx, message)
 }

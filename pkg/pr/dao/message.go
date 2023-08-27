@@ -50,5 +50,5 @@ func (d *prMessageDAO) List(ctx context.Context, pipelineRunID uint, query *q.Qu
 	if result.RowsAffected == 0 {
 		return 0, []*models.PRMessage{}, nil
 	}
-	return int(result.RowsAffected), prMessages, nil
+	return int(total), prMessages, nil
 }

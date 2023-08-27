@@ -33,5 +33,8 @@ func (m *prMessageManager) Create(ctx context.Context, prMessage *models.PRMessa
 
 func (m *prMessageManager) List(ctx context.Context, pipelineRunID uint,
 	query *q.Query) (int, []*models.PRMessage, error) {
+	if query == nil {
+		query = &q.Query{}
+	}
 	return m.dao.List(ctx, pipelineRunID, query)
 }
