@@ -18,6 +18,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
+const TemplateTypeWorkload = "workload"
+
 type Template struct {
 	global.Model
 

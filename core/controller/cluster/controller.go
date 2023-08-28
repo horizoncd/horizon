@@ -17,6 +17,7 @@ package cluster
 import (
 	"context"
 
+	templatemanager "github.com/horizoncd/horizon/pkg/template/manager"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/horizoncd/horizon/core/config"
@@ -133,6 +134,7 @@ type controller struct {
 	applicationMgr        appmanager.Manager
 	autoFreeSvc           *service.AutoFreeSVC
 	applicationSvc        applicationservice.Service
+	templateMgr           templatemanager.Manager
 	templateReleaseMgr    trmanager.Manager
 	templateSchemaGetter  templateschema.Getter
 	outputGetter          output.Getter
@@ -172,6 +174,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		k8sutil:               param.K8sUtil,
 		applicationMgr:        param.ApplicationMgr,
 		applicationSvc:        param.ApplicationSvc,
+		templateMgr:           param.TemplateMgr,
 		templateReleaseMgr:    param.TemplateReleaseMgr,
 		templateSchemaGetter:  param.TemplateSchemaGetter,
 		autoFreeSvc:           param.AutoFreeSvc,
