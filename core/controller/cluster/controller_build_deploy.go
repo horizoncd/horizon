@@ -203,12 +203,15 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 	normalizedBranch := strings.Join(pinyin.LazyPinyin(branch, args), "")
 	normalizedBranch = regexp.MustCompile(`[^a-zA-Z0-9_.-]`).ReplaceAllString(normalizedBranch, "_")
 
-	if len(commit) > 8 {
-		commit = commit[:8]
-	}
-
+	normalizedCommit := func(commit string) string {
+		res := commit
+		if len(res) > 8 {
+			res = res[:8]
+		}
+		return regexp.MustCompile(`[^a-zA-Z0-9_.-]`).ReplaceAllString(res, "_")
+	}(commit)
 	return path.Join(domain, regionEntity.Registry.Path, application,
-		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, commit, timeStr))
+		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, normalizedCommit, timeStr))
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {
