@@ -28,7 +28,7 @@ func TestCheck(t *testing.T) {
 
 	// Test UpdateByID
 	checkRun := &models.CheckRun{
-		PipilineRunID: 10,
+		PipelineRunID: 10,
 		CheckID:       createdCheck.ResourceID,
 		Status:        models.CheckStatusQueue,
 	}
@@ -50,7 +50,7 @@ func TestCheck(t *testing.T) {
 	assert.Len(t, checks, 1)
 
 	// Test ListCheckRuns
-	checkRuns, err := checkManager.ListCheckRuns(ctx, checkRun.PipilineRunID)
+	checkRuns, err := checkManager.ListCheckRuns(ctx, checkRun.PipelineRunID)
 	assert.NoError(t, err)
 	assert.Len(t, checkRuns, 1)
 	assert.Equal(t, checkRuns[0].Status, models.CheckStatusInProgress)

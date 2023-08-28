@@ -28,7 +28,7 @@ func NewCheckDAO(db *gorm.DB) CheckDAO {
 }
 
 func (d *checkDAO) Create(ctx context.Context, check *models.Check) (*models.Check, error) {
-	result := d.db.WithContext(ctx).Create(check)
+	result := d.db.WithContext(ctx).Debug().Create(check)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.CheckInDB, result.Error.Error())
@@ -49,7 +49,7 @@ func (d *checkDAO) UpdateByID(ctx context.Context, checkRunID uint, newCheckRun 
 
 func (d *checkDAO) GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error) {
 	var checks []*models.Check
-	sql := d.db.WithContext(ctx)
+	sql := d.db.WithContext(ctx).Debug()
 	if len(resources) == 0 {
 		return []*models.Check{}, nil
 	}

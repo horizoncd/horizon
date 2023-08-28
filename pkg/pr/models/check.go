@@ -34,7 +34,7 @@ func String2CheckRunStatus(s string) CheckRunStatus {
 
 type Check struct {
 	global.Model
-	common.Resource `json:",inline" gorm:"embedded"`
+	common.Resource `json:",inline"`
 }
 
 type CheckRun struct {
@@ -43,7 +43,7 @@ type CheckRun struct {
 	CheckID       uint           `json:"checkId"`
 	Status        CheckRunStatus `json:"status"`
 	Message       string         `json:"message"`
-	PipilineRunID uint           `gorm:"column:pipeline_run_id" json:"pipelineRunId"`
+	PipelineRunID uint           `gorm:"column:pipeline_run_id" json:"pipelineRunId"`
 	DetailURL     string         `gorm:"column:detail_url" json:"detailUrl"`
 }
 
