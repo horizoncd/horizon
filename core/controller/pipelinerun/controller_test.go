@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -39,9 +40,11 @@ import (
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermodel "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	"github.com/horizoncd/horizon/pkg/config/token"
 	envmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/git"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
@@ -51,6 +54,10 @@ import (
 	"github.com/horizoncd/horizon/pkg/pr/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	prservice "github.com/horizoncd/horizon/pkg/pr/service"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
@@ -385,4 +392,207 @@ func Test(t *testing.T) {
 
 	err = c.StopPipelinerunForCluster(ctx, pipelinerun.ClusterID)
 	assert.Nil(t, err)
+}
+
+func TestExecutePipelineRun(t *testing.T) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&applicationmodel.Application{}, &clustermodel.Cluster{},
+		&regionmodels.Region{}, &membermodels.Member{}, &registrymodels.Registry{},
+		&prmodels.Pipelinerun{}, &groupmodels.Group{}, &prmodels.Check{},
+		&usermodel.User{}, &trmodels.TemplateRelease{}); err != nil {
+		panic(err)
+	}
+	param := managerparam.InitManager(db)
+	ctx := context.Background()
+	// nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(1),
+	})
+	mockCtl := gomock.NewController(t)
+
+	mockTektonInterface := tektonmock.NewMockInterface(mockCtl)
+
+	mockFactory := tektonftymock.NewMockFactory(mockCtl)
+	mockFactory.EXPECT().GetTekton(gomock.Any()).Return(mockTektonInterface, nil).AnyTimes()
+	tokenConfig := token.Config{
+		JwtSigningKey:         "hello",
+		CallbackTokenExpireIn: 24 * time.Hour,
+	}
+
+	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+
+	ctrl := controller{
+		prMgr:              param.PRMgr,
+		appMgr:             param.ApplicationMgr,
+		clusterMgr:         param.ClusterMgr,
+		envMgr:             param.EnvMgr,
+		regionMgr:          param.RegionMgr,
+		tektonFty:          mockFactory,
+		tokenSvc:           tokenservice.NewService(param, tokenConfig),
+		tokenConfig:        tokenConfig,
+		clusterGitRepo:     mockClusterGitRepo,
+		templateReleaseMgr: param.TemplateReleaseMgr,
+	}
+
+	_, err := param.UserMgr.Create(ctx, &usermodel.User{
+		Name: "Tony",
+	})
+	assert.NoError(t, err)
+
+	group, err := param.GroupMgr.Create(ctx, &groupmodels.Group{
+		Name: "test",
+	})
+	assert.NoError(t, err)
+
+	app, err := param.ApplicationMgr.Create(ctx, &applicationmodel.Application{
+		Name:    "test",
+		GroupID: group.ID,
+	}, nil)
+	assert.NoError(t, err)
+
+	registryID, err := param.RegistryMgr.Create(ctx, &registrymodels.Registry{
+		Name: "test",
+	})
+	assert.NoError(t, err)
+
+	region, err := param.RegionMgr.Create(ctx, &regionmodels.Region{
+		Name:       "test",
+		RegistryID: registryID,
+	})
+	assert.NoError(t, err)
+
+	cluster, err := param.ClusterMgr.Create(ctx, &clustermodel.Cluster{
+		Name:            "clusterGit",
+		ApplicationID:   app.ID,
+		GitURL:          "hello",
+		RegionName:      region.Name,
+		Template:        "javaapp",
+		TemplateRelease: "v1.0.0",
+	}, nil, nil)
+	assert.NoError(t, err)
+
+	_, err = param.TemplateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
+		TemplateName: "javaapp",
+		Name:         "v1.0.0",
+	})
+	assert.NoError(t, err)
+
+	mockClusterGitRepo.EXPECT().GetCluster(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.ClusterFiles{
+			PipelineJSONBlob:    map[string]interface{}{},
+			ApplicationJSONBlob: map[string]interface{}{},
+		}, nil).AnyTimes()
+
+	mockTektonInterface.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("hello", nil).AnyTimes()
+
+	PRPending, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Status:    string(pipelinemodel.StatusPending),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusPending), PRPending.Status)
+
+	PRReady, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Status:    string(pipelinemodel.StatusReady),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusReady), PRReady.Status)
+
+	err = ctrl.Execute(ctx, PRReady.ID, false)
+	assert.NoError(t, err)
+
+	err = ctrl.Execute(ctx, PRPending.ID, false)
+	assert.NotNil(t, err)
+
+	err = ctrl.Execute(ctx, PRPending.ID, true)
+	assert.NoError(t, err)
+
+	PRCancel, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Status:    string(pipelinemodel.StatusPending),
+	})
+	assert.NoError(t, err)
+
+	err = ctrl.Cancel(ctx, PRCancel.ID)
+	assert.NoError(t, err)
+
+	err = ctrl.Cancel(ctx, PRReady.ID)
+	assert.NotNil(t, err)
+}
+
+func TestCheckRun(t *testing.T) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&prmodels.CheckRun{}); err != nil {
+		panic(err)
+	}
+	param := managerparam.InitManager(db)
+	ctx := context.Background()
+	// nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(1),
+	})
+
+	ctrl := controller{
+		prMgr: param.PRMgr,
+	}
+
+	_, err := ctrl.CreateCheckRun(ctx, 1, &CreateCheckRunRequest{
+		Name:      "test",
+		Status:    string(prmodels.CheckStatusQueue),
+		Message:   "hello",
+		DetailURL: "https://www.google.com",
+	})
+	assert.NoError(t, err)
+
+	checkRuns, err := ctrl.ListCheckRuns(ctx, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, len(checkRuns), 1)
+}
+
+func TestMessage(t *testing.T) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&prmodels.PRMessage{}, &usermodel.User{}); err != nil {
+		panic(err)
+	}
+	param := managerparam.InitManager(db)
+	ctx := context.Background()
+	// nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(1),
+	})
+
+	_, err := param.UserMgr.Create(ctx, &usermodel.User{
+		Name: "Tony",
+	})
+	assert.NoError(t, err)
+
+	ctrl := controller{
+		prMgr:   param.PRMgr,
+		userMgr: param.UserMgr,
+	}
+
+	message1, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+		Content: "first",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, message1.Content, "first")
+
+	time.Sleep(time.Second)
+
+	message2, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+		Content: "second",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, message2.Content, "second")
+
+	count, messages, err := ctrl.ListPRMessages(ctx, 1, &q.Query{})
+	assert.NoError(t, err)
+	assert.Equal(t, count, 2)
+	assert.Equal(t, len(messages), 2)
+	assert.Equal(t, messages[0].Content, "first")
+	assert.Equal(t, messages[1].Content, "second")
 }

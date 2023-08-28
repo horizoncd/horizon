@@ -225,7 +225,8 @@ type CreatePipelineRunRequest struct {
 	Description string `json:"description"`
 	Action      string `json:"action"`
 	// for build deploy
-	Git           *BuildDeployRequestGit `json:"git,omitempty"`
-	ImageTag      string                 `json:"imageTag,omitempty"`
-	PipelinerunID uint                   `json:"pipelinerunID,omitempty"`
+	Git      *BuildDeployRequestGit `json:"git,omitempty"`
+	ImageTag string                 `json:"imageTag,omitempty"`
+	// for rollback
+	PipelinerunID uint `json:"pipelinerunID,omitempty"`
 }

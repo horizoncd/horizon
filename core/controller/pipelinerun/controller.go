@@ -359,7 +359,11 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 		return err
 	}
 
-	if !force {
+	if force {
+		if pr.Status != string(prmodels.StatusReady) && pr.Status != string(prmodels.StatusPending) {
+			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
+		}
+	} else {
 		if pr.Status != string(prmodels.StatusReady) {
 			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
 		}
@@ -467,6 +471,14 @@ func (c *controller) execute(ctx context.Context, pr *models.Pipelinerun) error 
 func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	const op = "pipelinerun controller: cancel pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return err
+	}
+
+	if pr.Status != string(prmodels.StatusPending) && pr.Status != string(prmodels.StatusReady) {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not pending or ready to cancel")
+	}
 	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
 }
 
@@ -486,7 +498,7 @@ func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
 		CheckID:       request.CheckID,
 		Status:        models.String2CheckRunStatus(request.Status),
 		Message:       request.Message,
-		PipilineRunID: pipelineRunID,
+		PipelineRunID: pipelineRunID,
 		DetailURL:     request.DetailURL,
 	})
 }
@@ -505,6 +517,7 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 		PipelineRunID: pipelineRunID,
 		Content:       request.Content,
 		CreatedBy:     currentUser.GetID(),
+		UpdatedBy:     currentUser.GetID(),
 	})
 }
 

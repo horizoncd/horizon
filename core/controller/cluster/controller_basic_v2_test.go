@@ -30,8 +30,8 @@ func TestCreatePipelineRun(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&regionmodels.Region{}, &membermodels.Member{}, &registrymodels.Registry{},
-		&prmodels.Pipelinerun{}, &groupmodels.Group{},
-		&usermodel.User{}, &prmodels.Check{}); err != nil {
+		&prmodels.Pipelinerun{}, &groupmodels.Group{}, &prmodels.Check{},
+		&usermodel.User{}); err != nil {
 		panic(err)
 	}
 	param := managerparam.InitManager(db)
@@ -41,17 +41,6 @@ func TestCreatePipelineRun(t *testing.T) {
 		Name: "Tony",
 		ID:   uint(1),
 	})
-	// request for build deploy
-	r := &CreatePipelineRunRequest{
-		Action:      prmodels.ActionBuildDeploy,
-		Title:       "test",
-		Description: "test",
-		Git: &BuildDeployRequestGit{
-			Commit: "test",
-		},
-		PipelinerunID: 1,
-	}
-
 	mockCtl := gomock.NewController(t)
 	mockGitGetter := mock_code.NewMockGitGetter(mockCtl)
 	mockGitGetter.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -109,6 +98,53 @@ func TestCreatePipelineRun(t *testing.T) {
 	}, nil, nil)
 	assert.NoError(t, err)
 
-	_, err = controller.CreatePipelineRun(ctx, clusterGit.ID, r)
+	// request for build deploy
+	requestBuildDeploy := &CreatePipelineRunRequest{
+		Action:      prmodels.ActionBuildDeploy,
+		Title:       "test",
+		Description: "test",
+		Git: &BuildDeployRequestGit{
+			Commit: "test",
+		},
+	}
+	pipelineBuildDeploy, err := controller.CreatePipelineRun(ctx, clusterGit.ID, requestBuildDeploy)
 	assert.NoError(t, err)
+	assert.Equal(t, "ready", pipelineBuildDeploy.Status)
+
+	mockClusterGitRepo.EXPECT().GetCluster(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.ClusterFiles{
+			PipelineJSONBlob:    map[string]interface{}{},
+			ApplicationJSONBlob: map[string]interface{}{},
+		}, nil)
+	mockClusterGitRepo.EXPECT().CompareConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("diff", nil)
+	requestDeploy := &CreatePipelineRunRequest{
+		Action:      prmodels.ActionDeploy,
+		Title:       "test",
+		Description: "test",
+	}
+	pipelineDeploy, err := controller.CreatePipelineRun(ctx, clusterGit.ID, requestDeploy)
+	assert.NoError(t, err)
+	assert.Equal(t, "ready", pipelineDeploy.Status)
+
+	requestRollback := &CreatePipelineRunRequest{
+		Action:        prmodels.ActionRollback,
+		Title:         "test",
+		Description:   "test",
+		PipelinerunID: pipelineBuildDeploy.ID,
+	}
+	_, err = controller.CreatePipelineRun(ctx, clusterGit.ID, requestRollback)
+	assert.NotNil(t, err)
+
+	_, err = param.PRMgr.Check.Create(ctx, &prmodels.Check{
+		Resource: common.Resource{
+			ResourceID: group.ID,
+			Type:       common.ResourceGroup,
+		},
+	})
+	assert.NoError(t, err)
+
+	pipelineBuildDeployPending, err := controller.CreatePipelineRun(ctx, clusterGit.ID, requestBuildDeploy)
+	assert.NoError(t, err)
+	assert.Equal(t, "pending", pipelineBuildDeployPending.Status)
 }
