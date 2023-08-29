@@ -75,7 +75,7 @@ func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Applicatio
 			cluster.GitRef = r.Git.Ref()
 			cluster.GitRefType = r.Git.RefType()
 		} else if application.GitURL != "" && r.Git != nil {
-			if r.Git.URL != application.GitURL {
+			if r.Git.URL != application.GitURL && r.Git.URL != "" {
 				// git url is not equal, do not inherit git info from application
 				cluster.GitURL = r.Git.URL
 				cluster.GitSubfolder = r.Git.Subfolder

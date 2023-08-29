@@ -101,6 +101,23 @@ func testImageURL(t *testing.T) {
 			},
 			want: "harbor.com/path/app/cluster:ceshi_zhongguohello_-117651f0",
 		},
+		{
+			name: "normal5",
+			args: args{
+				regionEntity: &regionmodels.RegionEntity{
+					Registry: &registrymodels.Registry{
+						Path:   "path",
+						Server: "https://harbor.com",
+					},
+				},
+				application: "app",
+				cluster:     "cluster",
+				branch:      "fix/bug",
+				// commit will be branch name if the repo could not be fetched
+				commit: "fix/bug",
+			},
+			want: "harbor.com/path/app/cluster:fix_bug-fix_bug",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

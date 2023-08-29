@@ -555,6 +555,7 @@ func test(t *testing.T) {
 		}, nil).AnyTimes()
 
 	appMgr := manager.ApplicationMgr
+	templateMgr := manager.TemplateMgr
 	trMgr := manager.TemplateReleaseMgr
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
@@ -636,6 +637,7 @@ func test(t *testing.T) {
 		cd:                   cd,
 		k8sutil:              k8sutil,
 		applicationMgr:       appMgr,
+		templateMgr:          templateMgr,
 		templateReleaseMgr:   trMgr,
 		templateSchemaGetter: templateSchemaGetter,
 		envMgr:               envMgr,
@@ -1302,6 +1304,7 @@ func testV2(t *testing.T) {
 		}, nil).Times(1)
 
 	appMgr := manager.ApplicationMgr
+	templateMgr := manager.TemplateMgr
 	trMgr := manager.TemplateReleaseMgr
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
@@ -1378,6 +1381,16 @@ func testV2(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
+	_, err = templateMgr.Create(ctx, &templatemodels.Template{
+		Name:      "rollout",
+		ChartName: "rollout",
+		GroupID:   0,
+		OnlyOwner: nil,
+		WithoutCI: true,
+		Type:      templatemodels.TemplateTypeWorkload,
+	})
+	assert.Nil(t, err)
+
 	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
 		TemplateName: templateName,
 		Name:         "v1.0.0",
@@ -1391,6 +1404,7 @@ func testV2(t *testing.T) {
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
 		applicationMgr:       appMgr,
+		templateMgr:          templateMgr,
 		templateReleaseMgr:   trMgr,
 		templateSchemaGetter: templateSchemaGetter,
 		envMgr:               envMgr,
@@ -1615,6 +1629,7 @@ func testUpgrade(t *testing.T) {
 		clusterMgr:            manager.ClusterMgr,
 		clusterGitRepo:        clusterGitRepo,
 		applicationMgr:        appMgr,
+		templateMgr:           manager.TemplateMgr,
 		templateReleaseMgr:    trMgr,
 		templateSchemaGetter:  templateSchemaGetter,
 		envMgr:                envMgr,
