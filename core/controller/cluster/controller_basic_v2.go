@@ -115,11 +115,9 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	if err := validateClusterName(params.Name); err != nil {
 		return nil, err
 	}
-	if params.Git != nil {
-		if params.Git.URL != "" {
-			if err := validate.CheckGitURL(params.Git.URL); err != nil {
-				return nil, err
-			}
+	if params.Git != nil && params.Git.URL != "" {
+		if err := validate.CheckGitURL(params.Git.URL); err != nil {
+			return nil, err
 		}
 	}
 	if params.Image != nil {
@@ -165,7 +163,11 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 		return nil, err
 	}
 
-	// 7. get templateRelease
+	// 7. get template and templateRelease
+	template, err := c.templateMgr.GetByName(ctx, buildTemplateInfo.TemplateInfo.Name)
+	if err != nil {
+		return nil, err
+	}
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
 		buildTemplateInfo.TemplateInfo.Name, buildTemplateInfo.TemplateInfo.Release)
 	if err != nil {
@@ -174,7 +176,7 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 
 	// 8. customize db infos
 	cluster, tags := params.toClusterModel(application,
-		envEntity, buildTemplateInfo, expireSeconds)
+		envEntity, buildTemplateInfo, template, expireSeconds)
 
 	// 9. update db and tags
 	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, params.ExtraMembers)
