@@ -121,4 +121,4 @@ GitOps是应用程序交付的最佳实践，Horizon遵循GitOps最佳实践。�
 + 微信群
 
   添加管理员微信，您将被邀请加入该群。
-  ![wechat](image/readme/wechat.jpg)
+  <img src="image/readme/wechat.jpg" alt="wechat" style="zoom:67%;" />

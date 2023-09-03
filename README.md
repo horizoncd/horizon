@@ -121,4 +121,4 @@ You can contact with us by the following ways:
   
   Add administrator wechat and you will be invited to join the group.
 
-  ![wechat](image/readme/wechat.jpg)
+  <img src="image/readme/wechat.jpg" alt="wechat" style="zoom: 67%;" />
