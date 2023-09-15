@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/pr/models"
 
 	"github.com/stretchr/testify/assert"
@@ -50,7 +51,10 @@ func TestCheck(t *testing.T) {
 	assert.Len(t, checks, 1)
 
 	// Test ListCheckRuns
-	checkRuns, err := checkManager.ListCheckRuns(ctx, checkRun.PipelineRunID)
+	keyWords := make(map[string]interface{})
+	keyWords[common.CheckrunQueryByPipelinerunID] = checkRun.PipelineRunID
+	query := q.New(keyWords)
+	checkRuns, err := checkManager.ListCheckRuns(ctx, query)
 	assert.NoError(t, err)
 	assert.Len(t, checkRuns, 1)
 	assert.Equal(t, checkRuns[0].Status, models.CheckStatusInProgress)

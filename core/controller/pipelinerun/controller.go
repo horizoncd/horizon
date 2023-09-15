@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
@@ -38,7 +39,6 @@ import (
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
-	"github.com/horizoncd/horizon/pkg/pr/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	prservice "github.com/horizoncd/horizon/pkg/pr/service"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
@@ -61,19 +61,20 @@ type Controller interface {
 	StopPipelinerun(ctx context.Context, pipelinerunID uint) error
 	StopPipelinerunForCluster(ctx context.Context, clusterID uint) error
 
-	CreateCheck(ctx context.Context, check *models.Check) (*models.Check, error)
-	UpdateCheckRunByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error
+	CreateCheck(ctx context.Context, check *prmodels.Check) (*prmodels.Check, error)
+	GetCheckRunByID(ctx context.Context, checkRunID uint) (*prmodels.CheckRun, error)
+	UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error
 
-	ListMessagesByPipelinerun(ctx context.Context, pipelinerunID uint, query *q.Query) (int, []*models.PRMessage, error)
+	ListMessagesByPipelinerun(ctx context.Context, pipelinerunID uint, query *q.Query) (int, []*prmodels.PRMessage, error)
 	// Execute runs a pipelineRun only if its state is ready.
 	Execute(ctx context.Context, pipelinerunID uint, force bool) error
 	// Cancel withdraws a pipelineRun only if its state is pending.
 	Cancel(ctx context.Context, pipelinerunID uint) error
 
-	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
-	CreateCheckRun(ctx context.Context, pipelineRunID uint, request *CreateCheckRunRequest) (*models.CheckRun, error)
+	ListCheckRuns(ctx context.Context, q *q.Query) ([]*prmodels.CheckRun, error)
+	CreateCheckRun(ctx context.Context, pipelineRunID uint, request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
 	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
-	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*models.PRMessage, error)
+	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*prmodels.PRMessage, error)
 }
 
 type controller struct {
@@ -328,22 +329,31 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
 }
 
-func (c *controller) CreateCheck(ctx context.Context, check *models.Check) (*models.Check, error) {
+func (c *controller) CreateCheck(ctx context.Context, check *prmodels.Check) (*prmodels.Check, error) {
 	const op = "pipelinerun controller: create check"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	return c.prMgr.Check.Create(ctx, check)
 }
 
-func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error {
+func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error {
 	const op = "pipelinerun controller: update check run"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.prMgr.Check.UpdateByID(ctx, checkRunID, newCheckRun)
+	err := c.prMgr.Check.UpdateByID(ctx, checkRunID, &prmodels.CheckRun{
+		Name:      request.Name,
+		Status:    prmodels.String2CheckRunStatus(request.Status),
+		Message:   request.Message,
+		DetailURL: request.DetailURL,
+	})
+	if err != nil {
+		return err
+	}
+	return c.updatePrStatusByCheckrunID(ctx, checkRunID)
 }
 
 func (c *controller) ListMessagesByPipelinerun(ctx context.Context,
-	pipelinerunID uint, query *q.Query) (int, []*models.PRMessage, error) {
+	pipelinerunID uint, query *q.Query) (int, []*prmodels.PRMessage, error) {
 	const op = "pipelinerun controller: list pr message"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -372,7 +382,7 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	return c.execute(ctx, pr)
 }
 
-func (c *controller) execute(ctx context.Context, pr *models.Pipelinerun) error {
+func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) error {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
@@ -456,6 +466,7 @@ func (c *controller) execute(ctx context.Context, pr *models.Pipelinerun) error 
 	err = c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
 		"ci_event_id": ciEventID,
 		"status":      prmodels.StatusRunning,
+		"started_at":  time.Now(),
 	})
 	if err != nil {
 		return err
@@ -482,29 +493,43 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
 }
 
-func (c *controller) ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error) {
+func (c *controller) ListCheckRuns(ctx context.Context, query *q.Query) ([]*prmodels.CheckRun, error) {
 	const op = "pipelinerun controller: list check runs"
 	defer wlog.Start(context.Background(), op).StopPrint()
-	return c.prMgr.Check.ListCheckRuns(ctx, pipelineRunID)
+	return c.prMgr.Check.ListCheckRuns(ctx, query)
+}
+
+func (c *controller) GetCheckRunByID(ctx context.Context, checkRunID uint) (*prmodels.CheckRun, error) {
+	const op = "pipelinerun controller: get check run by id"
+	defer wlog.Start(context.Background(), op).StopPrint()
+	return c.prMgr.Check.GetCheckRunByID(ctx, checkRunID)
 }
 
 func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
-	request *CreateCheckRunRequest) (*models.CheckRun, error) {
+	request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error) {
 	const op = "pipelinerun controller: create check run"
 	defer wlog.Start(context.Background(), op).StopPrint()
 
-	return c.prMgr.Check.CreateCheckRun(ctx, &models.CheckRun{
+	checkrun, err := c.prMgr.Check.CreateCheckRun(ctx, &prmodels.CheckRun{
 		Name:          request.Name,
 		CheckID:       request.CheckID,
-		Status:        models.String2CheckRunStatus(request.Status),
+		Status:        prmodels.String2CheckRunStatus(request.Status),
 		Message:       request.Message,
 		PipelineRunID: pipelineRunID,
 		DetailURL:     request.DetailURL,
 	})
+	if err != nil {
+		return nil, err
+	}
+	err = c.updatePrStatus(ctx, checkrun)
+	if err != nil {
+		return nil, err
+	}
+	return checkrun, nil
 }
 
 func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
-	request *CreatePrMessageRequest) (*models.PRMessage, error) {
+	request *CreatePrMessageRequest) (*prmodels.PRMessage, error) {
 	const op = "pipelinerun controller: create pr message"
 	defer wlog.Start(context.Background(), op).StopPrint()
 
@@ -513,7 +538,7 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 		return nil, err
 	}
 
-	return c.prMgr.Message.Create(ctx, &models.PRMessage{
+	return c.prMgr.Message.Create(ctx, &prmodels.PRMessage{
 		PipelineRunID: pipelineRunID,
 		Content:       request.Content,
 		CreatedBy:     currentUser.GetID(),
@@ -581,4 +606,74 @@ func (c *controller) ListPRMessages(ctx context.Context,
 		result = append(result, resultMsg)
 	}
 	return count, result, nil
+}
+
+func (c *controller) updatePrStatusByCheckrunID(ctx context.Context, checkrunID uint) error {
+	Checkrun, err := c.prMgr.Check.GetCheckRunByID(ctx, checkrunID)
+	if err != nil {
+		return err
+	}
+	return c.updatePrStatus(ctx, Checkrun)
+}
+
+func (c *controller) updatePrStatus(ctx context.Context, checkrun *prmodels.CheckRun) error {
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, checkrun.PipelineRunID)
+	if err != nil {
+		return err
+	}
+	if pipelinerun.Status != string(prmodels.StatusPending) {
+		return nil
+	}
+	prStatus, err := func() (prmodels.PipelineStatus, error) {
+		switch checkrun.Status {
+		case prmodels.CheckStatusCancelled:
+			return prmodels.StatusCancelled, nil
+		case prmodels.CheckStatusFailure:
+			return prmodels.StatusFailed, nil
+		case prmodels.CheckStatusSuccess:
+			return c.calculatePrSuccessStatus(ctx, pipelinerun)
+		default:
+			return prmodels.StatusPending, nil
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	if prStatus == prmodels.StatusPending {
+		return nil
+	}
+	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, checkrun.PipelineRunID, prStatus)
+}
+
+func (c *controller) calculatePrSuccessStatus(ctx context.Context,
+	pipelinerun *prmodels.Pipelinerun) (prmodels.PipelineStatus, error) {
+	cluster, err := c.clusterMgr.GetByIDIncludeSoftDelete(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return prmodels.StatusPending, err
+	}
+	checks, err := c.prSvc.GetCheckByResource(ctx, cluster.ID, common.ResourceCluster)
+	if err != nil {
+		return prmodels.StatusPending, err
+	}
+	runs, err := c.prMgr.Check.ListCheckRuns(ctx, q.New(map[string]interface{}{
+		common.CheckrunQueryByPipelinerunID: pipelinerun.ID},
+	))
+	if err != nil {
+		return prmodels.StatusPending, err
+	}
+	checkSuccessMap := make(map[uint]bool, len(checks))
+	for _, run := range runs {
+		if run.Status != prmodels.CheckStatusSuccess {
+			// if one checkrun is not success, return pending
+			return prmodels.StatusPending, nil
+		}
+		checkSuccessMap[run.CheckID] = true
+	}
+	for _, check := range checks {
+		if _, ok := checkSuccessMap[check.ID]; !ok {
+			// if one check is not run, return pending
+			return prmodels.StatusPending, nil
+		}
+	}
+	return prmodels.StatusReady, nil
 }

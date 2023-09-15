@@ -2,7 +2,9 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/horizoncd/horizon/lib/q"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -17,7 +19,8 @@ type CheckDAO interface {
 	UpdateByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error
 	// GetByResource get checks by resource
 	GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error)
-	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
+	GetCheckRunByID(ctx context.Context, checkRunID uint) (*models.CheckRun, error)
+	ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error)
 	CreateCheckRun(ctx context.Context, run *models.CheckRun) (*models.CheckRun, error)
 }
 
@@ -38,7 +41,7 @@ func (d *checkDAO) Create(ctx context.Context, check *models.Check) (*models.Che
 }
 
 func (d *checkDAO) UpdateByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error {
-	result := d.db.WithContext(ctx).Model(&models.CheckRun{}).Where("id = ?", checkRunID).Updates(newCheckRun)
+	result := d.db.WithContext(ctx).Model(&models.CheckRun{}).Debug().Where("id = ?", checkRunID).Updates(newCheckRun)
 
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.CheckInDB, result.Error.Error())
@@ -70,10 +73,26 @@ func (d *checkDAO) GetByResource(ctx context.Context, resources ...common.Resour
 	return checks, nil
 }
 
-func (d *checkDAO) ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error) {
+func (d *checkDAO) ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error) {
 	var checkRuns []*models.CheckRun
-	result := d.db.Where("pipeline_run_id = ?", pipelineRunID).
-		Find(&checkRuns)
+
+	statement := d.db.WithContext(ctx)
+	if query != nil {
+		for k, v := range query.Keywords {
+			switch k {
+			case common.CheckrunQueryFilter:
+				statement = statement.Where("name like ?", fmt.Sprintf("%%%v%%", v))
+			case common.CheckrunQueryByStatus:
+				status := models.String2CheckRunStatus(v.(string))
+				statement = statement.Where("status = ?", status)
+			case common.CheckrunQueryByPipelinerunID:
+				statement = statement.Where("pipeline_run_id = ?", v)
+			case common.CheckrunQueryByCheckID:
+				statement = statement.Where("check_id = ?", v)
+			}
+		}
+	}
+	result := statement.Debug().Find(&checkRuns)
 
 	if result.RowsAffected == 0 {
 		return []*models.CheckRun{}, nil
@@ -92,4 +111,17 @@ func (d *checkDAO) CreateCheckRun(ctx context.Context, run *models.CheckRun) (*m
 	}
 
 	return run, result.Error
+}
+
+func (d *checkDAO) GetCheckRunByID(ctx context.Context, checkRunID uint) (*models.CheckRun, error) {
+	var checkRun models.CheckRun
+	result := d.db.WithContext(ctx).Where("id = ?", checkRunID).Find(&checkRun)
+
+	if result.RowsAffected == 0 {
+		return nil, herrors.NewErrNotFound(herrors.CheckRunInDB, "check run not found")
+	}
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.CheckRunInDB, result.Error.Error())
+	}
+	return &checkRun, nil
 }

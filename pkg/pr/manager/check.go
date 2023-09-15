@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 
+	"github.com/horizoncd/horizon/lib/q"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -17,7 +18,8 @@ type CheckManager interface {
 	UpdateByID(ctx context.Context, checkRunID uint, newCheckRun *models.CheckRun) error
 	// GetByResource get checks by resource
 	GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error)
-	ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error)
+	GetCheckRunByID(ctx context.Context, checkRunID uint) (*models.CheckRun, error)
+	ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error)
 	CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error)
 }
 
@@ -43,8 +45,15 @@ func (m *checkManager) GetByResource(ctx context.Context, resources ...common.Re
 	return m.dao.GetByResource(ctx, resources...)
 }
 
-func (m *checkManager) ListCheckRuns(ctx context.Context, pipelineRunID uint) ([]*models.CheckRun, error) {
-	return m.dao.ListCheckRuns(ctx, pipelineRunID)
+func (m *checkManager) GetCheckRunByID(ctx context.Context, checkRunID uint) (*models.CheckRun, error) {
+	return m.dao.GetCheckRunByID(ctx, checkRunID)
+}
+
+func (m *checkManager) ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error) {
+	if query == nil {
+		query = &q.Query{}
+	}
+	return m.dao.ListCheckRuns(ctx, query)
 }
 
 func (m *checkManager) CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error) {

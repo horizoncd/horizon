@@ -63,10 +63,11 @@ type PrMessage struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-type CreateCheckRunRequest struct {
-	Name      string `json:"name"`
-	CheckID   uint   `json:"checkId"`
-	Status    string `json:"status"`
-	Message   string `json:"message"`
-	DetailURL string `json:"detailUrl"`
+type CreateOrUpdateCheckRunRequest struct {
+	Name       string `json:"name"`
+	CheckID    uint   `json:"checkId"`
+	Status     string `json:"status"`
+	Message    string `json:"message"`
+	ExternalID string `json:"externalId"`
+	DetailURL  string `json:"detailUrl"`
 }

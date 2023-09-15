@@ -137,6 +137,7 @@ var supportedEvents = map[string]string{
 	models.ClusterAction:          "Cluster has triggered an action",
 	models.ClusterPodsRescheduled: "Pods has been deleted to reschedule",
 	models.ClusterKubernetesEvent: "Kubernetes event associated with cluster has been triggered",
+	models.PipelinerunCreated:     "New pipelinerun has been created",
 }
 
 func (m *manager) ListSupportEvents() map[string]string {

@@ -539,7 +539,7 @@ func TestCheckRun(t *testing.T) {
 		prMgr: param.PRMgr,
 	}
 
-	_, err := ctrl.CreateCheckRun(ctx, 1, &CreateCheckRunRequest{
+	_, err := ctrl.CreateCheckRun(ctx, 1, &CreateOrUpdateCheckRunRequest{
 		Name:      "test",
 		Status:    string(prmodels.CheckStatusQueue),
 		Message:   "hello",
@@ -547,7 +547,10 @@ func TestCheckRun(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	checkRuns, err := ctrl.ListCheckRuns(ctx, 1)
+	keyWords := make(map[string]interface{})
+	keyWords[common.CheckrunQueryByPipelinerunID] = 1
+	query := q.New(keyWords)
+	checkRuns, err := ctrl.ListCheckRuns(ctx, query)
 	assert.NoError(t, err)
 	assert.Equal(t, len(checkRuns), 1)
 }

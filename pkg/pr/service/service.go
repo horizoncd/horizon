@@ -69,7 +69,7 @@ func (s *Service) OfPipelineBasic(ctx context.Context,
 
 func (s *Service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
 	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*models.PipelineBasic, error) {
-	var pipelineBasics []*models.PipelineBasic
+	pipelineBasics := make([]*models.PipelineBasic, 0, len(prs))
 	for _, pr := range prs {
 		pipelineBasic, err := s.OfPipelineBasic(ctx, pr, firstCanRollbackPipelinerun)
 		if err != nil {
@@ -130,6 +130,10 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 			Type:       common.ResourceGroup,
 		})
 	}
+	resources = append(resources, common.Resource{
+		ResourceID: 0,
+		Type:       common.ResourceGroup,
+	})
 
 	return s.manager.PRMgr.Check.GetByResource(ctx, resources...)
 }

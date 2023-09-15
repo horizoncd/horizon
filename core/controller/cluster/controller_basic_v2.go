@@ -685,6 +685,8 @@ func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
+	c.recordPipelinerunCreatedEvent(ctx, pipelineRun)
+
 	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, pipelineRun.ClusterID)
 	if err != nil {
 		return nil, err
@@ -827,4 +829,17 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		LastConfigCommit: lastConfigCommitSHA,
 		ConfigCommit:     configCommitSHA,
 	}, nil
+}
+
+func (c *controller) recordPipelinerunCreatedEvent(ctx context.Context, pr *prmodels.Pipelinerun) {
+	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceID:   pr.ID,
+			ResourceType: common.ResourcePipelinerun,
+			EventType:    eventmodels.PipelinerunCreated,
+		},
+	})
+	if err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 }

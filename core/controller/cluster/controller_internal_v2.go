@@ -178,8 +178,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 10. record event
-	c.recordEvent(ctx, pr, cluster)
+	// 10. record cluster event
+	c.recordClusterEvent(ctx, pr, cluster)
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
@@ -187,7 +187,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}, nil
 }
 
-func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
+func (c *controller) recordClusterEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
 	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,

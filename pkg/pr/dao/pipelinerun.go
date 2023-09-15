@@ -180,12 +180,12 @@ func (d *pipelinerunDAO) GetByClusterID(ctx context.Context, clusterID uint,
 	offset := query.Offset()
 	limit := query.Limit()
 
-	sql := d.db.WithContext(ctx).Table("tb_pipelinerun").Where("cluster_id = ?", clusterID).
+	sql := d.db.WithContext(ctx).Debug().Table("tb_pipelinerun").Where("cluster_id = ?", clusterID).
 		Order("created_at desc")
 	if canRollback {
 		// remove the first canRollback pipelinerun
 		offset++
-		sql = sql.Where("action = 'restart'").Where("status = 'ok'")
+		sql = sql.Where("action != 'restart'").Where("status = 'ok'")
 	}
 
 	for k, v := range query.Keywords {
@@ -199,6 +199,10 @@ func (d *pipelinerunDAO) GetByClusterID(ctx context.Context, clusterID uint,
 	result := sql.Count(&total)
 	if result.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	if canRollback && total > 0 {
+		// ignore the first canRollback pipelinerun
+		total--
 	}
 
 	var pipelineruns []*models.Pipelinerun
