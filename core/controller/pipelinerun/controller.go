@@ -72,7 +72,8 @@ type Controller interface {
 	Cancel(ctx context.Context, pipelinerunID uint) error
 
 	ListCheckRuns(ctx context.Context, q *q.Query) ([]*prmodels.CheckRun, error)
-	CreateCheckRun(ctx context.Context, pipelineRunID uint, request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
+	CreateCheckRun(ctx context.Context, pipelineRunID uint,
+		request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
 	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
 	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*prmodels.PRMessage, error)
 }
@@ -336,7 +337,8 @@ func (c *controller) CreateCheck(ctx context.Context, check *prmodels.Check) (*p
 	return c.prMgr.Check.Create(ctx, check)
 }
 
-func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error {
+func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint,
+	request *CreateOrUpdateCheckRunRequest) error {
 	const op = "pipelinerun controller: update check run"
 	defer wlog.Start(ctx, op).StopPrint()
 

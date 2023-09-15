@@ -15,6 +15,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/git"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
@@ -31,7 +32,7 @@ func TestCreatePipelineRun(t *testing.T) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&regionmodels.Region{}, &membermodels.Member{}, &registrymodels.Registry{},
 		&prmodels.Pipelinerun{}, &groupmodels.Group{}, &prmodels.Check{},
-		&usermodel.User{}); err != nil {
+		&usermodel.User{}, &eventmodels.Event{}); err != nil {
 		panic(err)
 	}
 	param := managerparam.InitManager(db)
@@ -61,6 +62,7 @@ func TestCreatePipelineRun(t *testing.T) {
 		regionMgr:      param.RegionMgr,
 		clusterGitRepo: mockClusterGitRepo,
 		commitGetter:   mockGitGetter,
+		eventMgr:       param.EventMgr,
 	}
 
 	_, err := param.UserMgr.Create(ctx, &usermodel.User{

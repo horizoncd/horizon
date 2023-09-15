@@ -524,7 +524,9 @@ func TestExecutePipelineRun(t *testing.T) {
 
 func TestCheckRun(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&prmodels.CheckRun{}); err != nil {
+	if err := db.AutoMigrate(&groupmodels.Group{}, &membermodels.Member{}, &applicationmodel.Application{},
+		&clustermodel.Cluster{}, &prmodels.CheckRun{}, &prmodels.Pipelinerun{},
+		&usermodel.User{}, &prmodels.Check{}); err != nil {
 		panic(err)
 	}
 	param := managerparam.InitManager(db)
@@ -536,19 +538,73 @@ func TestCheckRun(t *testing.T) {
 	})
 
 	ctrl := controller{
-		prMgr: param.PRMgr,
+		clusterMgr: param.ClusterMgr,
+		prMgr:      param.PRMgr,
+		prSvc:      prservice.NewService(param),
 	}
 
-	_, err := ctrl.CreateCheckRun(ctx, 1, &CreateOrUpdateCheckRunRequest{
+	_, err := param.UserMgr.Create(ctx, &usermodel.User{
+		Name: "Tony",
+	})
+	assert.NoError(t, err)
+
+	group, err := param.GroupMgr.Create(ctx, &groupmodels.Group{
+		Name: "test",
+	})
+	assert.NoError(t, err)
+
+	app, err := param.ApplicationMgr.Create(ctx, &applicationmodel.Application{
+		Name:    "test",
+		GroupID: group.ID,
+	}, nil)
+	assert.NoError(t, err)
+
+	cluster, err := param.ClusterMgr.Create(ctx, &clustermodel.Cluster{
+		Name:          "cluster",
+		ApplicationID: app.ID,
+	}, nil, nil)
+	assert.NoError(t, err)
+
+	// create a check under cluster
+	check, err := ctrl.CreateCheck(ctx, &pipelinemodel.Check{
+		Resource: common.Resource{
+			ResourceID: cluster.ID,
+			Type:       "clusters",
+		},
+	})
+	assert.NoError(t, err)
+
+	pr, err := ctrl.prMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ID:        1,
+		Status:    string(prmodels.StatusPending),
+		ClusterID: cluster.ID,
+	})
+	assert.NoError(t, err)
+
+	_, err = ctrl.CreateCheckRun(ctx, pr.ID, &CreateOrUpdateCheckRunRequest{
 		Name:      "test",
 		Status:    string(prmodels.CheckStatusQueue),
+		CheckID:   check.ID,
 		Message:   "hello",
 		DetailURL: "https://www.google.com",
 	})
 	assert.NoError(t, err)
 
+	err = ctrl.UpdateCheckRunByID(ctx, 1, &CreateOrUpdateCheckRunRequest{
+		Status: string(prmodels.CheckStatusSuccess),
+	})
+	assert.NoError(t, err)
+
+	cr, err := ctrl.GetCheckRunByID(ctx, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, string(cr.Status), string(prmodels.CheckStatusSuccess))
+
+	prInDB, err := ctrl.GetPipelinerun(ctx, pr.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(prInDB.Status), string(prmodels.StatusReady))
+
 	keyWords := make(map[string]interface{})
-	keyWords[common.CheckrunQueryByPipelinerunID] = 1
+	keyWords[common.CheckrunQueryByPipelinerunID] = strconv.Itoa(int(pr.ID))
 	query := q.New(keyWords)
 	checkRuns, err := ctrl.ListCheckRuns(ctx, query)
 	assert.NoError(t, err)

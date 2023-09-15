@@ -333,7 +333,7 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 			} else if !ok {
 				continue
 			}
-			log.Debugf(ctx, "event %d matches webhook %d", event.ID, webhook.URL)
+			log.Debugf(ctx, "event %d matches webhook %s", event.ID, webhook.URL)
 			// 3.2 add webhook to the list
 			if _, ok := conditionsToCreate[event.ID]; !ok {
 				conditionsToCreate[event.ID] = map[uint]messageDependency{}

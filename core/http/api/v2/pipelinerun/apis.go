@@ -211,7 +211,6 @@ func (a *API) ListCheckRuns(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, checkRuns)
-
 }
 
 func (a *API) CreateCheckRun(c *gin.Context) {

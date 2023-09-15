@@ -76,7 +76,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/checkruns"),
+			Pattern:     "/checkruns",
 			HandlerFunc: api.ListCheckRuns,
 		},
 		{
@@ -86,12 +86,12 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/pipelineruns/:%v/message", _pipelinerunIDParam),
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/messages", _pipelinerunIDParam),
 			HandlerFunc: api.ListPrMessages,
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/pipelineruns/:%v/message", _pipelinerunIDParam),
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/messages", _pipelinerunIDParam),
 			HandlerFunc: api.CreatePrMessage,
 		},
 	}

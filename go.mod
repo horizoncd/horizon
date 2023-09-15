@@ -13,7 +13,7 @@ require (
 	github.com/go-redis/redis/v8 v8.3.3
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/golang/mock v1.6.0
-	github.com/google/go-containerregistry v0.1.3 // indirect
+	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
