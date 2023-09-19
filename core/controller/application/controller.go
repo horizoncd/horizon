@@ -590,6 +590,16 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		}
 	}
 
+	// 6. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationUpdated,
+			ResourceID:   appExistsInDB.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 	return err
 }
 
