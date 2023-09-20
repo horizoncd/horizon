@@ -441,6 +441,10 @@ func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) erro
 	case codemodels.GitRefTypeBranch:
 		prGit.Branch = pr.GitRef
 	}
+	pipelineJSONBlob := make(map[string]interface{})
+	if clusterFiles.PipelineJSONBlob != nil {
+		pipelineJSONBlob = clusterFiles.PipelineJSONBlob
+	}
 
 	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
 		Action:           pr.Action,
@@ -453,7 +457,7 @@ func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) erro
 		ImageURL:         pr.ImageURL,
 		Operator:         currentUser.GetEmail(),
 		PipelinerunID:    pr.ID,
-		PipelineJSONBlob: clusterFiles.PipelineJSONBlob,
+		PipelineJSONBlob: pipelineJSONBlob,
 		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,

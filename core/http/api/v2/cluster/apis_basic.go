@@ -549,6 +549,11 @@ func (a *API) CreatePipelineRun(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		if perror.Cause(err) == herrors.ErrClusterNoChange || perror.Cause(err) == herrors.ErrShouldBuildDeployFirst {
+			log.WithFiled(c, "op", op).Errorf("%+v", err)
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
