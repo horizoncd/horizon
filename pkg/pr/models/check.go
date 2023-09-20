@@ -8,7 +8,7 @@ import (
 type CheckRunStatus string
 
 const (
-	CheckStatusQueue      CheckRunStatus = "Queue"
+	CheckStatusPending    CheckRunStatus = "Pending"
 	CheckStatusInProgress CheckRunStatus = "InProgress"
 	CheckStatusSuccess    CheckRunStatus = "Success"
 	CheckStatusFailure    CheckRunStatus = "Failure"
@@ -16,7 +16,7 @@ const (
 )
 
 var CheckRunStatusArr = [...]CheckRunStatus{
-	CheckStatusQueue,
+	CheckStatusPending,
 	CheckStatusInProgress,
 	CheckStatusSuccess,
 	CheckStatusFailure,
@@ -29,7 +29,7 @@ func String2CheckRunStatus(s string) CheckRunStatus {
 			return status
 		}
 	}
-	return CheckStatusQueue
+	return CheckStatusPending
 }
 
 type Check struct {

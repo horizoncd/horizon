@@ -583,7 +583,7 @@ func TestCheckRun(t *testing.T) {
 
 	_, err = ctrl.CreateCheckRun(ctx, pr.ID, &CreateOrUpdateCheckRunRequest{
 		Name:      "test",
-		Status:    string(prmodels.CheckStatusQueue),
+		Status:    string(prmodels.CheckStatusPending),
 		CheckID:   check.ID,
 		Message:   "hello",
 		DetailURL: "https://www.google.com",
@@ -603,10 +603,7 @@ func TestCheckRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(prInDB.Status), string(prmodels.StatusReady))
 
-	keyWords := make(map[string]interface{})
-	keyWords[common.CheckrunQueryByPipelinerunID] = strconv.Itoa(int(pr.ID))
-	query := q.New(keyWords)
-	checkRuns, err := ctrl.ListCheckRuns(ctx, query)
+	checkRuns, err := ctrl.ListCheckRuns(ctx, pr.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, len(checkRuns), 1)
 }

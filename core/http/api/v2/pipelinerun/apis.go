@@ -204,13 +204,14 @@ func (a *API) Cancel(c *gin.Context) {
 }
 
 func (a *API) ListCheckRuns(c *gin.Context) {
-	query := parseContext(c)
-	checkRuns, err := a.prCtl.ListCheckRuns(c, query)
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-	response.SuccessWithData(c, checkRuns)
+	a.withPipelinerunID(c, func(pipelinerunID uint) {
+		checkRuns, err := a.prCtl.ListCheckRuns(c, pipelinerunID)
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		response.SuccessWithData(c, checkRuns)
+	})
 }
 
 func (a *API) CreateCheckRun(c *gin.Context) {

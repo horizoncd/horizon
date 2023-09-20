@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/lib/q"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -11,6 +10,9 @@ import (
 	"github.com/horizoncd/horizon/pkg/pr/models"
 )
 
+// nolint
+//
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/pipelinerun/manager/mock_check_manager.go
 type CheckManager interface {
 	// Create create a check
 	Create(ctx context.Context, check *models.Check) (*models.Check, error)
@@ -19,7 +21,7 @@ type CheckManager interface {
 	// GetByResource get checks by resource
 	GetByResource(ctx context.Context, resources ...common.Resource) ([]*models.Check, error)
 	GetCheckRunByID(ctx context.Context, checkRunID uint) (*models.CheckRun, error)
-	ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error)
+	ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*models.CheckRun, error)
 	CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error)
 }
 
@@ -49,11 +51,8 @@ func (m *checkManager) GetCheckRunByID(ctx context.Context, checkRunID uint) (*m
 	return m.dao.GetCheckRunByID(ctx, checkRunID)
 }
 
-func (m *checkManager) ListCheckRuns(ctx context.Context, query *q.Query) ([]*models.CheckRun, error) {
-	if query == nil {
-		query = &q.Query{}
-	}
-	return m.dao.ListCheckRuns(ctx, query)
+func (m *checkManager) ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*models.CheckRun, error) {
+	return m.dao.ListCheckRuns(ctx, pipelinerunID)
 }
 
 func (m *checkManager) CreateCheckRun(ctx context.Context, checkRun *models.CheckRun) (*models.CheckRun, error) {

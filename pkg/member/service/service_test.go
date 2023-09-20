@@ -630,7 +630,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 //			ret: sph(3), jerry(2), cat(4)
 //
 // nolint
-func TestGetPipelinerunMember(t *testing.T) {
+func TestGetPipelinerunAndCheckrunMember(t *testing.T) {
 	createEnv(t)
 
 	mockCtrl := gomock.NewController(t)
@@ -652,6 +652,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 			ID:       1,
 		}
 		pipelineRunID uint = 23123
+		checkrunID    uint = 12138
 	)
 	users := []usermodels.User{
 		{
@@ -732,6 +733,12 @@ func TestGetPipelinerunMember(t *testing.T) {
 		ClusterID: cluster4ID,
 	}, nil).AnyTimes()
 
+	checkMockManager := pipelinemock.NewMockCheckManager(mockCtrl)
+	checkMockManager.EXPECT().GetCheckRunByID(gomock.Any(), checkrunID).
+		Return(&pipelinemodels.CheckRun{
+			PipelineRunID: pipelineRunID,
+		}, nil).AnyTimes()
+
 	roleSvc := rolemock.NewMockService(mockCtrl)
 	originService := &service{
 		memberManager:             manager.MemberMgr,
@@ -740,6 +747,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		applicationClusterManager: clusterManager,
 		prMgr: &prmanager.PRManager{
 			PipelineRun: pipelineMockManager,
+			Check:       checkMockManager,
 		},
 		roleService: roleSvc,
 		userManager: manager.UserMgr,
@@ -806,6 +814,11 @@ func TestGetPipelinerunMember(t *testing.T) {
 	pipelineRunIDStr := strconv.FormatUint(uint64(pipelineRunID), 10)
 	members, err := s.GetMemberOfResource(ctx, common.ResourcePipelinerun, pipelineRunIDStr)
 	assert.Nil(t, err)
+	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
+
+	members, err = s.GetMemberOfResource(ctx, common.ResourceCheckrun,
+		strconv.FormatUint(uint64(checkrunID), 10))
+	assert.NoError(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
 
 	members, err = s.UpdateMember(ctx, members.ID, roleservice.Maintainer)

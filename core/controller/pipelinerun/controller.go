@@ -71,7 +71,7 @@ type Controller interface {
 	// Cancel withdraws a pipelineRun only if its state is pending.
 	Cancel(ctx context.Context, pipelinerunID uint) error
 
-	ListCheckRuns(ctx context.Context, q *q.Query) ([]*prmodels.CheckRun, error)
+	ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*prmodels.CheckRun, error)
 	CreateCheckRun(ctx context.Context, pipelineRunID uint,
 		request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
 	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
@@ -495,22 +495,22 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
 }
 
-func (c *controller) ListCheckRuns(ctx context.Context, query *q.Query) ([]*prmodels.CheckRun, error) {
+func (c *controller) ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*prmodels.CheckRun, error) {
 	const op = "pipelinerun controller: list check runs"
-	defer wlog.Start(context.Background(), op).StopPrint()
-	return c.prMgr.Check.ListCheckRuns(ctx, query)
+	defer wlog.Start(ctx, op).StopPrint()
+	return c.prMgr.Check.ListCheckRuns(ctx, pipelinerunID)
 }
 
 func (c *controller) GetCheckRunByID(ctx context.Context, checkRunID uint) (*prmodels.CheckRun, error) {
 	const op = "pipelinerun controller: get check run by id"
-	defer wlog.Start(context.Background(), op).StopPrint()
+	defer wlog.Start(ctx, op).StopPrint()
 	return c.prMgr.Check.GetCheckRunByID(ctx, checkRunID)
 }
 
 func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
 	request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error) {
 	const op = "pipelinerun controller: create check run"
-	defer wlog.Start(context.Background(), op).StopPrint()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	checkrun, err := c.prMgr.Check.CreateCheckRun(ctx, &prmodels.CheckRun{
 		Name:          request.Name,
@@ -533,7 +533,7 @@ func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
 func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 	request *CreatePrMessageRequest) (*prmodels.PRMessage, error) {
 	const op = "pipelinerun controller: create pr message"
-	defer wlog.Start(context.Background(), op).StopPrint()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -551,7 +551,7 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 func (c *controller) ListPRMessages(ctx context.Context,
 	pipelineRunID uint, query *q.Query) (int, []*PrMessage, error) {
 	const op = "pipelinerun controller: list pr messages"
-	defer wlog.Start(context.Background(), op).StopPrint()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	count, messages, err := c.prMgr.Message.List(ctx, pipelineRunID, query)
 	if err != nil {
@@ -657,9 +657,7 @@ func (c *controller) calculatePrSuccessStatus(ctx context.Context,
 	if err != nil {
 		return prmodels.StatusPending, err
 	}
-	runs, err := c.prMgr.Check.ListCheckRuns(ctx, q.New(map[string]interface{}{
-		common.CheckrunQueryByPipelinerunID: pipelinerun.ID},
-	))
+	runs, err := c.prMgr.Check.ListCheckRuns(ctx, pipelinerun.ID)
 	if err != nil {
 		return prmodels.StatusPending, err
 	}

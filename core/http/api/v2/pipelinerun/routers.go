@@ -76,7 +76,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/checkruns",
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/checkruns", _pipelinerunIDParam),
 			HandlerFunc: api.ListCheckRuns,
 		},
 		{

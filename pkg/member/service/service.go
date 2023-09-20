@@ -170,6 +170,19 @@ func (s *service) getOauthAppMember(ctx context.Context, clientID string) (*mode
 	return s.getMember(ctx, common.ResourceGroup, app.OwnerID, models.MemberUser, currentUser.GetID())
 }
 
+func (s *service) getCheckrunMember(ctx context.Context, checkrunID uint) (*models.Member, error) {
+	checkrun, err := s.prMgr.Check.GetCheckRunByID(ctx, checkrunID)
+	if err != nil {
+		return nil, err
+	}
+	if checkrun == nil {
+		msg := fmt.Sprintf("checkrun does not found, checkrunID = %d", checkrunID)
+		log.Warningf(ctx, msg)
+		return nil, herror.NewErrNotFound(herror.MemberInfoInDB, msg)
+	}
+	return s.getPipelinerunMember(ctx, checkrun.PipelineRunID)
+}
+
 func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) (*models.Member, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -238,12 +251,16 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 		return nil, err
 	}
 	var memberInfo *models.Member
-	if resourceType == common.ResourcePipelinerun {
+	switch resourceType {
+	case common.ResourceCheckrun:
+		resourceID, _ := strconv.Atoi(resourceIDStr)
+		memberInfo, err = s.getCheckrunMember(ctx, uint(resourceID))
+	case common.ResourcePipelinerun:
 		resourceID, _ := strconv.Atoi(resourceIDStr)
 		memberInfo, err = s.getPipelinerunMember(ctx, uint(resourceID))
-	} else if resourceType == common.ResourceOauthApps {
+	case common.ResourceOauthApps:
 		memberInfo, err = s.getOauthAppMember(ctx, resourceIDStr)
-	} else {
+	default:
 		resourceID, _ := strconv.Atoi(resourceIDStr)
 		memberInfo, err = s.getMember(ctx, resourceType, uint(resourceID), models.MemberUser, currentUser.GetID())
 	}

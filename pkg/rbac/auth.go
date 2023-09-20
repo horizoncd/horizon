@@ -68,7 +68,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 		return auth.DecisionAllow, AdminAllow, nil
 	}
 
-	// TODO(tom): members and pipelineruns and environments need to add to auth check
+	// TODO(tom): members, users, accesstokens and environments need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
 		attr.GetResource() == "environments" || attr.GetResource() == "users" ||
 		attr.GetResource() == "personalaccesstokens" ||
