@@ -316,38 +316,3 @@ func (a *API) withCheckrunID(c *gin.Context, f func(pipelineRunID uint)) {
 	}
 	f(uint(id))
 }
-
-func parseContext(c *gin.Context) *q.Query {
-	keywords := make(map[string]interface{})
-
-	filter := c.Query(common.CheckrunQueryFilter)
-	if filter != "" {
-		keywords[common.CheckrunQueryFilter] = filter
-	}
-
-	status := c.Query(common.CheckrunQueryByStatus)
-	if status != "" {
-		keywords[common.CheckrunQueryByStatus] = status
-	}
-
-	pipelinerunIDStr := c.Query(common.CheckrunQueryByPipelinerunID)
-	if pipelinerunIDStr != "" {
-		pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-			return nil
-		}
-		keywords[common.CheckrunQueryByPipelinerunID] = pipelinerunID
-	}
-
-	checkIDStr := c.Query(common.CheckrunQueryByCheckID)
-	if checkIDStr != "" {
-		checkID, err := strconv.ParseUint(checkIDStr, 10, 0)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-			return nil
-		}
-		keywords[common.CheckrunQueryByCheckID] = checkID
-	}
-	return q.New(keywords)
-}
