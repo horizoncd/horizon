@@ -55,7 +55,7 @@ CREATE TABLE `tb_pr_msg`
 (
   `id`              bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `pipeline_run_id` bigint(20) unsigned NOT NULL COMMENT 'pipeline run id',
-  `content`         text       NOT NULL DEFAULT '' COMMENT 'content of message',
+  `content`         text                NOT NULL COMMENT 'content of message',
   `created_at`      datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`      datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_by`      bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'creator',
