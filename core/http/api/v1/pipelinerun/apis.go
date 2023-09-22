@@ -132,7 +132,7 @@ func (a *API) Get(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	resp, err := a.prCtl.Get(c, uint(pipelinerunID))
+	resp, err := a.prCtl.GetPipelinerun(c, uint(pipelinerunID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
@@ -160,7 +160,7 @@ func (a *API) List(c *gin.Context) {
 		canRollback = false
 	}
 
-	total, pipelines, err := a.prCtl.List(c, uint(clusterID), canRollback, q.Query{
+	total, pipelines, err := a.prCtl.ListPipelineruns(c, uint(clusterID), canRollback, q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})

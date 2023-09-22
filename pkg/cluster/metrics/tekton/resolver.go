@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 )
 
 type WrappedPipelineRun struct {

@@ -38,6 +38,7 @@ const (
 	ClusterFreed           string = "clusters_freed"
 	ClusterKubernetesEvent string = "clusters_kubernetes_event"
 	ClusterAction                 = "clusters_action"
+	PipelinerunCreated     string = "pipelineruns_created"
 	// TODO: add group events
 )
 

@@ -27,6 +27,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/git"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
@@ -358,7 +360,7 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 	}
 
 	// 8. get latest deployed commit
-	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	latestPR, err := c.prMgr.PipelineRun.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -658,4 +660,186 @@ func (c *controller) ToggleLikeStatus(ctx context.Context, clusterID uint, like 
 		return err
 	}
 	return nil
+}
+
+func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
+	r *CreatePipelineRunRequest) (*prmodels.PipelineBasic, error) {
+	const op = "pipelinerun controller: create pipelinerun"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pipelineRun, err := c.createPipelineRun(ctx, clusterID, r)
+	if err != nil {
+		return nil, err
+	}
+
+	// 找一下是否需要check，如果不需要则直接设为ready
+	checks, err := c.prSvc.GetCheckByResource(ctx, clusterID, common.ResourceCluster)
+	if err != nil {
+		return nil, err
+	}
+	if len(checks) == 0 {
+		pipelineRun.Status = string(prmodels.StatusReady)
+	}
+
+	if pipelineRun, err = c.prMgr.PipelineRun.Create(ctx, pipelineRun); err != nil {
+		return nil, err
+	}
+
+	c.recordPipelinerunCreatedEvent(ctx, pipelineRun)
+
+	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, pipelineRun.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	return c.prSvc.OfPipelineBasic(ctx, pipelineRun, firstCanRollbackPipelinerun)
+}
+
+func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
+	r *CreatePipelineRunRequest) (*prmodels.Pipelinerun, error) {
+	defer wlog.Start(ctx, "cluster controller: create pipeline run").StopPrint()
+	var action string
+	var err error
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if r.Action == prmodels.ActionBuildDeploy && cluster.GitURL == "" {
+		return nil, herrors.ErrBuildDeployNotSupported
+	}
+
+	var gitURL, gitRef, gitRefType, imageURL, codeCommitID = cluster.GitURL,
+		cluster.GitRef, cluster.GitRefType, cluster.Image, cluster.GitRef
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	var lastConfigCommitSHA, configCommitSHA = configCommit.Master, configCommit.Gitops
+
+	switch r.Action {
+	case prmodels.ActionBuildDeploy:
+		action = prmodels.ActionBuildDeploy
+
+		if r.Git != nil {
+			if r.Git.Commit != "" {
+				gitRefType = codemodels.GitRefTypeCommit
+				gitRef = r.Git.Commit
+			} else if r.Git.Tag != "" {
+				gitRefType = codemodels.GitRefTypeTag
+				gitRef = r.Git.Tag
+			} else if r.Git.Branch != "" {
+				gitRefType = codemodels.GitRefTypeBranch
+				gitRef = r.Git.Branch
+			}
+		}
+
+		commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, gitRefType, gitRef)
+		if err != nil {
+			commit = &git.Commit{
+				Message: "commit not found",
+				ID:      gitRef,
+			}
+		}
+		codeCommitID = commit.ID
+
+		imageURL = assembleImageURL(regionEntity, application.Name, cluster.Name, gitRef, commit.ID)
+
+	case prmodels.ActionDeploy:
+		action = prmodels.ActionDeploy
+
+		clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, err
+		}
+
+		if cluster.GitURL != "" {
+			err = c.checkAllowDeploy(ctx, application, cluster, clusterFiles, configCommit)
+			if err != nil {
+				return nil, err
+			}
+
+			commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, cluster.GitRefType, cluster.GitRef)
+			if err == nil {
+				codeCommitID = commit.ID
+			}
+		} else if cluster.Image != "" {
+			imageURL, err = getDeployImage(cluster.Image, r.ImageTag)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	case prmodels.ActionRollback:
+		action = prmodels.ActionRollback
+
+		// get pipelinerun to rollback, and do some validation
+		pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, r.PipelinerunID)
+		if err != nil {
+			return nil, err
+		}
+
+		if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
+			pipelinerun.ConfigCommit == "" {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"the pipelinerun with id: %v can not be rolled back", r.PipelinerunID)
+		}
+
+		if pipelinerun.ClusterID != cluster.ID {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID)
+		}
+
+		// Deprecated: for internal usage
+		err = c.checkAndSyncGitOpsBranch(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
+		if err != nil {
+			return nil, err
+		}
+
+		gitURL, gitRefType, gitRef, codeCommitID, imageURL =
+			cluster.GitURL, cluster.GitRefType, cluster.GitRef, pipelinerun.GitCommit, pipelinerun.ImageURL
+		configCommitSHA = configCommit.Master
+
+	default:
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "unsupported action %v", r.Action)
+	}
+
+	return &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           action,
+		Status:           string(prmodels.StatusPending),
+		Title:            r.Title,
+		Description:      r.Description,
+		GitURL:           gitURL,
+		GitRefType:       gitRefType,
+		GitRef:           gitRef,
+		GitCommit:        codeCommitID,
+		ImageURL:         imageURL,
+		LastConfigCommit: lastConfigCommitSHA,
+		ConfigCommit:     configCommitSHA,
+	}, nil
+}
+
+func (c *controller) recordPipelinerunCreatedEvent(ctx context.Context, pr *prmodels.Pipelinerun) {
+	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceID:   pr.ID,
+			ResourceType: common.ResourcePipelinerun,
+			EventType:    eventmodels.PipelinerunCreated,
+		},
+	})
+	if err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 }

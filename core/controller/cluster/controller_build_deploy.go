@@ -28,7 +28,7 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/git"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -100,7 +100,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionBuildDeploy,
-		Status:           string(prmodels.StatusCreated),
+		Status:           string(prmodels.StatusRunning),
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
@@ -111,7 +111,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		LastConfigCommit: configCommit.Master,
 		ConfigCommit:     configCommit.Gitops,
 	}
-	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
+	prCreated, err := c.prMgr.PipelineRun.Create(ctx, pr)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 
 	// update event id returned from tekton-trigger EventListener
 	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d", ciEventID, pr.ID)
-	err = c.pipelinerunMgr.UpdateCIEventIDByID(ctx, pr.ID, ciEventID)
+	err = c.prMgr.PipelineRun.UpdateCIEventIDByID(ctx, pr.ID, ciEventID)
 	if err != nil {
 		return nil, err
 	}

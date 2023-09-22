@@ -24,12 +24,13 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 
 	"github.com/horizoncd/horizon/lib/s3"
 	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"

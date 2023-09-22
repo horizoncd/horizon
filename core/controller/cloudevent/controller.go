@@ -27,9 +27,9 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	pipelinemanager "github.com/horizoncd/horizon/pkg/pr/pipeline/manager"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
@@ -45,7 +45,7 @@ type Controller interface {
 
 type controller struct {
 	tektonFty          factory.Factory
-	pipelinerunMgr     prmanager.Manager
+	prMgr              *prmanager.PRManager
 	pipelineMgr        pipelinemanager.Manager
 	clusterMgr         clustermanager.Manager
 	clusterGitRepo     gitrepo.ClusterGitRepo
@@ -57,7 +57,7 @@ type controller struct {
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
 	return &controller{
 		tektonFty:          tektonFty,
-		pipelinerunMgr:     parameter.PipelinerunMgr,
+		prMgr:              parameter.PRMgr,
 		pipelineMgr:        parameter.PipelineMgr,
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
@@ -100,7 +100,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		pipelinerunID, result.Result, result.StartTime, result.CompletionTime)
 
 	// 2. update pipelinerun in db
-	if err := c.pipelinerunMgr.UpdateResultByID(ctx, pipelinerunID, &prmodels.Result{
+	if err := c.prMgr.PipelineRun.UpdateResultByID(ctx, pipelinerunID, &prmodels.Result{
 		S3Bucket:   result.Bucket,
 		LogObject:  result.LogObject,
 		PrObject:   result.PrObject,
@@ -180,7 +180,7 @@ func (c *controller) handleJibBuild(ctx context.Context, result *tekton.Pipeline
 func (c *controller) getHorizonMetaData(ctx context.Context, wpr *WrappedPipelineRun) (
 	*global.HorizonMetaData, error) {
 	eventID := wpr.PipelineRun.Labels[common.TektonTriggersEventIDKey]
-	pipelinerun, err := c.pipelinerunMgr.GetByCIEventID(ctx, eventID)
+	pipelinerun, err := c.prMgr.PipelineRun.GetByCIEventID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}

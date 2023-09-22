@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"gopkg.in/yaml.v3"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -33,6 +34,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/event/models"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -53,6 +55,7 @@ type MessageContent struct {
 	WebhookID   uint                  `json:"webhookID,omitempty"`
 	Application *ApplicationInfo      `json:"application,omitempty"`
 	Cluster     *ClusterInfo          `json:"cluster,omitempty"`
+	Pipelinerun *PipelinerunInfo      `json:"pipelinerun,omitempty"`
 	EventType   string                `json:"eventType,omitempty"`
 	User        *usermodels.UserBasic `json:"user,omitempty"`
 	Extra       *string               `json:"extra,omitempty"`
@@ -60,7 +63,7 @@ type MessageContent struct {
 
 type ResourceCommonInfo struct {
 	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
 
 // ApplicationInfo contains basic info of application
@@ -76,6 +79,18 @@ type ClusterInfo struct {
 	Env             string `json:"env,omitempty"`
 }
 
+// PipelinerunInfo contains basic info of pipelinerun
+type PipelinerunInfo struct {
+	ResourceCommonInfo
+	ClusterID   uint   `json:"clusterID,omitempty"`
+	ClusterName string `json:"clusterName,omitempty"`
+	Action      string `json:"action,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	GitRef      string `json:"gitRef,omitempty"`
+	GitRefType  string `json:"gitRefType,omitempty"`
+}
+
 // WebhookLogGenerator generates webhook logs by events
 type WebhookLogGenerator struct {
 	webhookMgr     webhookmanager.Manager
@@ -83,6 +98,7 @@ type WebhookLogGenerator struct {
 	groupMgr       groupmanager.Manager
 	applicationMgr applicationmanager.Manager
 	clusterMgr     clustermanager.Manager
+	prMgr          *prmanager.PRManager
 	userMgr        usermanager.Manager
 }
 
@@ -93,6 +109,7 @@ func NewWebhookLogGenerator(manager *managerparam.Manager) *WebhookLogGenerator 
 		groupMgr:       manager.GroupMgr,
 		applicationMgr: manager.ApplicationMgr,
 		clusterMgr:     manager.ClusterMgr,
+		prMgr:          manager.PRMgr,
 		userMgr:        manager.UserMgr,
 	}
 }
@@ -102,6 +119,7 @@ type messageDependency struct {
 	event       *models.Event
 	application *applicationmodels.Application
 	cluster     *clustermodels.Cluster
+	pipelinerun *prmodels.Pipelinerun
 }
 
 // listSystemResources lists root group(0) as system resource
@@ -149,6 +167,23 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Conte
 	return cluster, app, resources
 }
 
+// listAssociatedResourcesOfPipelinerun gets pipelinerun by id and list all the parent resources
+func (w *WebhookLogGenerator) listAssociatedResourcesOfPipelinerun(ctx context.Context,
+	id uint) (*prmodels.Pipelinerun, *clustermodels.Cluster, map[string][]uint) {
+	pr, err := w.prMgr.PipelineRun.GetByID(ctx, id)
+	if err != nil {
+		log.Warningf(ctx, "pipelinerun %d is not exist",
+			id)
+		return nil, nil, nil
+	}
+	cluster, _, resources := w.listAssociatedResourcesOfCluster(ctx, pr.ClusterID)
+	if resources == nil {
+		resources = map[string][]uint{}
+	}
+	resources[common.ResourcePipelinerun] = []uint{pr.ID}
+	return pr, cluster, resources
+}
+
 // listAssociatedResources list all the associated resources of event to find all the webhooks
 func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 	e *models.Event) (*messageDependency, map[string][]uint) {
@@ -156,6 +191,7 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 		resources   map[string][]uint
 		cluster     *clustermodels.Cluster
 		application *applicationmodels.Application
+		pr          *prmodels.Pipelinerun
 		dep         = &messageDependency{}
 	)
 
@@ -167,6 +203,11 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 		cluster, application, resources = w.listAssociatedResourcesOfCluster(ctx, e.ResourceID)
 		dep.application = application
 		dep.cluster = cluster
+	case common.ResourcePipelinerun:
+		pr, cluster, resources = w.listAssociatedResourcesOfPipelinerun(ctx, e.ResourceID)
+		dep.cluster = cluster
+		dep.pipelinerun = pr
+		log.Debugf(ctx, "dep: %+v", dep)
 	default:
 		log.Infof(ctx, "resource type %s is unsupported",
 			e.ResourceType)
@@ -226,6 +267,27 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 		}
 	}
 
+	if dep.event.ResourceType == common.ResourcePipelinerun &&
+		dep.pipelinerun != nil {
+		message.Pipelinerun = &PipelinerunInfo{
+			ResourceCommonInfo: ResourceCommonInfo{
+				ID: dep.pipelinerun.ID,
+			},
+			ClusterID: dep.pipelinerun.ClusterID,
+			ClusterName: func() string {
+				if dep.cluster != nil {
+					return dep.cluster.Name
+				}
+				return ""
+			}(),
+			Action:      dep.pipelinerun.Action,
+			Title:       dep.pipelinerun.Title,
+			Description: dep.pipelinerun.Description,
+			GitRef:      dep.pipelinerun.GitRef,
+			GitRefType:  dep.pipelinerun.GitRefType,
+		}
+	}
+
 	reqBody, err := json.Marshal(message)
 	if err != nil {
 		log.Errorf(ctx, fmt.Sprintf("failed to marshal message, error: %+v", err))
@@ -271,6 +333,7 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 			} else if !ok {
 				continue
 			}
+			log.Debugf(ctx, "event %d matches webhook %s", event.ID, webhook.URL)
 			// 3.2 add webhook to the list
 			if _, ok := conditionsToCreate[event.ID]; !ok {
 				conditionsToCreate[event.ID] = map[uint]messageDependency{}
@@ -280,6 +343,7 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 				event:       event,
 				application: dependency.application,
 				cluster:     dependency.cluster,
+				pipelinerun: dependency.pipelinerun,
 			}
 			conditionsToQuery[event.ID] = append(conditionsToQuery[event.ID], webhook.ID)
 		}

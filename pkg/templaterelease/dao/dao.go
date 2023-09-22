@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	cmodel "github.com/horizoncd/horizon/pkg/cluster/models"
@@ -25,7 +27,6 @@ import (
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
-	"gorm.io/gorm"
 )
 
 type DAO interface {
@@ -51,7 +52,7 @@ func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease
 	result := d.db.WithContext(ctx).Create(templateRelease)
 
 	if result.Error != nil {
-		return nil, herrors.NewErrCreateFailed(herrors.GroupInDB, result.Error.Error())
+		return nil, herrors.NewErrCreateFailed(herrors.TemplateReleaseInDB, result.Error.Error())
 	}
 	return templateRelease, nil
 }

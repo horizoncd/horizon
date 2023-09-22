@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/horizoncd/horizon/core/common"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
@@ -27,7 +29,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/autofree"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	uuid "github.com/satori/go.uuid"
 )
 
 func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
@@ -86,7 +87,7 @@ func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr cluster
 			// 2. Only need to free when the cluster has pipelineruns
 			// and expired and its environment supports auto-free
 			isNeedFree, err := func() (bool, error) {
-				prTotal, pipelineruns, err := prCtr.List(ctx, clr.ID, false, q.Query{
+				prTotal, pipelineruns, err := prCtr.ListPipelineruns(ctx, clr.ID, false, q.Query{
 					PageNumber: 1,
 					PageSize:   1,
 				})

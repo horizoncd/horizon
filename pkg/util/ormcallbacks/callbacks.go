@@ -15,8 +15,9 @@
 package callbacks
 
 import (
-	"github.com/horizoncd/horizon/core/common"
 	"gorm.io/gorm"
+
+	"github.com/horizoncd/horizon/core/common"
 )
 
 const (
@@ -47,9 +48,11 @@ func addUpdatedByForUpdateDeleteCallback(db *gorm.DB) {
 	if err != nil {
 		return
 	}
-	field := db.Statement.Schema.LookUpField(_updatedBy)
-	if field != nil {
-		db.Statement.SetColumn(_updatedBy, currentUser.GetID())
+	if db.Statement.Schema != nil {
+		field := db.Statement.Schema.LookUpField(_updatedBy)
+		if field != nil {
+			db.Statement.SetColumn(_updatedBy, currentUser.GetID())
+		}
 	}
 }
 

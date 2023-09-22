@@ -17,17 +17,19 @@ package manager
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/dao"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"gorm.io/gorm"
+
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/pr/dao"
+	"github.com/horizoncd/horizon/pkg/pr/models"
 )
 
 // nolint
 // -package=mock_manager
 //
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/pipelinerun/manager/mock_manager.go
-type Manager interface {
+type PipelineRunManager interface {
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
 	GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error)
@@ -45,73 +47,87 @@ type Manager interface {
 	UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error
 	// UpdateResultByID  update the pipelinerun restore result
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
+	UpdateColumns(ctx context.Context, pipelinerunID uint, columns map[string]interface{}) error
 }
 
-type manager struct {
-	dao dao.DAO
+type pipelinerunManager struct {
+	dao dao.PipelineRunDAO
 }
 
-func New(db *gorm.DB) Manager {
-	return &manager{
-		dao: dao.NewDAO(db),
+func NewPipelineRunManager(db *gorm.DB) PipelineRunManager {
+	return &pipelinerunManager{
+		dao: dao.NewPipelineRunDAO(db),
 	}
 }
 
-func (m *manager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
+func (m *pipelinerunManager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pipelinerun.CreatedBy = currentUser.GetID()
 	return m.dao.Create(ctx, pipelinerun)
 }
 
-func (m *manager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
+func (m *pipelinerunManager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetByID(ctx, pipelinerunID)
 }
 
-func (m *manager) GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error) {
+func (m *pipelinerunManager) GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error) {
 	return m.dao.GetByCIEventID(ctx, ciEventID)
 }
 
-func (m *manager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
+func (m *pipelinerunManager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 	return m.dao.DeleteByID(ctx, pipelinerunID)
 }
 
-func (m *manager) DeleteByClusterID(ctx context.Context, clusterID uint) error {
+func (m *pipelinerunManager) DeleteByClusterID(ctx context.Context, clusterID uint) error {
 	return m.dao.DeleteByClusterID(ctx, clusterID)
 }
 
-func (m *manager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
+func (m *pipelinerunManager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
 	return m.dao.UpdateConfigCommitByID(ctx, pipelinerunID, commit)
 }
 
-func (m *manager) GetLatestByClusterIDAndActions(ctx context.Context,
+func (m *pipelinerunManager) GetLatestByClusterIDAndActions(ctx context.Context,
 	clusterID uint, actions ...string) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestByClusterIDAndActions(ctx, clusterID, actions...)
 }
 
-func (m *manager) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
+func (m *pipelinerunManager) GetLatestSuccessByClusterID(ctx context.Context,
+	clusterID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestSuccessByClusterID(ctx, clusterID)
 }
 
-func (m *manager) UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error {
+func (m *pipelinerunManager) UpdateStatusByID(ctx context.Context,
+	pipelinerunID uint, result models.PipelineStatus) error {
 	return m.dao.UpdateStatusByID(ctx, pipelinerunID, result)
 }
 
-func (m *manager) UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error {
+func (m *pipelinerunManager) UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error {
 	return m.dao.UpdateCIEventIDByID(ctx, pipelinerunID, ciEventID)
 }
 
-func (m *manager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
+func (m *pipelinerunManager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
 	return m.dao.UpdateResultByID(ctx, pipelinerunID, result)
 }
 
-func (m *manager) GetByClusterID(ctx context.Context,
+func (m *pipelinerunManager) GetByClusterID(ctx context.Context,
 	clusterID uint, canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
 	return m.dao.GetByClusterID(ctx, clusterID, canRollback, query)
 }
 
-func (m *manager) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
+func (m *pipelinerunManager) GetFirstCanRollbackPipelinerun(ctx context.Context,
+	clusterID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetFirstCanRollbackPipelinerun(ctx, clusterID)
 }
 
-func (m *manager) GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
+func (m *pipelinerunManager) GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
 	status string) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestByClusterIDAndActionAndStatus(ctx, clusterID, action, status)
+}
+
+func (m *pipelinerunManager) UpdateColumns(ctx context.Context,
+	pipelinerunID uint, columns map[string]interface{}) error {
+	return m.dao.UpdateColumns(ctx, pipelinerunID, columns)
 }

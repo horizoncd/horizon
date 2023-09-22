@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/server/route"
 )
@@ -134,6 +135,10 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/clusters/:%v/favorite", common.ParamClusterID),
 			HandlerFunc: api.DeleteFavorite,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/pipelineruns", common.ParamClusterID),
+			HandlerFunc: api.CreatePipelineRun,
 		},
 	}
 

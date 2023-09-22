@@ -27,7 +27,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -60,7 +60,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 1. get pr, and do some validate
-	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
-		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
+		if err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
 			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
 				pr.ID, pState, err)
 			return err
@@ -104,7 +104,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 			return nil, perror.WithMessage(err, op)
 		}
 		// 4. update config commit and status
-		if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
+		if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 			return nil, err
 		}
 		if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
@@ -178,8 +178,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 10. record event
-	c.recordEvent(ctx, pr, cluster)
+	// 10. record cluster event
+	c.recordClusterEvent(ctx, pr, cluster)
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
@@ -187,7 +187,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}, nil
 }
 
-func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
+func (c *controller) recordClusterEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
 	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,

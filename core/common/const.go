@@ -93,6 +93,10 @@ const (
 	// use the pipeline's cluster's member info
 	ResourcePipelinerun = "pipelineruns"
 
+	// ResourceCheckrun currently checkruns do not have direct member info, will
+	// use the member info of the clusters that they belong to
+	ResourceCheckrun = "checkruns"
+
 	// ResourceOauthApps currently oauthapp do not have direct member info, will
 	// use the oauthapp's groups member info
 	ResourceOauthApps = "oauthapps"

@@ -45,8 +45,10 @@ import (
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
+	pipelinemanager "github.com/horizoncd/horizon/pkg/pr/pipeline/manager"
+	prservice "github.com/horizoncd/horizon/pkg/pr/service"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
@@ -122,6 +124,7 @@ type Controller interface {
 	// Deprecated: for internal usage, v1 to v2
 	Upgrade(ctx context.Context, clusterID uint) error
 	ToggleLikeStatus(ctx context.Context, clusterID uint, like *WhetherLike) (err error)
+	CreatePipelineRun(ctx context.Context, clusterID uint, r *CreatePipelineRunRequest) (*prmodels.PipelineBasic, error)
 }
 
 type controller struct {
@@ -142,7 +145,8 @@ type controller struct {
 	envRegionMgr          environmentregionmapper.Manager
 	regionMgr             regionmanager.Manager
 	groupSvc              groupsvc.Service
-	pipelinerunMgr        prmanager.Manager
+	prMgr                 *prmanager.PRManager
+	prSvc                 *prservice.Service
 	pipelineMgr           pipelinemanager.Manager
 	tektonFty             factory.Factory
 	registryFty           registryfty.RegistryGetter
@@ -183,7 +187,8 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		envRegionMgr:          param.EnvRegionMgr,
 		regionMgr:             param.RegionMgr,
 		groupSvc:              param.GroupSvc,
-		pipelinerunMgr:        param.PipelinerunMgr,
+		prMgr:                 param.PRMgr,
+		prSvc:                 param.PRService,
 		pipelineMgr:           param.PipelineMgr,
 		tektonFty:             param.TektonFty,
 		registryFty:           registryfty.Fty,

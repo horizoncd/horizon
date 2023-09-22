@@ -40,7 +40,8 @@ import (
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	pipelinemodels "github.com/horizoncd/horizon/pkg/pr/models"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
@@ -629,7 +630,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 //			ret: sph(3), jerry(2), cat(4)
 //
 // nolint
-func TestGetPipelinerunMember(t *testing.T) {
+func TestGetPipelinerunAndCheckrunMember(t *testing.T) {
 	createEnv(t)
 
 	mockCtrl := gomock.NewController(t)
@@ -651,6 +652,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 			ID:       1,
 		}
 		pipelineRunID uint = 23123
+		checkrunID    uint = 12138
 	)
 	users := []usermodels.User{
 		{
@@ -725,11 +727,17 @@ func TestGetPipelinerunMember(t *testing.T) {
 		}, nil
 	}).AnyTimes()
 
-	pipelineMockManager := pipelinemock.NewMockManager(mockCtrl)
+	pipelineMockManager := pipelinemock.NewMockPipelineRunManager(mockCtrl)
 	pipelineMockManager.EXPECT().GetByID(gomock.Any(), pipelineRunID).Return(&pipelinemodels.Pipelinerun{
 		ID:        0,
 		ClusterID: cluster4ID,
 	}, nil).AnyTimes()
+
+	checkMockManager := pipelinemock.NewMockCheckManager(mockCtrl)
+	checkMockManager.EXPECT().GetCheckRunByID(gomock.Any(), checkrunID).
+		Return(&pipelinemodels.CheckRun{
+			PipelineRunID: pipelineRunID,
+		}, nil).AnyTimes()
 
 	roleSvc := rolemock.NewMockService(mockCtrl)
 	originService := &service{
@@ -737,9 +745,12 @@ func TestGetPipelinerunMember(t *testing.T) {
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
-		pipelineManager:           pipelineMockManager,
-		roleService:               roleSvc,
-		userManager:               manager.UserMgr,
+		prMgr: &prmanager.PRManager{
+			PipelineRun: pipelineMockManager,
+			Check:       checkMockManager,
+		},
+		roleService: roleSvc,
+		userManager: manager.UserMgr,
 	}
 	s = originService
 
@@ -805,6 +816,11 @@ func TestGetPipelinerunMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
 
+	members, err = s.GetMemberOfResource(ctx, common.ResourceCheckrun,
+		strconv.FormatUint(uint64(checkrunID), 10))
+	assert.NoError(t, err)
+	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
+
 	members, err = s.UpdateMember(ctx, members.ID, roleservice.Maintainer)
 	assert.Nil(t, err)
 	assert.Equal(t, roleservice.Maintainer, members.Role)
@@ -822,7 +838,7 @@ func TestListTemplateMember(t *testing.T) {
 		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
 		templateManager:           manager.TemplateMgr,
-		pipelineManager:           manager.PipelinerunMgr,
+		prMgr:                     manager.PRMgr,
 		roleService:               nil,
 	}
 
@@ -904,7 +920,7 @@ func TestListWebhookMember(t *testing.T) {
 		applicationManager:        manager.ApplicationMgr,
 		applicationClusterManager: manager.ClusterMgr,
 		templateManager:           manager.TemplateMgr,
-		pipelineManager:           manager.PipelinerunMgr,
+		prMgr:                     manager.PRMgr,
 		roleService:               nil,
 		webhookManager:            manager.WebhookMgr,
 	}

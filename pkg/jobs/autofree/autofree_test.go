@@ -48,8 +48,9 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
+	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
@@ -129,10 +130,12 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		Manager:     manager,
 		CD:          cd,
 	}
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
-	parameter.PipelinerunMgr = mockPipelineManager
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
+	parameter.PRMgr = &prmanager.PRManager{
+		PipelineRun: mockPipelineManager,
+	}
 	clrCtl := clusterctl.NewController(conf, parameter)
-	prCtl := prctl.NewController(parameter)
+	prCtl := prctl.NewController(conf, parameter)
 
 	// init data
 
@@ -189,7 +192,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 				Return(0, pipelineruns, nil).AnyTimes()
 		}
 		mockPipelineManager.EXPECT().GetFirstCanRollbackPipelinerun(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-		num, pipelineBasics, err := prCtl.List(ctx, cluster.ID, false, q.Query{
+		num, pipelineBasics, err := prCtl.ListPipelineruns(ctx, cluster.ID, false, q.Query{
 			PageNumber: 1,
 			PageSize:   10,
 		})

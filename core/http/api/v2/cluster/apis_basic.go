@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/cluster"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -526,4 +527,36 @@ func (a *API) DeleteFavorite(c *gin.Context) {
 		return
 	}
 	response.Success(c)
+}
+
+func (a *API) CreatePipelineRun(c *gin.Context) {
+	op := "cluster: create pipeline run"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var req cluster.CreatePipelineRunRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	pipelineRun, err := a.clusterCtl.CreatePipelineRun(c, uint(clusterID), &req)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrClusterNoChange || perror.Cause(err) == herrors.ErrShouldBuildDeployFirst {
+			log.WithFiled(c, "op", op).Errorf("%+v", err)
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, pipelineRun)
 }

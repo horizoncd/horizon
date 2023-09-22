@@ -118,6 +118,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/jobs/grafanasync"
 	"github.com/horizoncd/horizon/pkg/jobs/k8sevent"
 	jobwebhook "github.com/horizoncd/horizon/pkg/jobs/webhook"
+	prservice "github.com/horizoncd/horizon/pkg/pr/service"
 	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
@@ -465,6 +466,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		OutputGetter:   outputGetter,
 		TektonFty:      tektonFty,
 		ClusterGitRepo: clusterGitRepo,
+		PRService:      prservice.NewService(manager),
 		GitGetter:      gitGetter,
 		GrafanaService: grafanaService,
 		BuildSchema:    buildSchema,
@@ -494,7 +496,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		applicationCtl       = applicationctl.NewController(parameter)
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
-		prCtl                = prctl.NewController(parameter)
+		prCtl                = prctl.NewController(coreConfig, parameter)
 		templateCtl          = templatectl.NewController(parameter, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
