@@ -108,6 +108,8 @@ const (
 
 	ResourceWebhook    = "webhooks"
 	ResourceWebhookLog = "webhooklogs"
+
+	ResourceMember = "members"
 )
 
 const (

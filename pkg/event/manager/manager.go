@@ -137,6 +137,9 @@ var supportedEvents = map[string]string{
 	models.ClusterAction:          "Cluster has triggered an action",
 	models.ClusterPodsRescheduled: "Pods has been deleted to reschedule",
 	models.ClusterKubernetesEvent: "Kubernetes event associated with cluster has been triggered",
+	models.MemberCreated:          "New member has been created",
+	models.MemberUpdated:          "Member has been updated",
+	models.MemberDeleted:          "Member has been deleted",
 	models.PipelinerunCreated:     "New pipelinerun has been created",
 }
 

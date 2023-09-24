@@ -103,15 +103,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 
 	// 5. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterRestarted,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterRestarted)
 
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
@@ -424,15 +416,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 10. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterRollbacked,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterRollbacked)
 
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,

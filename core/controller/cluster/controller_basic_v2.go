@@ -28,6 +28,7 @@ import (
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/git"
+	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
@@ -245,16 +246,8 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 12. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterCreated,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.recordClusterEvent(ctx, ret.ID, eventmodels.ClusterCreated)
+	c.recordMemberCreatedEvent(ctx, ret.ID)
 	// 13. customize response
 	return ret, nil
 }
@@ -519,15 +512,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterUpdated,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterUpdated)
 
 	// 8. update cluster in db
 	clusterModel, tags := r.toClusterModel(cluster, expireSeconds, environmentName,
@@ -829,6 +814,39 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		LastConfigCommit: lastConfigCommitSHA,
 		ConfigCommit:     configCommitSHA,
 	}, nil
+}
+
+func (c *controller) recordClusterEvent(ctx context.Context, clusterID uint, eventType string) {
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			ResourceID:   clusterID,
+			EventType:    eventType,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+}
+
+func (c *controller) recordMemberCreatedEvent(ctx context.Context, clusterID uint) {
+	members, err := c.memberManager.ListDirectMember(ctx, membermodels.TypeApplicationCluster, clusterID)
+	if err != nil {
+		log.Warningf(ctx, "failed to list members of application, err: %s", err.Error())
+		return
+	}
+	events := make([]*eventmodels.Event, len(members))
+	for _, m := range members {
+		events = append(events, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceMember,
+				ResourceID:   m.ID,
+				EventType:    eventmodels.MemberCreated,
+			},
+		})
+	}
+	if _, err := c.eventMgr.CreateEvent(ctx, events...); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 }
 
 func (c *controller) recordPipelinerunCreatedEvent(ctx context.Context, pr *prmodels.Pipelinerun) {

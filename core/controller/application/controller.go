@@ -309,16 +309,8 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
-			ResourceID:   ret.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.recordApplicationEvent(ctx, ret.ID, eventmodels.ApplicationCreated)
+	c.recordMemberCreatedEvent(ctx, ret.ID)
 	return ret, nil
 }
 
@@ -436,16 +428,8 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		ret.Priority = *request.Priority
 	}
 
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
-			ResourceID:   applicationDBModel.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.recordApplicationEvent(ctx, applicationDBModel.ID, eventmodels.ApplicationCreated)
+	c.recordMemberCreatedEvent(ctx, ret.ID)
 	return ret, nil
 }
 
@@ -498,15 +482,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	}
 
 	// 5. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationUpdated,
-			ResourceID:   applicationModel.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordApplicationEvent(ctx, applicationModel.ID, eventmodels.ApplicationUpdated)
 
 	// 6. get fullPath
 	group, err := c.groupSvc.GetChildByID(ctx, appExistsInDB.GroupID)
@@ -591,15 +567,7 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 	}
 
 	// 6. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationUpdated,
-			ResourceID:   appExistsInDB.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordApplicationEvent(ctx, appExistsInDB.ID, eventmodels.ApplicationUpdated)
 	return err
 }
 
@@ -652,15 +620,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 	}
 
 	// 4. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationDeleted,
-			ResourceID:   id,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordApplicationEvent(ctx, id, eventmodels.ApplicationDeleted)
 
 	return nil
 }
@@ -894,4 +854,37 @@ func (c *controller) GetApplicationPipelineStats(ctx context.Context, applicatio
 	}
 
 	return c.pipelinemanager.ListPipelineStats(ctx, app.Name, cluster, pageNumber, pageSize)
+}
+
+func (c *controller) recordApplicationEvent(ctx context.Context, applicationID uint, eventType string) {
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			ResourceID:   applicationID,
+			EventType:    eventType,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+}
+
+func (c *controller) recordMemberCreatedEvent(ctx context.Context, applicationID uint) {
+	members, err := c.memberManager.ListDirectMember(ctx, membermodels.TypeApplication, applicationID)
+	if err != nil {
+		log.Warningf(ctx, "failed to list members of application, err: %s", err.Error())
+		return
+	}
+	events := make([]*eventmodels.Event, len(members))
+	for _, m := range members {
+		events = append(events, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceMember,
+				ResourceID:   m.ID,
+				EventType:    eventmodels.MemberCreated,
+			},
+		})
+	}
+	if _, err := c.eventMgr.CreateEvent(ctx, events...); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 }

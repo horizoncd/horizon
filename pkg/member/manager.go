@@ -34,6 +34,9 @@ type Manager interface {
 	// GetByID get the member by ID
 	GetByID(ctx context.Context, memberID uint) (*models.Member, error)
 
+	// GetByIDIncludeSoftDelete gets the member by ID including soft delete
+	GetByIDIncludeSoftDelete(ctx context.Context, memberID uint) (*models.Member, error)
+
 	// UpdateByID  update a member by memberID
 	UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error)
 
@@ -83,6 +86,10 @@ func (m *manager) Get(ctx context.Context, resourceType models.ResourceType,
 
 func (m *manager) GetByID(ctx context.Context, memberID uint) (*models.Member, error) {
 	return m.dao.GetByID(ctx, memberID)
+}
+
+func (m *manager) GetByIDIncludeSoftDelete(ctx context.Context, memberID uint) (*models.Member, error) {
+	return m.dao.GetByIDIncludeSoftDelete(ctx, memberID)
 }
 
 func (m *manager) UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error) {

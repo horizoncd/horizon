@@ -152,15 +152,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterBuildDeployed,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterBuildDeployed)
 
 	return &InternalDeployResponse{
 		PipelinerunID: pr.ID,

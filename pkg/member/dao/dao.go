@@ -34,6 +34,7 @@ type DAO interface {
 	Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 		memberType models.MemberType, memberInfo uint) (*models.Member, error)
 	GetByID(ctx context.Context, memberID uint) (*models.Member, error)
+	GetByIDIncludeSoftDelete(ctx context.Context, memberID uint) (*models.Member, error)
 	Delete(ctx context.Context, memberID uint) error
 	HardDelete(ctx context.Context, resourceType string, resourceID uint) error
 	DeleteByMemberNameID(ctx context.Context, memberNameID uint) error
@@ -81,6 +82,24 @@ func (d *dao) GetByID(ctx context.Context, memberID uint) (*models.Member, error
 	var member models.Member
 	result := d.db.WithContext(ctx).Raw(common.MemberQueryByID, memberID).Scan(&member)
 	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.MemberInfoInDB, result.Error.Error())
+		}
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &member, nil
+}
+
+func (d *dao) GetByIDIncludeSoftDelete(ctx context.Context, memberID uint) (*models.Member, error) {
+	var member models.Member
+	result := d.db.WithContext(ctx).Where("id = ?", memberID).First(&member)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.MemberInfoInDB, result.Error.Error())
+		}
 		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {

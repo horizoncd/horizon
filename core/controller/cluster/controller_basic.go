@@ -553,16 +553,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
 	// 11. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterCreated,
-			ResourceID:   ret.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.recordClusterEvent(ctx, ret.ID, eventmodels.ClusterCreated)
+	c.recordMemberCreatedEvent(ctx, ret.ID)
 	return ret, nil
 }
 
@@ -725,15 +717,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 6. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterUpdated,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterUpdated)
 
 	// 7. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
@@ -917,16 +901,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		// 5. record event
-		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
-			EventSummary: eventmodels.EventSummary{
-				ResourceType: common.ResourceCluster,
-				EventType:    eventmodels.ClusterDeleted,
-				ResourceID:   clusterID,
-			},
-			ReqID: rid,
-		}); err != nil {
-			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
-		}
+		c.recordClusterEvent(newctx, clusterID, eventmodels.ClusterDeleted)
 	}()
 
 	return nil
@@ -997,15 +972,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 4. create event
-		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
-			EventSummary: eventmodels.EventSummary{
-				ResourceType: common.ResourceCluster,
-				EventType:    eventmodels.ClusterFreed,
-				ResourceID:   clusterID,
-			},
-		}); err != nil {
-			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
-		}
+		c.recordClusterEvent(newctx, clusterID, eventmodels.ClusterFreed)
 	}()
 
 	return nil
