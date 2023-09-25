@@ -654,6 +654,7 @@ func test(t *testing.T) {
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
 		eventMgr:             manager.EventMgr,
+		memberManager:        manager.MemberMgr,
 		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
 			JwtSigningKey:         "horizon",
 			CallbackTokenExpireIn: time.Hour * 2,
@@ -1421,6 +1422,7 @@ func testV2(t *testing.T) {
 		registryFty:          registryFty,
 		cd:                   mockCd,
 		eventMgr:             manager.EventMgr,
+		memberManager:        manager.MemberMgr,
 	}
 	applicationGitRepo.EXPECT().GetApplication(gomock.Any(), applicationName, gomock.Any()).
 		Return(&appgitrepo.GetResponse{
@@ -1647,6 +1649,7 @@ func testUpgrade(t *testing.T) {
 		cd:                    mockCd,
 		eventMgr:              manager.EventMgr,
 		templateUpgradeMapper: templateUpgradeMapper,
+		memberManager:         manager.MemberMgr,
 	}
 
 	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).

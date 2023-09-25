@@ -844,8 +844,10 @@ func (c *controller) recordMemberCreatedEvent(ctx context.Context, clusterID uin
 			},
 		})
 	}
-	if _, err := c.eventMgr.CreateEvent(ctx, events...); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	if len(events) > 0 {
+		if _, err := c.eventMgr.CreateEvent(ctx, events...); err != nil {
+			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+		}
 	}
 }
 

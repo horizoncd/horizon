@@ -41,6 +41,7 @@ import (
 	tmodels "github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
+	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 
 	"github.com/golang/mock/gomock"
@@ -293,6 +294,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&eventmodels.Event{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&usermodel.User{}); err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -363,6 +367,7 @@ func Test(t *testing.T) {
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
 		eventMgr:             manager.EventMgr,
+		memberManager:        manager.MemberMgr,
 	}
 
 	group, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
@@ -518,6 +523,7 @@ func TestV2(t *testing.T) {
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
 		eventMgr:             manager.EventMgr,
+		memberManager:        manager.MemberMgr,
 	}
 
 	group, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
