@@ -55,7 +55,7 @@ The Horizon Core Server is the Rest Server which export the OpenAPIs consume by 
 * PrivateToken,AccessToken Management
 * Group,application,cluster management
 * CI,CD Pipeline Management
-* WekHook Management
+* WebHook Management
 * User and Member Management
 * IDP Management
 
