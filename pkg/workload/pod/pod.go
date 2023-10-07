@@ -47,14 +47,16 @@ func (*pod) MatchGK(gk schema.GroupKind) bool {
 
 func (*pod) getPod(node *v1alpha1.ResourceNode,
 	factory dynamicinformer.DynamicSharedInformerFactory) (*corev1.Pod, error) {
-	instance, err := factory.ForResource(GVRPod).Lister().ByNamespace(node.Namespace).Get(node.Name)
+	obj, err := factory.ForResource(GVRPod).Lister().ByNamespace(node.Namespace).Get(node.Name)
 	if err != nil {
 		return nil, perror.Wrapf(
 			herrors.NewErrGetFailed(herrors.ResourceInK8S,
 				"failed to get deployment in k8s"),
 			"failed to get deployment in k8s: deployment = %s, err = %v", node.Name, err)
 	}
-	return instance.(*corev1.Pod), nil
+	pods := workload.ObjIntoPod(obj)
+
+	return &pods[0], nil
 }
 
 func (p *pod) ListPods(node *v1alpha1.ResourceNode,
