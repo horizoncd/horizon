@@ -99,6 +99,10 @@ func TestBasic(t *testing.T) {
 	retMember4, err := mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
+
+	retMember5, err := mgr.GetByIDIncludeSoftDelete(ctx, retMember3.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, retMember5)
 }
 
 func TestList(t *testing.T) {

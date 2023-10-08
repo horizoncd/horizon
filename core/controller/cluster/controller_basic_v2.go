@@ -834,7 +834,7 @@ func (c *controller) recordMemberCreatedEvent(ctx context.Context, clusterID uin
 		log.Warningf(ctx, "failed to list members of application, err: %s", err.Error())
 		return
 	}
-	events := make([]*eventmodels.Event, len(members))
+	events := make([]*eventmodels.Event, 0, len(members))
 	for _, m := range members {
 		events = append(events, &eventmodels.Event{
 			EventSummary: eventmodels.EventSummary{

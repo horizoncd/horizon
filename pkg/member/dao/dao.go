@@ -95,7 +95,7 @@ func (d *dao) GetByID(ctx context.Context, memberID uint) (*models.Member, error
 
 func (d *dao) GetByIDIncludeSoftDelete(ctx context.Context, memberID uint) (*models.Member, error) {
 	var member models.Member
-	result := d.db.WithContext(ctx).Where("id = ?", memberID).First(&member)
+	result := d.db.WithContext(ctx).Unscoped().Where("id = ?", memberID).First(&member)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.MemberInfoInDB, result.Error.Error())
