@@ -202,37 +202,6 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 
-	podsMap := make(map[string]*corev1.Pod)
-	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
-		ifContinue := false
-		workload.LoopAbilities(func(workload workload.Workload) bool {
-			if !workload.MatchGK(schema.GroupKind{Group: node.Group, Kind: node.Kind}) {
-				return true
-			}
-			gt := getter.New(workload)
-
-			var (
-				pods []corev1.Pod
-				err  error
-			)
-			_ = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
-				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
-					pods, err = gt.ListPods(node.ResourceNode, factory)
-					return nil
-				})
-			if err != nil {
-				return true
-			}
-
-			for i := range pods {
-				podsMap[string(pods[i].UID)] = &pods[i]
-			}
-			ifContinue = false
-			return false
-		})
-		return ifContinue
-	})
-
 	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
 	pd, err := workload.GetAbility(GKPod)
 	if err != nil {
