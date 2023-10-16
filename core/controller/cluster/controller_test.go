@@ -26,6 +26,7 @@ import (
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
 	clustercd "github.com/horizoncd/horizon/pkg/cd"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
 
 	v1 "k8s.io/api/core/v1"
@@ -653,7 +654,7 @@ func test(t *testing.T) {
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
-		eventMgr:             manager.EventMgr,
+		eventSvc:             eventservice.New(manager),
 		memberManager:        manager.MemberMgr,
 		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
 			JwtSigningKey:         "horizon",
@@ -1421,7 +1422,7 @@ func testV2(t *testing.T) {
 		tagMgr:               manager.TagMgr,
 		registryFty:          registryFty,
 		cd:                   mockCd,
-		eventMgr:             manager.EventMgr,
+		eventSvc:             eventservice.New(manager),
 		memberManager:        manager.MemberMgr,
 	}
 	applicationGitRepo.EXPECT().GetApplication(gomock.Any(), applicationName, gomock.Any()).
@@ -1647,7 +1648,7 @@ func testUpgrade(t *testing.T) {
 		tagMgr:                manager.TagMgr,
 		registryFty:           registryFty,
 		cd:                    mockCd,
-		eventMgr:              manager.EventMgr,
+		eventSvc:              eventservice.New(manager),
 		templateUpgradeMapper: templateUpgradeMapper,
 		memberManager:         manager.MemberMgr,
 	}

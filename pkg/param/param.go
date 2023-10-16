@@ -23,6 +23,7 @@ import (
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/environment/service"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/hook/hook"
@@ -51,6 +52,7 @@ type Param struct {
 	ApplicationSvc applicationservice.Service
 	ClusterSvc     clusterservice.Service
 	GroupSvc       groupsvc.Service
+	EventSvc       eventservice.Service
 	UserSvc        userservice.Service
 	TokenSvc       tokenservice.Service
 	RoleService    role.Service

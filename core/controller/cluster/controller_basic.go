@@ -553,8 +553,9 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
 	// 11. record event
-	c.recordClusterEvent(ctx, ret.ID, eventmodels.ClusterCreated)
-	c.recordMemberCreatedEvent(ctx, ret.ID)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, ret.ID,
+		eventmodels.ClusterCreated, nil)
+	c.eventSvc.RecordMemberCreatedEvent(ctx, common.ResourceCluster, ret.ID)
 	return ret, nil
 }
 
@@ -717,7 +718,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 6. record event
-	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterUpdated)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterUpdated, nil)
 
 	// 7. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
@@ -901,7 +903,8 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		// 5. record event
-		c.recordClusterEvent(newctx, clusterID, eventmodels.ClusterDeleted)
+		c.eventSvc.CreateEventIgnoreError(newctx, common.ResourceCluster, clusterID,
+			eventmodels.ClusterDeleted, nil)
 	}()
 
 	return nil
@@ -972,7 +975,8 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 4. create event
-		c.recordClusterEvent(newctx, clusterID, eventmodels.ClusterFreed)
+		c.eventSvc.CreateEventIgnoreError(newctx, common.ResourceCluster, clusterID,
+			eventmodels.ClusterFreed, nil)
 	}()
 
 	return nil

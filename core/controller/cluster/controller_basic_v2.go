@@ -28,13 +28,11 @@ import (
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/git"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
 	"github.com/horizoncd/horizon/pkg/util/validate"
 
@@ -246,8 +244,9 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 12. record event
-	c.recordClusterEvent(ctx, ret.ID, eventmodels.ClusterCreated)
-	c.recordMemberCreatedEvent(ctx, ret.ID)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, ret.ID,
+		eventmodels.ClusterCreated, nil)
+	c.eventSvc.RecordMemberCreatedEvent(ctx, common.ResourceCluster, ret.ID)
 	// 13. customize response
 	return ret, nil
 }
@@ -512,7 +511,8 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 7. record event
-	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterUpdated)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterUpdated, nil)
 
 	// 8. update cluster in db
 	clusterModel, tags := r.toClusterModel(cluster, expireSeconds, environmentName,
@@ -670,7 +670,8 @@ func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	c.recordPipelinerunCreatedEvent(ctx, pipelineRun)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelineRun.ID,
+		eventmodels.PipelinerunCreated, nil)
 
 	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, pipelineRun.ClusterID)
 	if err != nil {
@@ -814,52 +815,4 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		LastConfigCommit: lastConfigCommitSHA,
 		ConfigCommit:     configCommitSHA,
 	}, nil
-}
-
-func (c *controller) recordClusterEvent(ctx context.Context, clusterID uint, eventType string) {
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			EventType:    eventType,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-}
-
-func (c *controller) recordMemberCreatedEvent(ctx context.Context, clusterID uint) {
-	members, err := c.memberManager.ListDirectMember(ctx, membermodels.TypeApplicationCluster, clusterID)
-	if err != nil {
-		log.Warningf(ctx, "failed to list members of application, err: %s", err.Error())
-		return
-	}
-	events := make([]*eventmodels.Event, 0, len(members))
-	for _, m := range members {
-		events = append(events, &eventmodels.Event{
-			EventSummary: eventmodels.EventSummary{
-				ResourceType: common.ResourceMember,
-				ResourceID:   m.ID,
-				EventType:    eventmodels.MemberCreated,
-			},
-		})
-	}
-	if len(events) > 0 {
-		if _, err := c.eventMgr.CreateEvent(ctx, events...); err != nil {
-			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-		}
-	}
-}
-
-func (c *controller) recordPipelinerunCreatedEvent(ctx context.Context, pr *prmodels.Pipelinerun) {
-	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceID:   pr.ID,
-			ResourceType: common.ResourcePipelinerun,
-			EventType:    eventmodels.PipelinerunCreated,
-		},
-	})
-	if err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
 }

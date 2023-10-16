@@ -178,13 +178,12 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record cluster event
-	eventType := func() string {
-		if pr.Action == prmodels.ActionBuildDeploy {
-			return eventmodels.ClusterBuildDeployed
-		}
-		return eventmodels.ClusterDeployed
-	}()
-	c.recordClusterEvent(ctx, cluster.ID, eventType)
+	eventType := eventmodels.ClusterDeployed
+	if pr.Action == prmodels.ActionBuildDeploy {
+		eventType = eventmodels.ClusterBuildDeployed
+	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventType, nil)
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,

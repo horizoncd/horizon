@@ -32,6 +32,7 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
@@ -366,7 +367,7 @@ func Test(t *testing.T) {
 		templateReleaseMgr:   manager.TemplateReleaseMgr,
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
-		eventMgr:             manager.EventMgr,
+		eventSvc:             eventservice.New(manager),
 		memberManager:        manager.MemberMgr,
 	}
 
@@ -522,7 +523,7 @@ func TestV2(t *testing.T) {
 		templateReleaseMgr:   manager.TemplateReleaseMgr,
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
-		eventMgr:             manager.EventMgr,
+		eventSvc:             eventservice.New(manager),
 		memberManager:        manager.MemberMgr,
 	}
 

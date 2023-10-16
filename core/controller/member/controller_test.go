@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
@@ -55,6 +57,7 @@ var (
 	groupSvc            groupservice.Service
 	applicationSvc      applicationservice.Service
 	clusterSvc          clusterservice.Service
+	eventSvc            eventservice.Service
 )
 
 var (
@@ -85,13 +88,15 @@ func createContext(t *testing.T) {
 	// create table
 	err := db.AutoMigrate(&models.Group{}, &usermodel.User{},
 		&appmodels.Application{}, &membermodels.Member{},
-		&tmodels.Template{}, &trmodels.TemplateRelease{})
+		&tmodels.Template{}, &trmodels.TemplateRelease{}, &eventmodels.Event{})
 	assert.Nil(t, err)
 
 	groupCtl = group.NewController(&param.Param{Manager: manager})
 	groupSvc = groupservice.NewService(manager)
+
 	applicationSvc = applicationservice.NewService(groupSvc, manager)
 	clusterSvc = clusterservice.NewService(applicationSvc, manager)
+	eventSvc = eventservice.New(manager)
 }
 
 func MemberSame(m1, m2 Member) bool {
@@ -140,6 +145,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 		GroupSvc:       groupSvc,
 		ApplicationSvc: applicationSvc,
 		ClusterSvc:     clusterSvc,
+		EventSvc:       eventSvc,
 	})
 
 	CreateUsers(t)
@@ -201,6 +207,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		GroupSvc:       groupSvc,
 		ApplicationSvc: applicationSvc,
 		ClusterSvc:     clusterSvc,
+		EventSvc:       eventSvc,
 	})
 
 	// create group
@@ -270,6 +277,7 @@ func TestTemplateMember(t *testing.T) {
 		GroupSvc:       groupSvc,
 		ApplicationSvc: applicationSvc,
 		ClusterSvc:     clusterSvc,
+		EventSvc:       eventSvc,
 	})
 
 	onlyOwner := false

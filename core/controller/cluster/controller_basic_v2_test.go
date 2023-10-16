@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -62,7 +63,7 @@ func TestCreatePipelineRun(t *testing.T) {
 		regionMgr:      param.RegionMgr,
 		clusterGitRepo: mockClusterGitRepo,
 		commitGetter:   mockGitGetter,
-		eventMgr:       param.EventMgr,
+		eventSvc:       eventservice.New(param),
 	}
 
 	_, err := param.UserMgr.Create(ctx, &usermodel.User{

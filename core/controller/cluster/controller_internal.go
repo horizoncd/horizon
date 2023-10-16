@@ -152,7 +152,8 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record event
-	c.recordClusterEvent(ctx, cluster.ID, eventmodels.ClusterBuildDeployed)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterBuildDeployed, nil)
 
 	return &InternalDeployResponse{
 		PipelinerunID: pr.ID,

@@ -19,12 +19,10 @@ import (
 	"strconv"
 
 	"github.com/horizoncd/horizon/core/common"
-	eventManager "github.com/horizoncd/horizon/pkg/event/manager"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	"github.com/horizoncd/horizon/pkg/member/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type Controller interface {
@@ -45,14 +43,14 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		memberService: param.MemberService,
 		convertHelper: New(param),
-		eventMgr:      param.EventMgr,
+		eventSvc:      param.EventSvc,
 	}
 }
 
 type controller struct {
 	memberService memberservice.Service
 	convertHelper ConvertMemberHelp
-	eventMgr      eventManager.Manager
+	eventSvc      eventservice.Service
 }
 
 func (c *controller) CreateMember(ctx context.Context, postMember *PostMember) (*Member, error) {
@@ -64,7 +62,8 @@ func (c *controller) CreateMember(ctx context.Context, postMember *PostMember) (
 	if err != nil {
 		return nil, err
 	}
-	c.recodeMemberEvent(ctx, member, eventmodels.MemberCreated)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberCreated, nil)
 	return retMember, nil
 }
 
@@ -77,7 +76,8 @@ func (c *controller) UpdateMember(ctx context.Context, id uint, role string) (*M
 	if err != nil {
 		return nil, err
 	}
-	c.recodeMemberEvent(ctx, member, eventmodels.MemberUpdated)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberUpdated, nil)
 	return retMember, nil
 }
 
@@ -90,7 +90,8 @@ func (c *controller) RemoveMember(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	c.recodeMemberEvent(ctx, member, eventmodels.MemberDeleted)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberDeleted, nil)
 	return nil
 }
 
@@ -123,17 +124,4 @@ func (c *controller) GetMemberOfResource(ctx context.Context, resourceType strin
 		return nil, err
 	}
 	return retMember, nil
-}
-
-func (c *controller) recodeMemberEvent(ctx context.Context, member *models.Member, eventType string) {
-	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceID:   member.ID,
-			ResourceType: common.ResourceMember,
-			EventType:    eventType,
-		},
-	})
-	if err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
 }
