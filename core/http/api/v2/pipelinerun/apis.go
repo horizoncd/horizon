@@ -99,6 +99,10 @@ func (a *API) GetDiff(c *gin.Context) {
 	a.withPipelinerunID(c, func(pipelinerunID uint) {
 		diff, err := a.prCtl.GetDiff(c, uint(pipelinerunID))
 		if err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
 			response.AbortWithError(c, err)
 			return
 		}
