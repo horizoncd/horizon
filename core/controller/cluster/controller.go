@@ -39,7 +39,7 @@ import (
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	environmentregionmapper "github.com/horizoncd/horizon/pkg/environmentregion/manager"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	grafanaservice "github.com/horizoncd/horizon/pkg/grafana"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
@@ -159,7 +159,7 @@ type controller struct {
 	grafanaService        grafanaservice.Service
 	grafanaConfig         grafana.Config
 	buildSchema           *build.Schema
-	eventMgr              eventmanager.Manager
+	eventSvc              eventservice.Service
 	tokenSvc              tokenservice.Service
 	tokenConfig           token.Config
 	templateUpgradeMapper template.UpgradeMapper
@@ -201,7 +201,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaService:        param.GrafanaService,
 		grafanaConfig:         config.GrafanaConfig,
 		buildSchema:           param.BuildSchema,
-		eventMgr:              param.EventMgr,
+		eventSvc:              param.EventSvc,
 		tokenSvc:              param.TokenSvc,
 		tokenConfig:           config.TokenConfig,
 		templateUpgradeMapper: config.TemplateUpgradeMapper,

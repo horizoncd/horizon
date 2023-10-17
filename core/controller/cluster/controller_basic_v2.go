@@ -33,7 +33,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
 	"github.com/horizoncd/horizon/pkg/util/validate"
 
@@ -245,16 +244,9 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 12. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterCreated,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, ret.ID,
+		eventmodels.ClusterCreated, nil)
+	c.eventSvc.RecordMemberCreatedEvent(ctx, common.ResourceCluster, ret.ID)
 	// 13. customize response
 	return ret, nil
 }
@@ -519,15 +511,8 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterUpdated,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterUpdated, nil)
 
 	// 8. update cluster in db
 	clusterModel, tags := r.toClusterModel(cluster, expireSeconds, environmentName,
@@ -685,7 +670,8 @@ func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	c.recordPipelinerunCreatedEvent(ctx, pipelineRun)
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelineRun.ID,
+		eventmodels.PipelinerunCreated, nil)
 
 	firstCanRollbackPipelinerun, err := c.prMgr.PipelineRun.GetFirstCanRollbackPipelinerun(ctx, pipelineRun.ClusterID)
 	if err != nil {
@@ -829,17 +815,4 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		LastConfigCommit: lastConfigCommitSHA,
 		ConfigCommit:     configCommitSHA,
 	}, nil
-}
-
-func (c *controller) recordPipelinerunCreatedEvent(ctx context.Context, pr *prmodels.Pipelinerun) {
-	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceID:   pr.ID,
-			ResourceType: common.ResourcePipelinerun,
-			EventType:    eventmodels.PipelinerunCreated,
-		},
-	})
-	if err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
 }

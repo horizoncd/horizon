@@ -18,6 +18,9 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/horizoncd/horizon/core/common"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
 )
@@ -40,12 +43,14 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		memberService: param.MemberService,
 		convertHelper: New(param),
+		eventSvc:      param.EventSvc,
 	}
 }
 
 type controller struct {
 	memberService memberservice.Service
 	convertHelper ConvertMemberHelp
+	eventSvc      eventservice.Service
 }
 
 func (c *controller) CreateMember(ctx context.Context, postMember *PostMember) (*Member, error) {
@@ -57,6 +62,8 @@ func (c *controller) CreateMember(ctx context.Context, postMember *PostMember) (
 	if err != nil {
 		return nil, err
 	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberCreated, nil)
 	return retMember, nil
 }
 
@@ -69,11 +76,23 @@ func (c *controller) UpdateMember(ctx context.Context, id uint, role string) (*M
 	if err != nil {
 		return nil, err
 	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberUpdated, nil)
 	return retMember, nil
 }
 
 func (c *controller) RemoveMember(ctx context.Context, id uint) error {
-	return c.memberService.RemoveMember(ctx, id)
+	member, err := c.memberService.GetMember(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = c.memberService.RemoveMember(ctx, id)
+	if err != nil {
+		return err
+	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceMember, member.ID,
+		eventmodels.MemberDeleted, nil)
+	return nil
 }
 
 func (c *controller) ListMember(ctx context.Context, resourceType string, id uint) ([]Member, error) {

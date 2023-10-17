@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -101,7 +102,7 @@ func testListClusterByNameFuzzily(t *testing.T) {
 		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
 		groupManager:   manager.GroupMgr,
 		memberManager:  manager.MemberMgr,
-		eventMgr:       manager.EventMgr,
+		eventSvc:       eventservice.New(manager),
 		commitGetter:   commitGetter,
 	}
 
@@ -218,7 +219,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
 		groupManager:   manager.GroupMgr,
 		memberManager:  manager.MemberMgr,
-		eventMgr:       manager.EventMgr,
+		eventSvc:       eventservice.New(manager),
 		commitGetter:   commitGetter,
 	}
 
@@ -306,7 +307,7 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 		groupManager:   manager.GroupMgr,
 		envMgr:         manager.EnvMgr,
 		regionMgr:      manager.RegionMgr,
-		eventMgr:       manager.EventMgr,
+		eventSvc:       eventservice.New(manager),
 	}
 
 	id, err := registrydao.NewDAO(db).Create(ctx, &registrymodels.Registry{

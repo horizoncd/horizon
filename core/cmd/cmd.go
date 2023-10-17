@@ -110,6 +110,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cd"
 	clustermetrcis "github.com/horizoncd/horizon/pkg/cluster/metrics"
 	"github.com/horizoncd/horizon/pkg/environment/service"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
 	"github.com/horizoncd/horizon/pkg/jobs/autofree"
@@ -431,6 +432,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	groupSvc := groupservice.NewService(manager)
+	eventSvc := eventservice.New(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
@@ -454,6 +456,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ApplicationSvc:       applicationSvc,
 		ClusterSvc:           clusterSvc,
 		GroupSvc:             groupSvc,
+		EventSvc:             eventSvc,
 		UserSvc:              userSvc,
 		TokenSvc:             tokenSvc,
 		RoleService:          roleService,

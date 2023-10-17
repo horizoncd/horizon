@@ -21,7 +21,9 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/member"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/response"
@@ -234,6 +236,10 @@ func (a *API) DeleteMember(c *gin.Context) {
 	}
 	err = a.memberCtrl.RemoveMember(c, uint(uintID))
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}

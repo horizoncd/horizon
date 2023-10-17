@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"net/http"
 
+	membermanager "github.com/horizoncd/horizon/pkg/member"
+	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"gopkg.in/yaml.v3"
 
@@ -56,6 +58,7 @@ type MessageContent struct {
 	Application *ApplicationInfo      `json:"application,omitempty"`
 	Cluster     *ClusterInfo          `json:"cluster,omitempty"`
 	Pipelinerun *PipelinerunInfo      `json:"pipelinerun,omitempty"`
+	Member      *MemberInfo           `json:"member,omitempty"`
 	EventType   string                `json:"eventType,omitempty"`
 	User        *usermodels.UserBasic `json:"user,omitempty"`
 	Extra       *string               `json:"extra,omitempty"`
@@ -91,6 +94,16 @@ type PipelinerunInfo struct {
 	GitRefType  string `json:"gitRefType,omitempty"`
 }
 
+// MemberInfo contains basic info of member
+type MemberInfo struct {
+	ResourceCommonInfo
+	ResourceID   uint                      `json:"resourceID"`
+	ResourceType membermodels.ResourceType `json:"resourceType"`
+	Role         string                    `json:"role"`
+	MemberNameID uint                      `json:"memberNameID"`
+	MemberName   string                    `json:"memberName"`
+}
+
 // WebhookLogGenerator generates webhook logs by events
 type WebhookLogGenerator struct {
 	webhookMgr     webhookmanager.Manager
@@ -99,6 +112,7 @@ type WebhookLogGenerator struct {
 	applicationMgr applicationmanager.Manager
 	clusterMgr     clustermanager.Manager
 	prMgr          *prmanager.PRManager
+	memberMgr      membermanager.Manager
 	userMgr        usermanager.Manager
 }
 
@@ -110,6 +124,7 @@ func NewWebhookLogGenerator(manager *managerparam.Manager) *WebhookLogGenerator 
 		applicationMgr: manager.ApplicationMgr,
 		clusterMgr:     manager.ClusterMgr,
 		prMgr:          manager.PRMgr,
+		memberMgr:      manager.MemberMgr,
 		userMgr:        manager.UserMgr,
 	}
 }
@@ -120,6 +135,8 @@ type messageDependency struct {
 	application *applicationmodels.Application
 	cluster     *clustermodels.Cluster
 	pipelinerun *prmodels.Pipelinerun
+	member      *membermodels.Member
+	userBasic   *usermodels.UserBasic
 }
 
 // listSystemResources lists root group(0) as system resource
@@ -184,6 +201,32 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfPipelinerun(ctx context.C
 	return pr, cluster, resources
 }
 
+// listAssociatedResourcesOfMember gets member by id and list all the parent resources
+func (w *WebhookLogGenerator) listAssociatedResourcesOfMember(ctx context.Context,
+	id uint) (*membermodels.Member, *usermodels.UserBasic, map[string][]uint) {
+	member, err := w.memberMgr.GetByIDIncludeSoftDelete(ctx, id)
+	if err != nil {
+		log.Warningf(ctx, "member %d is not exist", id)
+		return nil, nil, nil
+	}
+	user, err := w.userMgr.GetUserByID(ctx, member.MemberNameID)
+	if err != nil {
+		log.Warningf(ctx, "user %d of member %d is not exist", member.MemberNameID, id)
+		return nil, nil, nil
+	}
+	var resources map[string][]uint
+	switch member.ResourceType {
+	case membermodels.TypeApplication:
+		_, resources = w.listAssociatedResourcesOfApp(ctx, member.ResourceID)
+	case membermodels.TypeApplicationCluster:
+		_, _, resources = w.listAssociatedResourcesOfCluster(ctx, member.ResourceID)
+	default:
+		// TODO: support member event of groups and templates
+		log.Warningf(ctx, "member event of resource type %s is unsupported yet", member.ResourceType)
+	}
+	return member, usermodels.ToUser(user), resources
+}
+
 // listAssociatedResources list all the associated resources of event to find all the webhooks
 func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 	e *models.Event) (*messageDependency, map[string][]uint) {
@@ -192,6 +235,8 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 		cluster     *clustermodels.Cluster
 		application *applicationmodels.Application
 		pr          *prmodels.Pipelinerun
+		member      *membermodels.Member
+		userBasic   *usermodels.UserBasic
 		dep         = &messageDependency{}
 	)
 
@@ -208,6 +253,10 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 		dep.cluster = cluster
 		dep.pipelinerun = pr
 		log.Debugf(ctx, "dep: %+v", dep)
+	case common.ResourceMember:
+		member, userBasic, resources = w.listAssociatedResourcesOfMember(ctx, e.ResourceID)
+		dep.member = member
+		dep.userBasic = userBasic
 	default:
 		log.Infof(ctx, "resource type %s is unsupported",
 			e.ResourceType)
@@ -288,6 +337,20 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 		}
 	}
 
+	if dep.event.ResourceType == common.ResourceMember &&
+		dep.member != nil && dep.userBasic != nil {
+		message.Member = &MemberInfo{
+			ResourceCommonInfo: ResourceCommonInfo{
+				ID: dep.member.ID,
+			},
+			ResourceID:   dep.member.ResourceID,
+			ResourceType: dep.member.ResourceType,
+			Role:         dep.member.Role,
+			MemberNameID: dep.member.MemberNameID,
+			MemberName:   dep.userBasic.Name,
+		}
+	}
+
 	reqBody, err := json.Marshal(message)
 	if err != nil {
 		log.Errorf(ctx, fmt.Sprintf("failed to marshal message, error: %+v", err))
@@ -344,6 +407,8 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 				application: dependency.application,
 				cluster:     dependency.cluster,
 				pipelinerun: dependency.pipelinerun,
+				member:      dependency.member,
+				userBasic:   dependency.userBasic,
 			}
 			conditionsToQuery[event.ID] = append(conditionsToQuery[event.ID], webhook.ID)
 		}
