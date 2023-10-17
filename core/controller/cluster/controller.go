@@ -201,6 +201,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaService:        param.GrafanaService,
 		grafanaConfig:         config.GrafanaConfig,
 		buildSchema:           param.BuildSchema,
+		eventSvc:              param.EventSvc,
 		tokenSvc:              param.TokenSvc,
 		tokenConfig:           config.TokenConfig,
 		templateUpgradeMapper: config.TemplateUpgradeMapper,
