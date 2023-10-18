@@ -17,15 +17,30 @@ components:
     pageNumber:
       name: pageNumber
       in: query
+      schema:
+        type: integer
+        format: int64
     pageSize:
       name: pageSize
       in: query
+      schema:
+        type: integer
+        format: int64
     paramResourceType:
       name: resourceType
       in: path
+      schema:
+        type: string
+        enum:
+          - groups
+          - applications
+          - clusters
+      description: resource type
     paramResourceID:
       name: resourceID
       in: path
+      schema:
+        type: string
     paramApplicationID:
       name: applicationID
       in: path
@@ -39,7 +54,16 @@ components:
     paramPipelinerunID:
       name: pipelinerunID
       in: path
+      schema:
+        type: string
       description: pipelinerun id
+      required: true
+    paramCheckrunID:
+      name: checkrunID
+      in: path
+      schema:
+        type: string
+      description: checkrun id
       required: true
     paramGroupID:
       name: groupID

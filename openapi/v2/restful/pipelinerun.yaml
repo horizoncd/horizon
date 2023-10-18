@@ -161,7 +161,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v2/clusters/:%v/pipelineruns:
+  /apis/core/v2/clusters/{clusterID}/pipelineruns:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramClusterID"
       - $ref: "common.yaml#/components/parameters/pageNumber"
@@ -171,12 +171,18 @@ paths:
         schema:
           type: boolean
         description: whether the pipelinerun can rollback
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [ pending, ready, ok, canceled, failed ]
+        description: status of pipelinerun
     get:
       tags:
         - pipelinerun
       operationId: getClusterPipelineRuns
       summary: |
-        Get pipelineruns of a cluster.
+        list pipelineruns of a cluster.
       responses:
         "200":
           description: Success
@@ -268,10 +274,10 @@ paths:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     post:
       tags:
-        - pipelinerun
-      operationId: createCheckRun
+        - checkrun
+      operationId: createCheckrun
       summary: |
-          Create a check run for the specified pipelinerun.
+        Create a check run for the specified pipelinerun.
       requestBody:
         content:
           application/json:
@@ -295,55 +301,130 @@ paths:
                   description: "detail url of check run"
       responses:
         "200":
-            description: Success
+          description: Success
     get:
       tags:
-          - pipelinerun
-      operationId: listCheckRuns
+        - checkrun
+      operationId: listCheckruns
       summary: |
         List check runs of the specified pipelinerun.
       responses:
-          "200":
-            description: Success
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    total:
-                      type: integer
-                      description: "total number of check runs"
-                    data:
-                      type: object
-                      properties:
-                        items:
-                          type: array
-                          properties:
-                              id:
-                                  type: integer
-                                  description: "id of check run"
-                              name:
-                                  type: string
-                                  description: "name of check run"
-                              checkId:
-                                  type: integer
-                                  description: "check id of check run"
-                              status:
-                                  type: string
-                                  description: "status of check run"
-                              pipilineRunId:
-                                  type: integer
-                                  description: "pipelinerun id of check run"
-                              detailUrl:
-                                  type: string
-                                  description: "detail url of check run"
-                              message:
-                                  type: string
-                                  description: "message of check run"
-                              createdAt:
-                                  type: string
-                              updatedAt:
-                                  type: string
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: "total number of check runs"
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        properties:
+                          id:
+                            type: integer
+                            description: "id of check run"
+                          name:
+                            type: string
+                            description: "name of check run"
+                          checkId:
+                            type: integer
+                            description: "check id of check run"
+                          status:
+                            type: string
+                            description: "status of check run"
+                          pipilineRunId:
+                            type: integer
+                            description: "pipelinerun id of check run"
+                          detailUrl:
+                            type: string
+                            description: "detail url of check run"
+                          message:
+                            type: string
+                            description: "message of check run"
+                          createdAt:
+                            type: string
+                          updatedAt:
+                            type: string
+  /apis/core/v2/checkruns/{checkrunID}:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramCheckrunID"
+    get:
+      tags:
+        - checkrun
+      operationId: getCheckrun
+      summary: |
+        get the specified check run.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    properties:
+                      id:
+                        type: integer
+                        description: "id of check run"
+                      name:
+                        type: string
+                        description: "name of check run"
+                      checkId:
+                        type: integer
+                        description: "check id of check run"
+                      status:
+                        type: string
+                        description: "status of check run"
+                      pipilineRunId:
+                        type: integer
+                        description: "pipelinerun id of check run"
+                      detailUrl:
+                        type: string
+                        description: "detail url of check run"
+                      message:
+                        type: string
+                        description: "message of check run"
+                      createdAt:
+                        type: string
+                      updatedAt:
+                        type: string
+    put:
+      tags:
+        - checkrun
+      operationId: updateCheckrun
+      summary: |
+        update the specified check run.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "name of check run"
+                checkId:
+                  type: integer
+                  description: "check id of check run"
+                status:
+                  type: string
+                  description: "status of check run"
+                message:
+                  type: string
+                  description: "message of check run"
+                detailUrl:
+                  type: string
+                  description: "detail url of check run"
+      responses:
+        "200":
+          description: Success
   /apis/core/v2/pipelineruns/{pipelinerunID}/message:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
@@ -367,39 +448,39 @@ paths:
           description: "Success"
     get:
       tags:
-          - pipelinerun
+        - pipelinerun
       operationId: listMessage
       summary: |
         List message of the specified pipelinerun.
       responses:
-          "200":
-            description: Success
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    total:
-                      type: integer
-                      description: "total number of message"
-                    data:
-                      type: array
-                      properties:
-                        id:
-                          type: integer
-                          description: "id of message"
-                        pipilineRunId:
-                          type: integer
-                          description: "pipelinerun id of message"
-                        content:
-                          type: string
-                          description: "content of message"
-                        createdAt:
-                          type: string
-                        createdBy:
-                            $ref: "#/components/schemas/MessageUser"
-                        updatedBy:
-                          $ref: "#/components/schemas/MessageUser"
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: "total number of message"
+                  data:
+                    type: array
+                    properties:
+                      id:
+                        type: integer
+                        description: "id of message"
+                      pipilineRunId:
+                        type: integer
+                        description: "pipelinerun id of message"
+                      content:
+                        type: string
+                        description: "content of message"
+                      createdAt:
+                        type: string
+                      createdBy:
+                        $ref: "#/components/schemas/MessageUser"
+                      updatedBy:
+                        $ref: "#/components/schemas/MessageUser"
 
 
 
@@ -408,19 +489,19 @@ components:
     MessageUser:
       type: object
       properties:
-          id:
-            type: integer
-          name:
-            type: string
-          userType:
-            type: string
+        id:
+          type: integer
+        name:
+          type: string
+        userType:
+          type: string
     PipelineRun:
       type: object
       properties:
         action:
           type: string
           description: "action of pipelinerun"
-          enum: ["builddeploy", "deploy", "restart", "rollback"]
+          enum: [ "builddeploy", "deploy", "restart", "rollback" ]
         canRollback:
           type: boolean
           description: "whether this pipelinerun can be specified to rollback"
@@ -457,7 +538,7 @@ components:
           description: "start time of pipelinerun"
         status:
           type: string
-          enum: ["ok", "waiting", "failed", "canceled"]
+          enum: [ "ok", "waiting", "failed", "canceled" ]
         title:
           type: string
           description: "title of pipelinerun"
