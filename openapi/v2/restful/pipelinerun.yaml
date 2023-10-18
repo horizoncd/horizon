@@ -320,36 +320,9 @@ paths:
                     type: integer
                     description: "total number of check runs"
                   data:
-                    type: object
-                    properties:
-                      items:
-                        type: array
-                        properties:
-                          id:
-                            type: integer
-                            description: "id of check run"
-                          name:
-                            type: string
-                            description: "name of check run"
-                          checkId:
-                            type: integer
-                            description: "check id of check run"
-                          status:
-                            type: string
-                            description: "status of check run"
-                          pipilineRunId:
-                            type: integer
-                            description: "pipelinerun id of check run"
-                          detailUrl:
-                            type: string
-                            description: "detail url of check run"
-                          message:
-                            type: string
-                            description: "message of check run"
-                          createdAt:
-                            type: string
-                          updatedAt:
-                            type: string
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Checkrun"
   /apis/core/v2/checkruns/{checkrunID}:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramCheckrunID"
@@ -367,34 +340,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  items:
-                    type: array
-                    properties:
-                      id:
-                        type: integer
-                        description: "id of check run"
-                      name:
-                        type: string
-                        description: "name of check run"
-                      checkId:
-                        type: integer
-                        description: "check id of check run"
-                      status:
-                        type: string
-                        description: "status of check run"
-                      pipilineRunId:
-                        type: integer
-                        description: "pipelinerun id of check run"
-                      detailUrl:
-                        type: string
-                        description: "detail url of check run"
-                      message:
-                        type: string
-                        description: "message of check run"
-                      createdAt:
-                        type: string
-                      updatedAt:
-                        type: string
+                  data:
+                    $ref: "#/components/schemas/Checkrun"
     put:
       tags:
         - checkrun
@@ -575,3 +522,31 @@ components:
             to:
               type: string
               description: "the last commit after the change"
+    Checkrun:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "id of check run"
+        name:
+          type: string
+          description: "name of check run"
+        checkId:
+          type: integer
+          description: "check id of check run"
+        status:
+          type: string
+          description: "status of check run"
+        pipilineRunId:
+          type: integer
+          description: "pipelinerun id of check run"
+        detailUrl:
+          type: string
+          description: "detail url of check run"
+        message:
+          type: string
+          description: "message of check run"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string

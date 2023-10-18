@@ -99,6 +99,12 @@ func (a *API) Update(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		}
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
