@@ -20,10 +20,13 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 
 	"github.com/gin-gonic/gin"
@@ -119,6 +122,10 @@ func (a *API) GetDiff(c *gin.Context) {
 	}
 	diff, err := a.prCtl.GetDiff(c, uint(pipelinerunID))
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}

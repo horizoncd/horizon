@@ -42,6 +42,7 @@ const (
 	MemberUpdated          string = "members_updated"
 	MemberDeleted          string = "members_deleted"
 	PipelinerunCreated     string = "pipelineruns_created"
+	PipelinerunCancelled   string = "pipelineruns_cancelled"
 	// TODO: add group events
 )
 
