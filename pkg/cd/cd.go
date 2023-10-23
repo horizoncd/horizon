@@ -56,6 +56,13 @@ const (
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 )
 
+var (
+	GKPod = schema.GroupKind{
+		Group: "",
+		Kind:  "Pod",
+	}
+)
+
 const (
 	// PodLifeCycleSchedule specifies whether pod has been scheduled
 	PodLifeCycleSchedule = "PodSchedule"
@@ -195,47 +202,31 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 
-	podsMap := make(map[string]*corev1.Pod)
-	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
-		ifContinue := false
-		workload.LoopAbilities(func(workload workload.Workload) bool {
-			if !workload.MatchGK(schema.GroupKind{Group: node.Group, Kind: node.Kind}) {
-				return true
-			}
-			gt := getter.New(workload)
-
-			var (
-				pods []corev1.Pod
-				err  error
-			)
-			_ = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
-				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
-					pods, err = gt.ListPods(node.ResourceNode, factory)
-					return nil
-				})
-			if err != nil {
-				return true
-			}
-
-			for i := range pods {
-				podsMap[string(pods[i].UID)] = &pods[i]
-			}
-			ifContinue = false
-			return false
-		})
-		return ifContinue
-	})
-
 	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
+	pd, err := workload.GetAbility(GKPod)
+	if err != nil {
+		return nil, err
+	}
+	gt := getter.New(pd)
 	for _, node := range resourceTreeInArgo.Nodes {
 		n := ResourceNode{ResourceNode: node}
 		if n.Kind == "Pod" {
-			if podDetail, ok := podsMap[n.UID]; ok {
-				t := Compact(*podDetail)
-				n.PodDetail = &t
-			} else {
+			var podDetail corev1.Pod
+			err = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
+				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+					pods, err := gt.ListPods(&node, factory)
+					if err != nil {
+						return err
+					}
+					podDetail = pods[0]
+					return nil
+				})
+			if err != nil {
+				log.Errorf(ctx, "failed to get pod detail: %v", err)
 				continue
 			}
+			t := Compact(podDetail)
+			n.PodDetail = &t
 		}
 		resourceTree = append(resourceTree, n)
 	}

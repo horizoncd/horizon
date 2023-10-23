@@ -15,7 +15,10 @@
 package workload
 
 import (
+	"fmt"
+
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +40,16 @@ func Register(ability Workload, gvrs ...schema.GroupVersionResource) {
 		})
 	}
 	Resources = append(Resources, gvrsUnderResource...)
+}
+
+func GetAbility(gk schema.GroupKind) (Workload, error) {
+	for _, ability := range abilities {
+		if ability.MatchGK(gk) {
+			return ability, nil
+		}
+	}
+	return nil, herrors.NewErrGetFailed(herrors.StepInWorkload,
+		fmt.Sprintf("ability does not exist, gk = %v", gk))
 }
 
 type Handler func(workload Workload) bool
