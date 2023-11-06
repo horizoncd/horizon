@@ -126,7 +126,7 @@ func (m *ResourceMatcher) Match(req *Request) bool {
 		}
 	}
 	if m.operations != nil {
-		if _, ok := m.operations[models.Operation(req.Operation)]; !ok {
+		if _, ok := m.operations[req.Operation]; !ok {
 			return false
 		}
 	}
@@ -174,7 +174,7 @@ func NewHTTPWebhooks(config config.Admission) {
 	}
 }
 
-func NewHTTPWebhook(config config.Webhook) *HTTPAdmissionWebhook {
+func NewHTTPWebhook(config config.Webhook) Webhook {
 	client := NewHTTPAdmissionClient(config.ClientConfig, time.Duration(config.TimeoutSeconds)*time.Second)
 	matchers := NewResourceMatchers(config.Rules)
 	return &HTTPAdmissionWebhook{

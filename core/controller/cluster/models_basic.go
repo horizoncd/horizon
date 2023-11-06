@@ -106,8 +106,8 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		// r.Git cannot be nil
 		gitURL          = r.Git.URL
 		gitSubfolder    = r.Git.Subfolder
-		templateName    = ""
-		templateRelease = ""
+		templateName    = application.Template
+		templateRelease = application.TemplateRelease
 	)
 	// if gitURL or gitSubfolder is empty, use application's gitURL or gitSubfolder
 	if gitURL == "" {
@@ -150,12 +150,6 @@ func (r *CreateClusterRequest) toAdmissionRequest(
 	app *appmodels.Application,
 	env, region string,
 	mergePatch bool) *admission.Request {
-	if r.Template == nil {
-		r.Template = &Template{
-			Name:    app.Template,
-			Release: app.TemplateRelease,
-		}
-	}
 	cluster := r.toClusterModel(app, env, region)
 	admissionCluster := &Cluster{
 		Cluster:       cluster.Cluster,

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
+	"k8s.io/apimachinery/pkg/util/runtime"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/admission/models"
@@ -88,9 +89,7 @@ func Validating(ctx context.Context, request *Request) error {
 	resCh := make(chan validateResult)
 	for _, webhook := range validatingWebhooks {
 		go func(webhook Webhook) {
-			defer func() {
-				finishedCount++
-			}()
+			defer runtime.HandleCrash()
 			if !webhook.Interest(request) {
 				resCh <- validateResult{nil, nil}
 				return
@@ -112,21 +111,21 @@ func Validating(ctx context.Context, request *Request) error {
 		}(webhook)
 	}
 
-	if finishedCount < len(validatingWebhooks) {
-		for res := range resCh {
-			finishedCount++
-			if res.err != nil {
-				return res.err
-			}
-			if res.resp != nil && res.resp.Allowed != nil && !*res.resp.Allowed {
-				log.Infof(ctx, "request denied by webhook: %s", res.resp.Result)
-				return perror.Wrapf(herrors.ErrForbidden, "request denied by webhook: %s", res.resp.Result)
-			}
-			if finishedCount >= len(validatingWebhooks) {
-				break
-			}
+	for res := range resCh {
+		finishedCount++
+		if res.err != nil {
+			return res.err
+		}
+		if res.resp != nil && res.resp.Allowed != nil && !*res.resp.Allowed {
+			log.Infof(ctx, "request denied by webhook: %s", res.resp.Result)
+			return perror.Wrapf(herrors.ErrForbidden, "request denied by webhook: %s", res.resp.Result)
+		}
+		if finishedCount >= len(validatingWebhooks) {
+			close(resCh)
+			break
 		}
 	}
+
 	return nil
 }
 
