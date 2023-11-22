@@ -214,10 +214,13 @@ func (c *cd) GetResourceTree(ctx context.Context,
 			var podDetail corev1.Pod
 			err = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
 				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+					log.Debugf(ctx, "get pod detail: %v", node.Name)
 					pods, err := gt.ListPods(&node, factory)
 					if err != nil {
+						log.Debugf(ctx, "failed to get pod detail: %v", err)
 						return err
 					}
+					log.Debugf(ctx, "get pod detail success: %v", node.Name)
 					podDetail = pods[0]
 					return nil
 				})
