@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/horizoncd/horizon/pkg/util/kube"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
@@ -121,6 +122,8 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		return err
 	}
 	restConfig = metadata.ConfigFor(restConfig)
+	restConfig.QPS = kube.K8sClientConfigQPS
+	restConfig.Burst = kube.K8sClientConfigBurst
 
 	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {

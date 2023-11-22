@@ -188,7 +188,7 @@ func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (er
 
 func (c *cd) GetResourceTree(ctx context.Context,
 	params *GetResourceTreeParams) ([]ResourceNode, error) {
-	const op = "cd: get cluster status"
+	const op = "cd: get resource tree"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
