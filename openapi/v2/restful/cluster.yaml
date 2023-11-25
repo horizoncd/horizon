@@ -206,7 +206,7 @@ paths:
           content:
             application/json:
               schema:
-                properties: 
+                properties:
                   data:
                     $ref: "#/components/schemas/PipelinerunIDResponse"
         default:
@@ -1121,7 +1121,7 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema: { }
     delete:
       summary: Remove cluster from favorites
       operationId: removeFavoriteCluster
@@ -1130,7 +1130,7 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema: { }
   /apis/core/v2/clusters/{clusterId}/pipelineruns:
     parameters:
       - name: clusterId
@@ -1141,41 +1141,41 @@ paths:
           type: integer
           example: 60517
     post:
-        summary: Create a pipelinerun for a cluster
-        operationId: createPipelinerun
-        tags: [cluster]
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  action:
-                    type: string
-                    enum: [builddeploy, deploy, rollback]
-                    description: type of pipelinerun
-                  title:
-                    type: string
-                    description: title of pipelinerun
-                  description:
-                    type: string
-                    description: description of pipelinerun
-                  git:
-                    type: object
-                    properties:
-                      branch:
-                        type: string
-                        description: branch of git repository
-                  imageTag:
-                    type: string
-                    description: image tag of a image
-                  pipelinerunID:
-                    type: number
-                    description: id of pipelinerun
-        responses:
-            '200':
-            description: OK
+      summary: Create a pipelinerun for a cluster
+      operationId: createPipelinerun
+      tags: [ cluster ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [ builddeploy, deploy, rollback ]
+                  description: type of pipelinerun
+                title:
+                  type: string
+                  description: title of pipelinerun
+                description:
+                  type: string
+                  description: description of pipelinerun
+                git:
+                  type: object
+                  properties:
+                    branch:
+                      type: string
+                      description: branch of git repository
+                imageTag:
+                  type: string
+                  description: image tag of a image
+                pipelinerunID:
+                  type: number
+                  description: id of pipelinerun
+      responses:
+        '200':
+          description: OK
 
 
 components:
@@ -1339,7 +1339,7 @@ components:
           $ref: "#/components/schemas/GitResponse"
         type:
           type: string
-          enum: [workload, database, middleware, other, v1]
+          enum: [ workload, database, middleware, other, v1 ]
           description: type of template related to cluster
         tags:
           $ref: "#/components/schemas/Tags"
@@ -1497,7 +1497,7 @@ components:
       properties:
         pipelinerunID:
           $ref: "#/components/schemas/PipelinerunID"
-  
+
     DeployRequest:
       type: object
       properties:

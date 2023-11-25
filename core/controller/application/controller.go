@@ -32,8 +32,8 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/member"
@@ -49,7 +49,6 @@ import (
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/permission"
 	"github.com/horizoncd/horizon/pkg/util/validate"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -95,7 +94,7 @@ type controller struct {
 	clusterMgr           clustermanager.Manager
 	userSvc              usersvc.Service
 	memberManager        member.Manager
-	eventMgr             eventmanager.Manager
+	eventSvc             eventservice.Service
 	tagMgr               tagmanager.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
@@ -116,7 +115,7 @@ func NewController(param *param.Param) Controller {
 		clusterMgr:           param.ClusterMgr,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberMgr,
-		eventMgr:             param.EventMgr,
+		eventSvc:             param.EventSvc,
 		tagMgr:               param.TagMgr,
 		applicationRegionMgr: param.ApplicationRegionMgr,
 		pipelinemanager:      param.PipelineMgr,
@@ -309,16 +308,9 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
-			ResourceID:   ret.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceApplication, ret.ID,
+		eventmodels.ApplicationCreated, nil)
+	c.eventSvc.RecordMemberCreatedEvent(ctx, common.ResourceApplication, ret.ID)
 	return ret, nil
 }
 
@@ -436,16 +428,9 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		ret.Priority = *request.Priority
 	}
 
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
-			ResourceID:   applicationDBModel.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceApplication, ret.ID,
+		eventmodels.ApplicationCreated, nil)
+	c.eventSvc.RecordMemberCreatedEvent(ctx, common.ResourceApplication, ret.ID)
 	return ret, nil
 }
 
@@ -498,15 +483,8 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	}
 
 	// 5. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationUpdated,
-			ResourceID:   applicationModel.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceApplication, applicationModel.ID,
+		eventmodels.ApplicationUpdated, nil)
 
 	// 6. get fullPath
 	group, err := c.groupSvc.GetChildByID(ctx, appExistsInDB.GroupID)
@@ -591,15 +569,8 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 	}
 
 	// 6. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationUpdated,
-			ResourceID:   appExistsInDB.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceApplication, appExistsInDB.ID,
+		eventmodels.ApplicationUpdated, nil)
 	return err
 }
 
@@ -652,16 +623,8 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 	}
 
 	// 4. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationDeleted,
-			ResourceID:   id,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceApplication, id,
+		eventmodels.ApplicationDeleted, nil)
 	return nil
 }
 

@@ -36,6 +36,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/token"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
@@ -93,6 +95,7 @@ type controller struct {
 	commitGetter       code.GitGetter
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	userMgr            usermanager.Manager
+	eventSvc           eventservice.Service
 }
 
 var _ Controller = (*controller)(nil)
@@ -113,6 +116,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		clusterGitRepo:     param.ClusterGitRepo,
 		userMgr:            param.UserMgr,
 		templateReleaseMgr: param.TemplateReleaseMgr,
+		eventSvc:           param.EventSvc,
 	}
 }
 
@@ -496,7 +500,13 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	if pr.Status != string(prmodels.StatusPending) && pr.Status != string(prmodels.StatusReady) {
 		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not pending or ready to cancel")
 	}
-	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
+	err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusCancelled)
+	if err != nil {
+		return err
+	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
+		eventmodels.PipelinerunCancelled, nil)
+	return nil
 }
 
 func (c *controller) ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*prmodels.CheckRun, error) {

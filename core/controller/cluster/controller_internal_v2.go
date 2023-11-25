@@ -24,7 +24,6 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
@@ -179,30 +178,17 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record cluster event
-	c.recordClusterEvent(ctx, pr, cluster)
+	eventType := eventmodels.ClusterDeployed
+	if pr.Action == prmodels.ActionBuildDeploy {
+		eventType = eventmodels.ClusterBuildDeployed
+	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventType, nil)
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
 		Commit:        configCommit.Gitops,
 	}, nil
-}
-
-func (c *controller) recordClusterEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
-	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType: func() string {
-				if pr.Action == prmodels.ActionBuildDeploy {
-					return eventmodels.ClusterBuildDeployed
-				}
-				return eventmodels.ClusterDeployed
-			}(),
-			ResourceID: cluster.ID,
-		},
-	})
-	if err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
 }
 
 func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
