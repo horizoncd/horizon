@@ -36,7 +36,6 @@ import (
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -719,49 +718,4 @@ func (c *controller) updatePipelineRunStatus(ctx context.Context,
 	log.Infof(ctx, "%s status, pr = %d, status =  %s, revision = %s",
 		action, prID, pState, revision)
 	return nil
-}
-
-// updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated
-func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
-	application *amodels.Application, cluster *cmodels.Cluster) (*cmodels.Cluster, error) {
-	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
-	if err != nil {
-		return nil, err
-	}
-	cluster.Template = templateFromFile.Name
-	cluster.TemplateRelease = templateFromFile.Release
-	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	files, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, file := range files {
-		if file.FileName == common.GitopsFileTags {
-			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-			if err != nil {
-				return nil, err
-			}
-			midMap := file.Content[release.ChartName].(map[string]interface{})
-			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
-			tags := make([]*tmodels.TagBasic, 0, len(tagsMap))
-			for k, v := range tagsMap {
-				value, ok := v.(string)
-				if !ok {
-					continue
-				}
-				tags = append(tags, &tmodels.TagBasic{
-					Key:   k,
-					Value: value,
-				})
-			}
-			return cluster, c.tagMgr.UpsertByResourceTypeID(ctx,
-				common.ResourceCluster, cluster.ID, tags)
-		}
-	}
-	return cluster, nil
 }

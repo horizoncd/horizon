@@ -25,6 +25,7 @@ import (
 	"time"
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
+	appservice "github.com/horizoncd/horizon/pkg/application/service"
 	clustercd "github.com/horizoncd/horizon/pkg/cd"
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
@@ -56,6 +57,7 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
+	cluterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	templateconfig "github.com/horizoncd/horizon/pkg/config/template"
 	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
@@ -515,11 +517,11 @@ func TestAll(t *testing.T) {
 func test(t *testing.T) {
 	// for test
 	conf := config.Config{}
-	param := param.Param{
+	parameter := param.Param{
 		AutoFreeSvc: service.New([]string{"test", "dev"}),
 		Manager:     managerparam.InitManager(nil),
 	}
-	NewController(&conf, &param)
+	NewController(&conf, &parameter)
 
 	templateName := "javaapp"
 	mockCtl := gomock.NewController(t)
@@ -563,6 +565,9 @@ func test(t *testing.T) {
 	groupMgr := manager.GroupMgr
 	registryDAO := registrydao.NewDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
+
+	groupSvc := groupservice.NewService(manager)
+	appSvc := appservice.NewService(groupSvc, manager)
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -634,6 +639,7 @@ func test(t *testing.T) {
 	c = &controller{
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
+		clusterSvc:           cluterservice.NewService(appSvc, clusterGitRepo, manager),
 		commitGetter:         commitGetter,
 		cd:                   cd,
 		k8sutil:              k8sutil,
@@ -644,7 +650,7 @@ func test(t *testing.T) {
 		envMgr:               envMgr,
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
-		autoFreeSvc:          param.AutoFreeSvc,
+		autoFreeSvc:          parameter.AutoFreeSvc,
 		groupSvc:             groupservice.NewService(manager),
 		prMgr:                manager.PRMgr,
 		tektonFty:            tektonFty,
@@ -1087,8 +1093,8 @@ func test(t *testing.T) {
 			Name:    resp.Template.Name,
 			Release: resp.Template.Release,
 		}, nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetManifest(ctx, application.Name, resp.Name, gomock.Any()).
-		Return(nil, herrors.NewErrNotFound(herrors.GitlabResource, "")).Times(2)
+	clusterGitRepo.EXPECT().CheckAndSyncGitOpsBranch(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
 	// update status to 'ok'
 	err = manager.PRMgr.PipelineRun.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
 		Result: string(prmodels.StatusOK),
@@ -1281,11 +1287,11 @@ func test(t *testing.T) {
 func testV2(t *testing.T) {
 	// for test
 	conf := config.Config{}
-	param := param.Param{
+	parameter := param.Param{
 		AutoFreeSvc: service.New([]string{"dev", "test2"}),
 		Manager:     managerparam.InitManager(nil),
 	}
-	NewController(&conf, &param)
+	NewController(&conf, &parameter)
 	templateName := "rollout"
 	templateVersion := "v1.0.0"
 	mockCtl := gomock.NewController(t)
@@ -1415,7 +1421,7 @@ func testV2(t *testing.T) {
 		groupSvc:             groupservice.NewService(manager),
 		prMgr:                manager.PRMgr,
 		userManager:          manager.UserMgr,
-		autoFreeSvc:          param.AutoFreeSvc,
+		autoFreeSvc:          parameter.AutoFreeSvc,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
@@ -1586,8 +1592,6 @@ func testUpgrade(t *testing.T) {
 		Path:     "group-upgrade",
 		ParentID: 0,
 	})
-	t.Logf("%+v", err)
-	t.Logf("%+v", group)
 	assert.Nil(t, err)
 	assert.NotNil(t, group)
 	gitURL := "ssh://git.com"
@@ -1704,9 +1708,10 @@ func testUpgrade(t *testing.T) {
 			Release: resp.Template.Release,
 		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().UpgradeCluster(ctx, gomock.Any()).Return("", nil).Times(1)
-	clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
-	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+	// clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
+	// clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
+	// 	gomock.Any(), gomock.Any()).Return("", nil).Times(1)
+	clusterGitRepo.EXPECT().SyncGitOpsBranch(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 	err = c.Upgrade(ctx, resp.ID)
 	assert.Nil(t, err)

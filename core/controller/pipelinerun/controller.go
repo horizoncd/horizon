@@ -561,21 +561,22 @@ func (c *controller) executeRestart(ctx context.Context, application *appmodels.
 
 func (c *controller) executeRollback(ctx context.Context, application *appmodels.Application,
 	cluster *clustermodels.Cluster, pr *prmodels.Pipelinerun) error {
-	// 1. update pr status to running
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":     prmodels.StatusRunning,
-		"started_at": time.Now(),
-	}); err != nil {
-		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
-			pr.ID, prmodels.StatusRunning)
-	}
-	// 2. get pipelinerun to rollback
+	// 1. get pipelinerun to rollback
 	if pr.RollbackFrom == nil {
 		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun to rollback is empty")
 	}
 	prToRollback, err := c.prMgr.PipelineRun.GetByID(ctx, *pr.RollbackFrom)
 	if err != nil {
 		return perror.Wrapf(err, "failed to get pipelinerun to rollback, pr = %d", *pr.RollbackFrom)
+	}
+
+	// 2. update pr status to running
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":     prmodels.StatusRunning,
+		"started_at": time.Now(),
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
+			pr.ID, prmodels.StatusRunning)
 	}
 
 	// for internal usage
