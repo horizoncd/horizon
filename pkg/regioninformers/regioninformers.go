@@ -68,6 +68,34 @@ type Target struct {
 	Regions map[uint]struct{}
 }
 
+type LoggingMutext struct {
+	sync.RWMutex
+}
+
+func (m *LoggingMutext) Lock() {
+	log.Debugf(context.Background(), "Lock")
+	m.RWMutex.Lock()
+	log.Debugf(context.Background(), "Locked")
+}
+
+func (m *LoggingMutext) Unlock() {
+	log.Debugf(context.Background(), "Unlock")
+	m.RWMutex.Unlock()
+	log.Debugf(context.Background(), "Unlocked")
+}
+
+func (m *LoggingMutext) RLock() {
+	log.Debugf(context.Background(), "RLock")
+	m.RWMutex.RLock()
+	log.Debugf(context.Background(), "RLocked")
+}
+
+func (m *LoggingMutext) RUnlock() {
+	log.Debugf(context.Background(), "RUnlock")
+	m.RWMutex.RUnlock()
+	log.Debugf(context.Background(), "RUnlocked")
+}
+
 // RegionInformers is a collection of informer factories for each region
 type RegionInformers struct {
 	regionMgr manager.Manager
@@ -77,7 +105,7 @@ type RegionInformers struct {
 	handlers []Resource
 
 	// mu protects factories, lastUpdated and stopChanMap
-	mu      sync.RWMutex
+	mu      LoggingMutext
 	clients map[uint]*RegionClient
 }
 
@@ -417,8 +445,10 @@ func (f *RegionInformers) GetDynamicFactory(regionID uint, operation DynamicFact
 		return err
 	}
 
+	log.Debugf(context.Background(), "get dynamic factory: %d", regionID)
 	f.mu.RLock()
 	defer f.mu.RUnlock()
+	log.Debugf(context.Background(), "got dynamic factory: %d", regionID)
 	return operation(f.clients[regionID].dynamicFactory)
 }
 
