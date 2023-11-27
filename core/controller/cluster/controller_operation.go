@@ -280,7 +280,7 @@ func getDeployImage(imageURL, deployTag string) (string, error) {
 
 func (c *controller) Rollback(ctx context.Context,
 	clusterID uint, r *RollbackRequest) (_ *PipelinerunIDResponse, err error) {
-	const op = "cluster controller: rollback "
+	const op = "cluster controller: rollback"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pipelinerun to rollback, and do some validation
@@ -335,8 +335,8 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// Deprecated: for internal usage
-	err = c.checkAndSyncGitOpsBranch(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
+	// for internal usage
+	err = c.clusterGitRepo.CheckAndSyncGitOpsBranch(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (c *controller) Rollback(ctx context.Context,
 
 	// 6. update template and tags in db
 	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
-	cluster, err = c.updateTemplateAndTagsFromFile(ctx, application, cluster)
+	cluster, err = c.clusterSvc.SyncDBWithGitRepo(ctx, application, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -671,7 +671,7 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	}
 
 	// 3. sync gitops branch if restarts occur
-	err = c.syncGitOpsBranch(ctx, application.Name, cluster.Name)
+	err = c.clusterGitRepo.SyncGitOpsBranch(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return err
 	}
@@ -764,80 +764,4 @@ func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
 		}
 	}
 	return cluster, nil
-}
-
-func (c *controller) checkAndSyncGitOpsBranch(ctx context.Context, application,
-	cluster string, commit string) error {
-	changed, err := c.manifestVersionChanged(ctx, application, cluster, commit)
-	if err != nil {
-		return err
-	}
-	if changed {
-		err = c.syncGitOpsBranch(ctx, application, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Deprecated: for internal usage
-// manifestVersionChanged determines whether manifest version is changed
-func (c *controller) manifestVersionChanged(ctx context.Context, application,
-	cluster string, commit string) (bool, error) {
-	currentManifest, err1 := c.clusterGitRepo.GetManifest(ctx, application, cluster, nil)
-	if err1 != nil {
-		if _, ok := perror.Cause(err1).(*herrors.HorizonErrNotFound); !ok {
-			log.Errorf(ctx, "get cluster manifest error, err = %s", err1.Error())
-			return false, err1
-		}
-	}
-	targetManifest, err2 := c.clusterGitRepo.GetManifest(ctx, application, cluster, &commit)
-	if err2 != nil {
-		if _, ok := perror.Cause(err2).(*herrors.HorizonErrNotFound); !ok {
-			log.Errorf(ctx, "get cluster manifest error, err = %s", err2.Error())
-			return false, err2
-		}
-	}
-	if err1 != nil && err2 != nil {
-		// manifest does not exist in both revisions
-		return false, nil
-	}
-	if err1 != nil || err2 != nil {
-		// One exists and the other does not exist in two revisions
-		return true, nil
-	}
-	return currentManifest.Version != targetManifest.Version, nil
-}
-
-// Deprecated: for internal usage
-// syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
-// Restart updates time in restart.yaml in default branch. When other actions update
-// template prefix in gitOps branch, there are merge conflicts in restart.yaml because
-// usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
-// For example:
-//
-//	<<<<<<< HEAD
-//	javaapp:
-//	  restartTime: "2025-02-19 10:24:52"
-//	=======
-//	rollout:
-//	  restartTime: "2025-02-14 12:12:07"
-//	>>>>>>> gitops
-func (c *controller) syncGitOpsBranch(ctx context.Context, application, cluster string) error {
-	gitOpsBranch := gitrepo.GitOpsBranch
-	defaultBranch := c.clusterGitRepo.DefaultBranch()
-	diff, err := c.clusterGitRepo.CompareConfig(ctx, application, cluster,
-		&gitOpsBranch, &defaultBranch)
-	if err != nil {
-		return err
-	}
-	if diff != "" {
-		_, err = c.clusterGitRepo.MergeBranch(ctx, application,
-			cluster, defaultBranch, gitOpsBranch, nil)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

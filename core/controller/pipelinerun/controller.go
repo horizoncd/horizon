@@ -26,10 +26,15 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
@@ -96,6 +101,8 @@ type controller struct {
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	userMgr            usermanager.Manager
 	eventSvc           eventservice.Service
+	cd                 cd.CD
+	clusterSvc         clusterservice.Service
 }
 
 var _ Controller = (*controller)(nil)
@@ -117,6 +124,8 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		userMgr:            param.UserMgr,
 		templateReleaseMgr: param.TemplateReleaseMgr,
 		eventSvc:           param.EventSvc,
+		cd:                 param.CD,
+		clusterSvc:         param.ClusterSvc,
 	}
 }
 
@@ -394,26 +403,38 @@ func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) erro
 		return err
 	}
 
-	// 1. get cluster
+	// 0. get resources
 	cluster, err := c.clusterMgr.GetByID(ctx, pr.ClusterID)
 	if err != nil {
 		return err
 	}
-
-	// 2. get application
 	application, err := c.appMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return err
 	}
 
-	// 3. generate a JWT token for tekton callback
-	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
+	switch pr.Action {
+	case prmodels.ActionBuildDeploy, prmodels.ActionDeploy:
+		return c.executeDeploy(ctx, application, cluster, pr, currentUser)
+	case prmodels.ActionRestart:
+		return c.executeRestart(ctx, application, cluster, pr)
+	case prmodels.ActionRollback:
+		return c.executeRollback(ctx, application, cluster, pr)
+	default:
+		return perror.Wrapf(herrors.ErrParamInvalid, "unsupported action %v", pr.Action)
+	}
+}
+
+func (c *controller) executeDeploy(ctx context.Context, application *appmodels.Application,
+	cluster *clustermodels.Cluster, pr *prmodels.Pipelinerun, currentUser user.User) error {
+	// 1. generate a JWT token for tekton callback
+	callbackToken, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
 		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(pr.ID))
 	if err != nil {
 		return err
 	}
 
-	// 4. create pipelinerun in k8s
+	// 2. create pipelinerun in k8s
 	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return err
@@ -465,7 +486,7 @@ func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) erro
 		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,
-		Token:            token,
+		Token:            callbackToken,
 	})
 	if err != nil {
 		return err
@@ -485,7 +506,172 @@ func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) erro
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func (c *controller) executeRestart(ctx context.Context, application *appmodels.Application,
+	cluster *clustermodels.Cluster, pr *prmodels.Pipelinerun) error {
+	// 1. update pr status to running
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":     prmodels.StatusRunning,
+		"started_at": time.Now(),
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
+			pr.ID, prmodels.StatusRunning)
+	}
+	// 2. update restartTime in git repo, then update pr status to merged
+	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return perror.Wrapf(err, "failed to get last config commit, cluster = %s", cluster.Name)
+	}
+	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return perror.Wrapf(err, "failed to update cluster restart time, cluster = %s", cluster.Name)
+	}
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":             prmodels.StatusMerged,
+		"last_config_commit": lastConfigCommit.Master,
+		"config_commit":      commit,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr columns, pr = %d, status = %s, config_commit = %s",
+			pr.ID, prmodels.StatusMerged, commit)
+	}
+	// 3. deploy cluster in cd system
+	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
+		Environment: cluster.EnvironmentName,
+		Cluster:     cluster.Name,
+		Revision:    commit,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to deploy cluster in CD, cluster = %s, revision = %s",
+			cluster.Name, commit)
+	}
+	// 4. update pr status to ok
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":      prmodels.StatusOK,
+		"finished_at": time.Now(),
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
+			pr.ID, prmodels.StatusOK)
+	}
+	// 5. create event
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterRestarted, nil)
+	return nil
+}
+
+func (c *controller) executeRollback(ctx context.Context, application *appmodels.Application,
+	cluster *clustermodels.Cluster, pr *prmodels.Pipelinerun) error {
+	// 1. update pr status to running
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":     prmodels.StatusRunning,
+		"started_at": time.Now(),
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
+			pr.ID, prmodels.StatusRunning)
+	}
+	// 2. get pipelinerun to rollback
+	if pr.RollbackFrom == nil {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun to rollback is empty")
+	}
+	prToRollback, err := c.prMgr.PipelineRun.GetByID(ctx, *pr.RollbackFrom)
+	if err != nil {
+		return perror.Wrapf(err, "failed to get pipelinerun to rollback, pr = %d", *pr.RollbackFrom)
+	}
+
+	// for internal usage
+	if err = c.clusterGitRepo.CheckAndSyncGitOpsBranch(ctx, application.Name,
+		cluster.Name, prToRollback.ConfigCommit); err != nil {
+		return perror.Wrapf(err, "failed to check and sync gitops branch, cluster = %s", cluster.Name)
+	}
+
+	// 3. rollback cluster config in git repo and update status
+	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return perror.Wrapf(err, "failed to get last config commit, cluster = %s", cluster.Name)
+	}
+	if _, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name,
+		prToRollback.ConfigCommit); err != nil {
+		return perror.Wrapf(err, "failed to rollback cluster config, cluster = %s, commit = %s",
+			cluster.Name, prToRollback.ConfigCommit)
+	}
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":             prmodels.StatusCommitted,
+		"last_config_commit": lastConfigCommit.Master,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr columns, pr = %d, status = %s",
+			pr.ID, prmodels.StatusCommitted)
+	}
+
+	// 4. merge branch & update config commit and status
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &pr.ID)
+	if err != nil {
+		return perror.Wrapf(err, "failed to merge branch, cluster = %s", cluster.Name)
+	}
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":        prmodels.StatusMerged,
+		"config_commit": masterRevision,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr columns, pr = %d, status = %s, config_commit = %s",
+			pr.ID, prmodels.StatusMerged, masterRevision)
+	}
+
+	// 5. update template and tags in db
+	cluster, err = c.clusterSvc.SyncDBWithGitRepo(ctx, application, cluster)
+	if err != nil {
+		return perror.Wrapf(err, "failed to sync db with git repo, cluster = %s", cluster.Name)
+	}
+
+	// 6. create cluster in cd system
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return perror.Wrapf(err, "failed to get region entity, region = %s", cluster.RegionName)
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return perror.Wrapf(err, "failed to get env value, cluster = %s", cluster.Name)
+	}
+	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
+	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		GitRepoURL:   repoInfo.GitRepoURL,
+		ValueFiles:   repoInfo.ValueFiles,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to create cluster in CD, cluster = %s", cluster.Name)
+	}
+
+	// 7. reset cluster status
+	if cluster.Status == common.ClusterStatusFreed {
+		cluster.Status = common.ClusterStatusEmpty
+		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+		if err != nil {
+			return perror.Wrapf(err, "failed to update cluster status, cluster = %s", cluster.Name)
+		}
+	}
+
+	// 8. deploy cluster in cd and update status
+	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
+		Environment: cluster.EnvironmentName,
+		Cluster:     cluster.Name,
+		Revision:    masterRevision,
+	}); err != nil {
+		return perror.Wrapf(err, "failed to deploy cluster in CD, cluster = %s, revision = %s",
+			cluster.Name, masterRevision)
+	}
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"status":      prmodels.StatusOK,
+		"finished_at": time.Now(),
+	}); err != nil {
+		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
+			pr.ID, prmodels.StatusOK)
+	}
+
+	// 9. record event
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourceCluster, cluster.ID,
+		eventmodels.ClusterRollbacked, nil)
 	return nil
 }
 

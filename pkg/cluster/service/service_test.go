@@ -69,8 +69,8 @@ func TestServiceGetByID(t *testing.T) {
 
 	t.Run("GetByID", func(t *testing.T) {
 		s := service{
-			applicationService: applicationservice.NewService(groupservice.NewService(manager), manager),
-			clusterManager:     manager.ClusterMgr,
+			appSvc:     applicationservice.NewService(groupservice.NewService(manager), manager),
+			clusterMgr: manager.ClusterMgr,
 		}
 		result, err := s.GetByID(ctx, application.ID)
 		assert.Nil(t, err)

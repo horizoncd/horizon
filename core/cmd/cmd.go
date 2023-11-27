@@ -434,7 +434,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	groupSvc := groupservice.NewService(manager)
 	eventSvc := eventservice.New(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
-	clusterSvc := clusterservice.NewService(applicationSvc, manager)
+	clusterSvc := clusterservice.NewService(applicationSvc, clusterGitRepo, manager)
 	userSvc := userservice.NewService(manager)
 	tokenSvc := tokenservice.NewService(manager, coreConfig.TokenConfig)
 
