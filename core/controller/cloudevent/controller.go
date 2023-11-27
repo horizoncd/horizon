@@ -86,7 +86,6 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	if err != nil {
 		return err
 	}
-
 	var result *collector.CollectResult
 	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, horizonMetaData); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -163,11 +162,8 @@ func (c *controller) handleJibBuild(ctx context.Context, result *tekton.Pipeline
 			// change step name
 			for _, stepResult := range result.StepResults {
 				stepResult.Task = jibBuild
-				if stepResult.Step == "compile" {
-					stepResult.Step = "jib-compile"
-				}
-				if stepResult.Step == "image" {
-					stepResult.Step = "jib-image"
+				if stepResult.Step == "compile" || stepResult.Step == "image" {
+					stepResult.Step = "jib-" + stepResult.Step
 				}
 			}
 		}
