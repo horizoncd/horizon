@@ -688,9 +688,6 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	if r.Action == prmodels.ActionBuildDeploy && cluster.GitURL == "" {
-		return nil, herrors.ErrBuildDeployNotSupported
-	}
 
 	var (
 		title        = r.Title
@@ -723,6 +720,9 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 	switch r.Action {
 	case prmodels.ActionBuildDeploy:
 		action = prmodels.ActionBuildDeploy
+		if cluster.GitURL == "" {
+			return nil, herrors.ErrBuildDeployNotSupported
+		}
 
 		if r.Git != nil {
 			if r.Git.Commit != "" {
@@ -805,6 +805,9 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 	case prmodels.ActionRestart:
 		title = prmodels.ActionRestart
 		action = prmodels.ActionRestart
+		if cluster.Status == common.ClusterStatusFreed {
+			return nil, herrors.ErrFreedClusterNotSupportedRestart
+		}
 		configCommitSHA = configCommit.Master
 
 	default:

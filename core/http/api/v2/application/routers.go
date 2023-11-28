@@ -24,7 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoute registers routes
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiV2Group := engine.Group("/apis/core/v2")
 	apiV2Routes := route.Routes{

@@ -56,6 +56,11 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		return nil, err
 	}
 
+	// freed cluster can not be restarted
+	if cluster.Status == common.ClusterStatusFreed {
+		return nil, herrors.ErrFreedClusterNotSupportedRestart
+	}
+
 	// 1. get config commit now
 	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
