@@ -142,6 +142,7 @@ var supportedEvents = map[string]string{
 	models.MemberDeleted:          "Member has been deleted",
 	models.PipelinerunCreated:     "New pipelinerun has been created",
 	models.PipelinerunCancelled:   "Pipelinerun has been cancelled",
+	models.PipelinerunExecuted:    "Pipelinerun has been executed",
 }
 
 func (m *manager) ListSupportEvents() map[string]string {

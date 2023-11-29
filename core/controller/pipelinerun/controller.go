@@ -394,7 +394,13 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 		}
 	}
 
-	return c.execute(ctx, pr)
+	err = c.execute(ctx, pr)
+	if err != nil {
+		return err
+	}
+	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
+		eventmodels.PipelinerunExecuted, nil)
+	return nil
 }
 
 func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) error {
