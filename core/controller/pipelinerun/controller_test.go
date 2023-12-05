@@ -408,7 +408,7 @@ func TestExecutePipelineRun(t *testing.T) {
 		&usermodel.User{}, &trmodels.TemplateRelease{}, &eventmodels.Event{}); err != nil {
 		panic(err)
 	}
-	param := managerparam.InitManager(db)
+	mgr := managerparam.InitManager(db)
 	ctx := context.Background()
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
@@ -428,62 +428,62 @@ func TestExecutePipelineRun(t *testing.T) {
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	mockCD := cdmock.NewMockCD(mockCtl)
 
-	groupSvc := groupservice.NewService(manager)
-	eventSvc := eventservice.New(manager)
-	applicationSvc := applicationservice.NewService(groupSvc, manager)
-	clusterSvc := clusterservice.NewService(applicationSvc, mockClusterGitRepo, manager)
+	groupSvc := groupservice.NewService(mgr)
+	eventSvc := eventservice.New(mgr)
+	applicationSvc := applicationservice.NewService(groupSvc, mgr)
+	clusterSvc := clusterservice.NewService(applicationSvc, mockClusterGitRepo, mgr)
 
 	ctrl := controller{
-		prMgr:              param.PRMgr,
-		appMgr:             param.ApplicationMgr,
-		clusterMgr:         param.ClusterMgr,
-		envMgr:             param.EnvMgr,
-		regionMgr:          param.RegionMgr,
+		prMgr:              mgr.PRMgr,
+		appMgr:             mgr.ApplicationMgr,
+		clusterMgr:         mgr.ClusterMgr,
+		envMgr:             mgr.EnvMgr,
+		regionMgr:          mgr.RegionMgr,
 		tektonFty:          mockFactory,
-		tokenSvc:           tokenservice.NewService(param, tokenConfig),
+		tokenSvc:           tokenservice.NewService(mgr, tokenConfig),
 		tokenConfig:        tokenConfig,
 		clusterGitRepo:     mockClusterGitRepo,
-		templateReleaseMgr: param.TemplateReleaseMgr,
+		templateReleaseMgr: mgr.TemplateReleaseMgr,
 		cd:                 mockCD,
 		clusterSvc:         clusterSvc,
 		eventSvc:           eventSvc,
 	}
 
-	_, err1 := param.EventMgr.CreateEvent(ctx, &eventmodels.Event{
+	_, err1 := mgr.EventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceID: 1,
 		},
 	})
 	assert.NoError(t, err1)
 
-	_, err := param.UserMgr.Create(ctx, &usermodel.User{
+	_, err := mgr.UserMgr.Create(ctx, &usermodel.User{
 		Name: "Tony",
 	})
 	assert.NoError(t, err)
 
-	group, err := param.GroupMgr.Create(ctx, &groupmodels.Group{
+	group, err := mgr.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "test",
 	})
 	assert.NoError(t, err)
 
-	app, err := param.ApplicationMgr.Create(ctx, &applicationmodel.Application{
+	app, err := mgr.ApplicationMgr.Create(ctx, &applicationmodel.Application{
 		Name:    "test",
 		GroupID: group.ID,
 	}, nil)
 	assert.NoError(t, err)
 
-	registryID, err := param.RegistryMgr.Create(ctx, &registrymodels.Registry{
+	registryID, err := mgr.RegistryMgr.Create(ctx, &registrymodels.Registry{
 		Name: "test",
 	})
 	assert.NoError(t, err)
 
-	region, err := param.RegionMgr.Create(ctx, &regionmodels.Region{
+	region, err := mgr.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:       "test",
 		RegistryID: registryID,
 	})
 	assert.NoError(t, err)
 
-	cluster, err := param.ClusterMgr.Create(ctx, &clustermodel.Cluster{
+	cluster, err := mgr.ClusterMgr.Create(ctx, &clustermodel.Cluster{
 		Name:            "clusterGit",
 		ApplicationID:   app.ID,
 		GitURL:          "hello",
@@ -493,7 +493,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	}, nil, nil)
 	assert.NoError(t, err)
 
-	_, err = param.TemplateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
+	_, err = mgr.TemplateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
 		TemplateName: "javaapp",
 		Name:         "v1.0.0",
 	})
@@ -541,7 +541,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	mockCD.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockCD.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	prPending, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prPending, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    prmodels.ActionBuildDeploy,
 		Status:    string(pipelinemodel.StatusPending),
@@ -549,7 +549,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusPending), prPending.Status)
 
-	prDeployReady, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prDeployReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    prmodels.ActionDeploy,
 		Status:    string(pipelinemodel.StatusReady),
@@ -557,7 +557,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusReady), prDeployReady.Status)
 
-	prRestartReady, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prRestartReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    prmodels.ActionRestart,
 		Status:    string(pipelinemodel.StatusReady),
@@ -565,7 +565,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusReady), prRestartReady.Status)
 
-	prOK, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prOK, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:        cluster.ID,
 		Action:           prmodels.ActionBuildDeploy,
 		Status:           string(pipelinemodel.StatusOK),
@@ -575,7 +575,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusOK), prOK.Status)
 
-	prRollbackReady, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prRollbackReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:    cluster.ID,
 		Action:       prmodels.ActionRollback,
 		Status:       string(pipelinemodel.StatusReady),
@@ -599,7 +599,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	err = ctrl.Execute(ctx, prPending.ID, true)
 	assert.NoError(t, err)
 
-	PRCancel, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	PRCancel, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Status:    string(pipelinemodel.StatusPending),
 	})

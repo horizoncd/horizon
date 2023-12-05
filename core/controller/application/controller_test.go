@@ -28,6 +28,7 @@ import (
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/application/gitrepo"
 	"github.com/horizoncd/horizon/pkg/application/models"
+	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
@@ -36,6 +37,7 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
@@ -298,6 +300,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&usermodel.User{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&appregionmodels.ApplicationRegion{}); err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -357,23 +362,25 @@ func Test(t *testing.T) {
 	_, err := manager.TemplateReleaseMgr.Create(ctx, tr)
 	assert.Nil(t, err)
 
-	c = &controller{
-		applicationGitRepo:   applicationGitRepo,
-		templateSchemaGetter: templateSchemaGetter,
-		tagMgr:               manager.TagMgr,
-		applicationMgr:       manager.ApplicationMgr,
-		groupMgr:             manager.GroupMgr,
-		groupSvc:             groupservice.NewService(manager),
-		templateReleaseMgr:   manager.TemplateReleaseMgr,
-		clusterMgr:           manager.ClusterMgr,
-		userSvc:              userservice.NewService(manager),
-		eventSvc:             eventservice.New(manager),
-		memberManager:        manager.MemberMgr,
+	params := &param.Param{
+		Manager:              manager,
+		UserSvc:              userservice.NewService(manager),
+		EventSvc:             eventservice.New(manager),
+		GroupSvc:             groupservice.NewService(manager),
+		ApplicationGitRepo:   applicationGitRepo,
+		TemplateSchemaGetter: templateSchemaGetter,
 	}
+	c = NewController(params)
 
 	group, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "ABC",
 		Path: "abc",
+	})
+	assert.Nil(t, err)
+
+	groupToTransfer, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
+		Name: "ABC-transfer",
+		Path: "abc/transfer",
 	})
 	assert.Nil(t, err)
 
@@ -445,6 +452,12 @@ func Test(t *testing.T) {
 
 	assert.Equal(t, resp.Description, updatedDescription)
 
+	err = c.Transfer(ctx, resp.ID, groupToTransfer.ID)
+	assert.Nil(t, err)
+	resp, err = c.GetApplication(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, resp.GroupID, groupToTransfer.ID)
+
 	err = c.DeleteApplication(ctx, resp.ID, false)
 	assert.Nil(t, err)
 
@@ -513,20 +526,15 @@ func TestV2(t *testing.T) {
 	}
 	_, err := manager.TemplateReleaseMgr.Create(ctx, tr)
 	assert.Nil(t, err)
-	c := &controller{
-		applicationGitRepo:   applicationGitRepo,
-		templateSchemaGetter: templateSchemaGetter,
-		applicationMgr:       manager.ApplicationMgr,
-		tagMgr:               manager.TagMgr,
-		groupMgr:             manager.GroupMgr,
-		groupSvc:             groupservice.NewService(manager),
-		templateReleaseMgr:   manager.TemplateReleaseMgr,
-		clusterMgr:           manager.ClusterMgr,
-		userSvc:              userservice.NewService(manager),
-		eventSvc:             eventservice.New(manager),
-		memberManager:        manager.MemberMgr,
+	params := &param.Param{
+		Manager:              manager,
+		UserSvc:              userservice.NewService(manager),
+		EventSvc:             eventservice.New(manager),
+		GroupSvc:             groupservice.NewService(manager),
+		ApplicationGitRepo:   applicationGitRepo,
+		TemplateSchemaGetter: templateSchemaGetter,
 	}
-
+	c := NewController(params)
 	group, err := manager.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "cde",
 		Path: "cde",
@@ -673,12 +681,10 @@ func TestListUserApplication(t *testing.T) {
 		applications = append(applications, application)
 	}
 
-	c = &controller{
-		applicationMgr: manager.ApplicationMgr,
-		groupMgr:       manager.GroupMgr,
-		groupSvc:       groupservice.NewService(manager),
-		memberManager:  manager.MemberMgr,
-	}
+	c = NewController(&param.Param{
+		Manager:  manager,
+		GroupSvc: groupservice.NewService(manager),
+	})
 
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{

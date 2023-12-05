@@ -72,7 +72,6 @@ type Controller interface {
 	GetCheckRunByID(ctx context.Context, checkRunID uint) (*prmodels.CheckRun, error)
 	UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error
 
-	ListMessagesByPipelinerun(ctx context.Context, pipelinerunID uint, query *q.Query) (int, []*prmodels.PRMessage, error)
 	// Execute runs a pipelineRun only if its state is ready.
 	Execute(ctx context.Context, pipelinerunID uint, force bool) error
 	// Cancel withdraws a pipelineRun only if its state is pending.
@@ -367,14 +366,6 @@ func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint,
 	return c.updatePrStatusByCheckrunID(ctx, checkRunID)
 }
 
-func (c *controller) ListMessagesByPipelinerun(ctx context.Context,
-	pipelinerunID uint, query *q.Query) (int, []*prmodels.PRMessage, error) {
-	const op = "pipelinerun controller: list pr message"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	return c.prMgr.Message.List(ctx, pipelinerunID, query)
-}
-
 func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool) error {
 	const op = "pipelinerun controller: execute pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -626,7 +617,7 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 	// 5. update template and tags in db
 	cluster, err = c.clusterSvc.SyncDBWithGitRepo(ctx, application, cluster)
 	if err != nil {
-		return perror.Wrapf(err, "failed to sync db with git repo, cluster = %s", cluster.Name)
+		return perror.Wrapf(err, "failed to sync db with git repo")
 	}
 
 	// 6. create cluster in cd system
@@ -765,7 +756,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 		return 0, nil, err
 	}
 	userIDs := make([]uint, 0, len(messages))
-	m := make(map[uint]struct{}, 0)
+	m := make(map[uint]struct{})
 	for _, message := range messages {
 		if _, ok := m[message.CreatedBy]; !ok {
 			userIDs = append(userIDs, message.CreatedBy)
@@ -785,8 +776,8 @@ func (c *controller) ListPRMessages(ctx context.Context,
 		return 0, nil, err
 	}
 	userMap := make(map[uint]*usermodels.User, 0)
-	for _, user := range users {
-		userMap[user.ID] = user
+	for _, u := range users {
+		userMap[u.ID] = u
 	}
 	result := make([]*PrMessage, 0, len(messages))
 	for _, message := range messages {
@@ -794,21 +785,21 @@ func (c *controller) ListPRMessages(ctx context.Context,
 			Content:   message.Content,
 			CreatedAt: message.CreatedAt,
 		}
-		if user, ok := userMap[message.CreatedBy]; ok {
+		if u, ok := userMap[message.CreatedBy]; ok {
 			resultMsg.CreatedBy = User{
-				ID:   user.ID,
-				Name: user.FullName,
+				ID:   u.ID,
+				Name: u.FullName,
 			}
-			if user.UserType == usermodels.UserTypeRobot {
+			if u.UserType == usermodels.UserTypeRobot {
 				resultMsg.CreatedBy.UserType = "bot"
 			}
 		}
-		if user, ok := userMap[message.UpdatedBy]; ok {
+		if u, ok := userMap[message.UpdatedBy]; ok {
 			resultMsg.UpdatedBy = User{
-				ID:   user.ID,
-				Name: user.FullName,
+				ID:   u.ID,
+				Name: u.FullName,
 			}
-			if user.UserType == usermodels.UserTypeRobot {
+			if u.UserType == usermodels.UserTypeRobot {
 				resultMsg.CreatedBy.UserType = "bot"
 			}
 		}

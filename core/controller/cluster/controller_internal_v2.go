@@ -113,16 +113,12 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, perror.WithMessage(err, op)
 		}
-		// 4. update config commit and status
-		if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
-			return nil, err
-		}
 		if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
 			return nil, err
 		}
 	}
 
-	// 5. merge branch from gitops to master if diff is not empty and update status
+	// 4. merge branch from gitops to master if diff is not empty and update status
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
@@ -138,6 +134,10 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 			gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &pr.ID)
 		if err != nil {
 			return nil, perror.WithMessage(err, op)
+		}
+		// 5. update config commit and status
+		if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, masterRevision); err != nil {
+			return nil, err
 		}
 		if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
 			return nil, err
