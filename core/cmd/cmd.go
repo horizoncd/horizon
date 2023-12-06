@@ -107,8 +107,10 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	"github.com/horizoncd/horizon/pkg/admission"
 	"github.com/horizoncd/horizon/pkg/cd"
 	clustermetrcis "github.com/horizoncd/horizon/pkg/cluster/metrics"
+	admissionconfig "github.com/horizoncd/horizon/pkg/config/admission"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
@@ -137,6 +139,7 @@ import (
 	templatev2 "github.com/horizoncd/horizon/core/http/api/v2/template"
 	"github.com/horizoncd/horizon/core/http/health"
 	"github.com/horizoncd/horizon/core/http/metrics"
+	admissionmiddle "github.com/horizoncd/horizon/core/middleware/admission"
 	ginlogmiddle "github.com/horizoncd/horizon/core/middleware/ginlog"
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	metricsmiddle "github.com/horizoncd/horizon/core/middleware/metrics"
@@ -225,6 +228,10 @@ func ParseFlags() *Flags {
 
 	flag.Parse()
 	return &flags
+}
+
+func InitAdmissionWebhook(config admissionconfig.Admission) {
+	admission.NewHTTPWebhooks(config)
 }
 
 func InitLog(flags *Flags) {
@@ -624,7 +631,8 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, authzSkippers...),
-		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
+		tagmiddle.Middleware(),
+		admissionmiddle.Middleware(authzSkippers...),
 	}
 	r.Use(middlewares...)
 
@@ -724,6 +732,8 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+
+	InitAdmissionWebhook(configs.Admission)
 
 	// enable pprof
 	runPProfServer(&configs.PProf)
