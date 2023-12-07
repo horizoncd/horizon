@@ -193,11 +193,11 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		lastUpdated:      region.UpdatedAt,
 	}
 
+	f.registerHandler(&client)
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.clients[region.ID] = &client
-
-	f.registerHandler(&client)
 	return nil
 }
 
