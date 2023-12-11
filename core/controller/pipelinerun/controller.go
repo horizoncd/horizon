@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
@@ -491,11 +490,7 @@ func (c *controller) executeDeploy(ctx context.Context, application *appmodels.A
 
 	// update event id returned from tekton-trigger EventListener
 	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d", ciEventID, pr.ID)
-	err = c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"ci_event_id": ciEventID,
-		"status":      prmodels.StatusRunning,
-		"started_at":  time.Now(),
-	})
+	err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusRunning)
 	if err != nil {
 		return err
 	}
@@ -509,10 +504,7 @@ func (c *controller) executeDeploy(ctx context.Context, application *appmodels.A
 func (c *controller) executeRestart(ctx context.Context, application *appmodels.Application,
 	cluster *clustermodels.Cluster, pr *prmodels.Pipelinerun) error {
 	// 1. update pr status to running
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":     prmodels.StatusRunning,
-		"started_at": time.Now(),
-	}); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusRunning); err != nil {
 		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
 			pr.ID, prmodels.StatusRunning)
 	}
@@ -543,10 +535,7 @@ func (c *controller) executeRestart(ctx context.Context, application *appmodels.
 			cluster.Name, commit)
 	}
 	// 4. update pr status to ok
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":      prmodels.StatusOK,
-		"finished_at": time.Now(),
-	}); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusOK); err != nil {
 		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
 			pr.ID, prmodels.StatusOK)
 	}
@@ -568,10 +557,7 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 	}
 
 	// 2. update pr status to running
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":     prmodels.StatusRunning,
-		"started_at": time.Now(),
-	}); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusRunning); err != nil {
 		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
 			pr.ID, prmodels.StatusRunning)
 	}
@@ -587,14 +573,16 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 	if err != nil {
 		return perror.Wrapf(err, "failed to get last config commit, cluster = %s", cluster.Name)
 	}
-	if _, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name,
-		prToRollback.ConfigCommit); err != nil {
+	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name,
+		prToRollback.ConfigCommit)
+	if err != nil {
 		return perror.Wrapf(err, "failed to rollback cluster config, cluster = %s, commit = %s",
 			cluster.Name, prToRollback.ConfigCommit)
 	}
 	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
 		"status":             prmodels.StatusCommitted,
 		"last_config_commit": lastConfigCommit.Master,
+		"config_commit":      newConfigCommit,
 	}); err != nil {
 		return perror.Wrapf(err, "failed to update pr columns, pr = %d, status = %s",
 			pr.ID, prmodels.StatusCommitted)
@@ -606,10 +594,7 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 	if err != nil {
 		return perror.Wrapf(err, "failed to merge branch, cluster = %s", cluster.Name)
 	}
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":        prmodels.StatusMerged,
-		"config_commit": masterRevision,
-	}); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusMerged); err != nil {
 		return perror.Wrapf(err, "failed to update pr columns, pr = %d, status = %s, config_commit = %s",
 			pr.ID, prmodels.StatusMerged, masterRevision)
 	}
@@ -659,10 +644,7 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 		return perror.Wrapf(err, "failed to deploy cluster in CD, cluster = %s, revision = %s",
 			cluster.Name, masterRevision)
 	}
-	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
-		"status":      prmodels.StatusOK,
-		"finished_at": time.Now(),
-	}); err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, pr.ID, prmodels.StatusOK); err != nil {
 		return perror.Wrapf(err, "failed to update pr status, pr = %d, status = %s",
 			pr.ID, prmodels.StatusOK)
 	}

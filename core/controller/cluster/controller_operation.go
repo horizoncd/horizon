@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -350,6 +349,11 @@ func (c *controller) Rollback(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, prCreated.ID, newConfigCommit); err != nil {
+		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
+			prCreated.ID, newConfigCommit, err)
+		return nil, err
+	}
 	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusCommitted,
 		newConfigCommit); err != nil {
 		return nil, err
@@ -360,10 +364,6 @@ func (c *controller) Rollback(ctx context.Context,
 		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
 	if err != nil {
 		return nil, err
-	}
-	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, prCreated.ID, masterRevision); err != nil {
-		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
-			prCreated.ID, masterRevision, err)
 	}
 	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusMerged,
 		masterRevision); err != nil {
@@ -705,17 +705,7 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 
 func (c *controller) updatePipelineRunStatus(ctx context.Context,
 	action string, prID uint, pState prmodels.PipelineStatus, revision string) error {
-	var err error
-	if pState != prmodels.StatusOK {
-		err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, prID, pState)
-	} else {
-		finishedAt := time.Now()
-		err = c.prMgr.PipelineRun.UpdateResultByID(ctx, prID, &prmodels.Result{
-			Result:     string(pState),
-			FinishedAt: &finishedAt,
-		})
-	}
-	if err != nil {
+	if err := c.prMgr.PipelineRun.UpdateStatusByID(ctx, prID, pState); err != nil {
 		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
 			prID, pState, err)
 		return err

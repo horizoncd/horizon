@@ -47,7 +47,7 @@ func Test(t *testing.T) {
 		ID:               0,
 		ClusterID:        1,
 		Action:           models.ActionBuildDeploy,
-		Status:           "created",
+		Status:           string(models.StatusCreated),
 		Title:            "title",
 		Description:      "description",
 		GitURL:           "",
@@ -69,10 +69,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "title", prGet.Title)
 	assert.Equal(t, "1", prGet.ConfigCommit)
+	assert.Equal(t, "created", prGet.Status)
 
 	err = mgr.UpdateConfigCommitByID(ctx, prGet.ID, "2")
 	assert.Nil(t, err)
-
 	prGet, err = mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
@@ -86,6 +86,22 @@ func Test(t *testing.T) {
 	prGet, err = mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, prGet.Status, string(models.StatusMerged))
+	assert.Nil(t, prGet.StartedAt)
+	assert.Nil(t, prGet.FinishedAt)
+
+	err = mgr.UpdateStatusByID(ctx, pr.ID, models.StatusRunning)
+	assert.Nil(t, err)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, prGet.Status, string(models.StatusRunning))
+	assert.NotNil(t, prGet.StartedAt)
+
+	err = mgr.UpdateStatusByID(ctx, pr.ID, models.StatusOK)
+	assert.Nil(t, err)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, prGet.Status, string(models.StatusOK))
+	assert.NotNil(t, prGet.FinishedAt)
 
 	err = mgr.UpdateResultByID(ctx, pr.ID, &models.Result{
 		S3Bucket:   "bucket",
