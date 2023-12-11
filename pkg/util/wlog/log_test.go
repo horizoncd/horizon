@@ -75,3 +75,13 @@ func TestResponse(t *testing.T) {
 	}
 	common.Response(ctx, resp)
 }
+
+func TestGetDuration(t *testing.T) {
+	ctx := log.WithContext(context.Background(), "traceId")
+
+	const op = "app: create application"
+	l := Start(ctx, op)
+	log.Info(ctx, "hello world")
+	t.Logf("duration: %v", l.GetDuration())
+	l.StopPrint()
+}

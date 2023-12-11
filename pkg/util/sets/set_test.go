@@ -19,6 +19,8 @@ package sets
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStringSet(t *testing.T) {
@@ -266,5 +268,33 @@ func TestStringIntersection(t *testing.T) {
 			t.Errorf("Expected intersection.Equal(expected) but not true.  intersection:%v expected:%v",
 				intersection.List(), test.expected.List())
 		}
+	}
+}
+
+func TestStringKeySet(t *testing.T) {
+	m := map[string]struct{}{
+		"1": {},
+		"2": {},
+		"3": {},
+	}
+	s := StringKeySet(m)
+	assert.Equal(t, 3, s.Len())
+}
+
+func TestUnsortedList(t *testing.T) {
+	s := NewString("a", "b", "c", "d")
+	list := s.UnsortedList()
+	assert.Equal(t, 4, len(list))
+	t.Logf("UnsortedList: %v", list)
+}
+
+func TestPopAny(t *testing.T) {
+	s := NewString("a", "b", "c", "d")
+	list := s.UnsortedList()
+	assert.Equal(t, 4, len(list))
+	for i := 0; i < 4; i++ {
+		item, ok := s.PopAny()
+		assert.True(t, ok)
+		assert.Contains(t, list, item)
 	}
 }

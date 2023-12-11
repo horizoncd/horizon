@@ -154,6 +154,11 @@ type ClusterGitRepo interface {
 	// GetManifest returns manifest with specific revision, defaults to gitops branch
 	GetManifest(ctx context.Context, application,
 		cluster string, commit *string) (*pkgcommon.Manifest, error)
+	// CheckAndSyncGitOpsBranch checks and sync if gitops branch is not up-to-date with master branch
+	// for internal usage
+	CheckAndSyncGitOpsBranch(ctx context.Context, application, cluster, commit string) error
+	// SyncGitOpsBranch syncs gitops branch to up-to-date with master branch
+	SyncGitOpsBranch(ctx context.Context, application, cluster string) error
 }
 type clusterGitopsRepo struct {
 	gitlabLib              gitlablib.Interface
@@ -1079,6 +1084,20 @@ func (g *clusterGitopsRepo) GetEnvValue(ctx context.Context,
 	return envMap[templateName][common.GitopsEnvValueNamespace], nil
 }
 
+func (g *clusterGitopsRepo) CheckAndSyncGitOpsBranch(ctx context.Context, application, cluster, commit string) error {
+	changed, err := g.manifestVersionChanged(ctx, application, cluster, commit)
+	if err != nil {
+		return err
+	}
+	if changed {
+		err = g.SyncGitOpsBranch(ctx, application, cluster)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g *clusterGitopsRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
 	const op = "cluster git repo: rollback"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1757,6 +1776,66 @@ func (g *clusterGitopsRepo) readFile(ctx context.Context, application, cluster,
 		return g.gitlabLib.GetFile(ctx, pid, *commit, fileName)
 	}
 	return g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, fileName)
+}
+
+// for internal usage
+// manifestVersionChanged determines whether manifest version is changed
+func (g *clusterGitopsRepo) manifestVersionChanged(ctx context.Context, application,
+	cluster string, commit string) (bool, error) {
+	currentManifest, err1 := g.GetManifest(ctx, application, cluster, nil)
+	if err1 != nil {
+		if _, ok := perror.Cause(err1).(*herrors.HorizonErrNotFound); !ok {
+			log.Errorf(ctx, "get cluster manifest error, err = %s", err1.Error())
+			return false, err1
+		}
+	}
+	targetManifest, err2 := g.GetManifest(ctx, application, cluster, &commit)
+	if err2 != nil {
+		if _, ok := perror.Cause(err2).(*herrors.HorizonErrNotFound); !ok {
+			log.Errorf(ctx, "get cluster manifest error, err = %s", err2.Error())
+			return false, err2
+		}
+	}
+	if err1 != nil && err2 != nil {
+		// manifest does not exist in both revisions
+		return false, nil
+	}
+	if err1 != nil || err2 != nil {
+		// One exists and the other does not exist in two revisions
+		return true, nil
+	}
+	return currentManifest.Version != targetManifest.Version, nil
+}
+
+// SyncGitOpsBranch for internal usage, syncs gitOps branch with default branch to avoid merge conflicts.
+// Restart updates time in restart.yaml in default branch. When other actions update
+// template prefix in gitOps branch, there are merge conflicts in restart.yaml because
+// usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
+// For example:
+//
+//	<<<<<<< HEAD
+//	javaapp:
+//	  restartTime: "2025-02-19 10:24:52"
+//	=======
+//	rollout:
+//	  restartTime: "2025-02-14 12:12:07"
+//	>>>>>>> gitops
+func (g *clusterGitopsRepo) SyncGitOpsBranch(ctx context.Context, application, cluster string) error {
+	gitOpsBranch := GitOpsBranch
+	defaultBranch := g.DefaultBranch()
+	diff, err := g.CompareConfig(ctx, application, cluster,
+		&gitOpsBranch, &defaultBranch)
+	if err != nil {
+		return err
+	}
+	if diff != "" {
+		_, err = g.MergeBranch(ctx, application,
+			cluster, defaultBranch, gitOpsBranch, nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func renameTemplateName(name string) string {

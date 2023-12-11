@@ -23,6 +23,12 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
+	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
+	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -399,10 +405,10 @@ func TestExecutePipelineRun(t *testing.T) {
 	if err := db.AutoMigrate(&applicationmodel.Application{}, &clustermodel.Cluster{},
 		&regionmodels.Region{}, &membermodels.Member{}, &registrymodels.Registry{},
 		&prmodels.Pipelinerun{}, &groupmodels.Group{}, &prmodels.Check{},
-		&usermodel.User{}, &trmodels.TemplateRelease{}); err != nil {
+		&usermodel.User{}, &trmodels.TemplateRelease{}, &eventmodels.Event{}); err != nil {
 		panic(err)
 	}
-	param := managerparam.InitManager(db)
+	mgr := managerparam.InitManager(db)
 	ctx := context.Background()
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
@@ -419,50 +425,65 @@ func TestExecutePipelineRun(t *testing.T) {
 		JwtSigningKey:         "hello",
 		CallbackTokenExpireIn: 24 * time.Hour,
 	}
-
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	mockCD := cdmock.NewMockCD(mockCtl)
+
+	groupSvc := groupservice.NewService(mgr)
+	eventSvc := eventservice.New(mgr)
+	applicationSvc := applicationservice.NewService(groupSvc, mgr)
+	clusterSvc := clusterservice.NewService(applicationSvc, mockClusterGitRepo, mgr)
 
 	ctrl := controller{
-		prMgr:              param.PRMgr,
-		appMgr:             param.ApplicationMgr,
-		clusterMgr:         param.ClusterMgr,
-		envMgr:             param.EnvMgr,
-		regionMgr:          param.RegionMgr,
+		prMgr:              mgr.PRMgr,
+		appMgr:             mgr.ApplicationMgr,
+		clusterMgr:         mgr.ClusterMgr,
+		envMgr:             mgr.EnvMgr,
+		regionMgr:          mgr.RegionMgr,
 		tektonFty:          mockFactory,
-		tokenSvc:           tokenservice.NewService(param, tokenConfig),
+		tokenSvc:           tokenservice.NewService(mgr, tokenConfig),
 		tokenConfig:        tokenConfig,
 		clusterGitRepo:     mockClusterGitRepo,
-		templateReleaseMgr: param.TemplateReleaseMgr,
+		templateReleaseMgr: mgr.TemplateReleaseMgr,
+		cd:                 mockCD,
+		clusterSvc:         clusterSvc,
+		eventSvc:           eventSvc,
 	}
 
-	_, err := param.UserMgr.Create(ctx, &usermodel.User{
+	_, err1 := mgr.EventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceID: 1,
+		},
+	})
+	assert.NoError(t, err1)
+
+	_, err := mgr.UserMgr.Create(ctx, &usermodel.User{
 		Name: "Tony",
 	})
 	assert.NoError(t, err)
 
-	group, err := param.GroupMgr.Create(ctx, &groupmodels.Group{
+	group, err := mgr.GroupMgr.Create(ctx, &groupmodels.Group{
 		Name: "test",
 	})
 	assert.NoError(t, err)
 
-	app, err := param.ApplicationMgr.Create(ctx, &applicationmodel.Application{
+	app, err := mgr.ApplicationMgr.Create(ctx, &applicationmodel.Application{
 		Name:    "test",
 		GroupID: group.ID,
 	}, nil)
 	assert.NoError(t, err)
 
-	registryID, err := param.RegistryMgr.Create(ctx, &registrymodels.Registry{
+	registryID, err := mgr.RegistryMgr.Create(ctx, &registrymodels.Registry{
 		Name: "test",
 	})
 	assert.NoError(t, err)
 
-	region, err := param.RegionMgr.Create(ctx, &regionmodels.Region{
+	region, err := mgr.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:       "test",
 		RegistryID: registryID,
 	})
 	assert.NoError(t, err)
 
-	cluster, err := param.ClusterMgr.Create(ctx, &clustermodel.Cluster{
+	cluster, err := mgr.ClusterMgr.Create(ctx, &clustermodel.Cluster{
 		Name:            "clusterGit",
 		ApplicationID:   app.ID,
 		GitURL:          "hello",
@@ -472,7 +493,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	}, nil, nil)
 	assert.NoError(t, err)
 
-	_, err = param.TemplateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
+	_, err = mgr.TemplateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
 		TemplateName: "javaapp",
 		Name:         "v1.0.0",
 	})
@@ -483,33 +504,102 @@ func TestExecutePipelineRun(t *testing.T) {
 			PipelineJSONBlob:    map[string]interface{}{},
 			ApplicationJSONBlob: map[string]interface{}{},
 		}, nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().GetConfigCommit(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.ClusterCommit{
+			Master: "master",
+			Gitops: "gitops",
+		}, nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().UpdateRestartTime(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("restart_commit", nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().CheckAndSyncGitOpsBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().Rollback(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("rollback_commit", nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().MergeBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any()).Return("rollback_master_commit", nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().GetClusterTemplate(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.ClusterTemplate{
+			Name:    "javaapp",
+			Release: "v1.0.0",
+		}, nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]clustergitrepo.ClusterValueFile{}, nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().GetEnvValue(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.EnvValue{
+			Environment:   "test",
+			Region:        region.Name,
+			Namespace:     "default",
+			BaseRegistry:  "registry.cn-hangzhou.aliyuncs.com",
+			IngressDomain: region.IngressDomain,
+		}, nil).AnyTimes()
+	mockClusterGitRepo.EXPECT().GetRepoInfo(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&clustergitrepo.RepoInfo{}).AnyTimes()
+	mockClusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
 
 	mockTektonInterface.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("hello", nil).AnyTimes()
 
-	PRPending, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	mockCD.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockCD.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	prPending, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
+		Action:    prmodels.ActionBuildDeploy,
 		Status:    string(pipelinemodel.StatusPending),
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, string(pipelinemodel.StatusPending), PRPending.Status)
+	assert.Equal(t, string(pipelinemodel.StatusPending), prPending.Status)
 
-	PRReady, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prDeployReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
+		Action:    prmodels.ActionDeploy,
 		Status:    string(pipelinemodel.StatusReady),
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, string(pipelinemodel.StatusReady), PRReady.Status)
+	assert.Equal(t, string(pipelinemodel.StatusReady), prDeployReady.Status)
 
-	err = ctrl.Execute(ctx, PRReady.ID, false)
+	prRestartReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Action:    prmodels.ActionRestart,
+		Status:    string(pipelinemodel.StatusReady),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusReady), prRestartReady.Status)
+
+	prOK, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:        cluster.ID,
+		Action:           prmodels.ActionBuildDeploy,
+		Status:           string(pipelinemodel.StatusOK),
+		ConfigCommit:     "ok_commit",
+		LastConfigCommit: "last_ok_commit",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusOK), prOK.Status)
+
+	prRollbackReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:    cluster.ID,
+		Action:       prmodels.ActionRollback,
+		Status:       string(pipelinemodel.StatusReady),
+		RollbackFrom: &prOK.ID,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusReady), prRollbackReady.Status)
+
+	err = ctrl.Execute(ctx, prDeployReady.ID, false)
 	assert.NoError(t, err)
 
-	err = ctrl.Execute(ctx, PRPending.ID, false)
+	err = ctrl.Execute(ctx, prRestartReady.ID, false)
+	assert.NoError(t, err)
+
+	err = ctrl.Execute(ctx, prRollbackReady.ID, false)
+	assert.NoError(t, err)
+
+	err = ctrl.Execute(ctx, prPending.ID, false)
 	assert.NotNil(t, err)
 
-	err = ctrl.Execute(ctx, PRPending.ID, true)
+	err = ctrl.Execute(ctx, prPending.ID, true)
 	assert.NoError(t, err)
 
-	PRCancel, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	PRCancel, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Status:    string(pipelinemodel.StatusPending),
 	})
@@ -518,7 +608,7 @@ func TestExecutePipelineRun(t *testing.T) {
 	err = ctrl.Cancel(ctx, PRCancel.ID)
 	assert.NoError(t, err)
 
-	err = ctrl.Cancel(ctx, PRReady.ID)
+	err = ctrl.Cancel(ctx, prDeployReady.ID)
 	assert.NotNil(t, err)
 }
 

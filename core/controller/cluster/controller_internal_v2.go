@@ -93,6 +93,17 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil
 	}
 
+	// get original config commit, and sync pipeline's last_config_commit in DB
+	originalConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.prMgr.PipelineRun.UpdateColumns(ctx, pr.ID, map[string]interface{}{
+		"last_config_commit": originalConfigCommit.Master,
+	}); err != nil {
+		return nil, err
+	}
+
 	// 3. update pipeline output in git repo if builddeploy for gitImport and deploy for imageDeploy
 	if (pr.Action == prmodels.ActionBuildDeploy && pr.GitURL != "") ||
 		(pr.Action == prmodels.ActionDeploy && pr.GitURL == "") {
@@ -102,20 +113,21 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, perror.WithMessage(err, op)
 		}
-		// 4. update config commit and status
-		if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
-			return nil, err
-		}
 		if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
 			return nil, err
 		}
 	}
 
-	// 5. merge branch from gitops to master if diff is not empty and update status
+	// 4. update config commit
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
+	if err := c.prMgr.PipelineRun.UpdateConfigCommitByID(ctx, pr.ID, configCommit.Gitops); err != nil {
+		return nil, err
+	}
+
+	// 5. merge branch from gitops to master if diff is not empty and update status
 	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
 		&configCommit.Master, &configCommit.Gitops)
 	if err != nil {

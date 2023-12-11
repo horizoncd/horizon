@@ -335,6 +335,10 @@ func (a *API) Restart(c *gin.Context) {
 
 	resp, err := a.clusterCtl.Restart(c, uint(clusterID))
 	if err != nil {
+		if perror.Cause(err) == herrors.ErrFreedClusterNotSupportedRestart {
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
+			return
+		}
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return

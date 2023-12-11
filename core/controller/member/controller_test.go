@@ -95,7 +95,7 @@ func createContext(t *testing.T) {
 	groupSvc = groupservice.NewService(manager)
 
 	applicationSvc = applicationservice.NewService(groupSvc, manager)
-	clusterSvc = clusterservice.NewService(applicationSvc, manager)
+	clusterSvc = clusterservice.NewService(applicationSvc, nil, manager)
 	eventSvc = eventservice.New(manager)
 }
 

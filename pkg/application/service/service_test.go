@@ -31,9 +31,10 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = context.TODO()
-	mgr   = managerparam.InitManager(db)
+	db, _    = orm.NewSqliteDB("")
+	ctx      = context.TODO()
+	mgr      = managerparam.InitManager(db)
+	groupSvc = groupservice.NewService(mgr)
 )
 
 // nolint
@@ -61,20 +62,14 @@ func TestServiceGetByID(t *testing.T) {
 	db.Save(application)
 
 	t.Run("GetByID", func(t *testing.T) {
-		s := service{
-			groupSvc: groupservice.NewService(mgr),
-			appMgr:   mgr.ApplicationMgr,
-		}
+		s := NewService(groupSvc, mgr)
 		result, err := s.GetByID(ctx, application.ID)
 		assert.Nil(t, err)
 		assert.Equal(t, "/a/b", result.FullPath)
 	})
 
 	t.Run("GetByIDs", func(t *testing.T) {
-		s := service{
-			groupSvc: groupservice.NewService(mgr),
-			appMgr:   mgr.ApplicationMgr,
-		}
+		s := NewService(groupSvc, mgr)
 		result, err := s.GetByIDs(ctx, []uint{application.ID})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(result))

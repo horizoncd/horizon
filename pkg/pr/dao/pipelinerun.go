@@ -16,6 +16,7 @@ package dao
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -158,7 +159,20 @@ func (d *pipelinerunDAO) GetLatestSuccessByClusterID(ctx context.Context, cluste
 }
 
 func (d *pipelinerunDAO) UpdateStatusByID(ctx context.Context, pipelinerunID uint, status models.PipelineStatus) error {
-	return d.UpdateColumns(ctx, pipelinerunID, map[string]interface{}{"status": string(status)})
+	switch status {
+	case models.StatusRunning:
+		return d.UpdateColumns(ctx, pipelinerunID, map[string]interface{}{
+			"started_at": time.Now(),
+			"status":     string(status)},
+		)
+	case models.StatusOK:
+		return d.UpdateColumns(ctx, pipelinerunID, map[string]interface{}{
+			"finished_at": time.Now(),
+			"status":      string(status)},
+		)
+	default:
+		return d.UpdateColumns(ctx, pipelinerunID, map[string]interface{}{"status": string(status)})
+	}
 }
 
 func (d *pipelinerunDAO) UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error {

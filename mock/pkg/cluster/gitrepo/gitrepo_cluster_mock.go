@@ -37,6 +37,20 @@ func (m *MockClusterGitRepo) EXPECT() *MockClusterGitRepoMockRecorder {
 	return m.recorder
 }
 
+// CheckAndSyncGitOpsBranch mocks base method.
+func (m *MockClusterGitRepo) CheckAndSyncGitOpsBranch(ctx context.Context, application, cluster, commit string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckAndSyncGitOpsBranch", ctx, application, cluster, commit)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckAndSyncGitOpsBranch indicates an expected call of CheckAndSyncGitOpsBranch.
+func (mr *MockClusterGitRepoMockRecorder) CheckAndSyncGitOpsBranch(ctx, application, cluster, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAndSyncGitOpsBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).CheckAndSyncGitOpsBranch), ctx, application, cluster, commit)
+}
+
 // CompareConfig mocks base method.
 func (m *MockClusterGitRepo) CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error) {
 	m.ctrl.T.Helper()
@@ -270,6 +284,20 @@ func (m *MockClusterGitRepo) Rollback(ctx context.Context, application, cluster,
 func (mr *MockClusterGitRepoMockRecorder) Rollback(ctx, application, cluster, commit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockClusterGitRepo)(nil).Rollback), ctx, application, cluster, commit)
+}
+
+// SyncGitOpsBranch mocks base method.
+func (m *MockClusterGitRepo) SyncGitOpsBranch(ctx context.Context, application, cluster string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncGitOpsBranch", ctx, application, cluster)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SyncGitOpsBranch indicates an expected call of SyncGitOpsBranch.
+func (mr *MockClusterGitRepoMockRecorder) SyncGitOpsBranch(ctx, application, cluster interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncGitOpsBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).SyncGitOpsBranch), ctx, application, cluster)
 }
 
 // UpdateCluster mocks base method.

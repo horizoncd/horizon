@@ -219,9 +219,10 @@ var (
 	ErrHTTPRequestFailed     = errors.New("http request failed")
 
 	// cluster
-	ErrClusterNoChange         = errors.New("no change to cluster")
-	ErrShouldBuildDeployFirst  = errors.New("clusters with build config should build and deploy first")
-	ErrBuildDeployNotSupported = errors.New("builddeploy is not supported for this cluster")
+	ErrClusterNoChange                 = errors.New("no change to cluster")
+	ErrShouldBuildDeployFirst          = errors.New("clusters with build config should build and deploy first")
+	ErrBuildDeployNotSupported         = errors.New("builddeploy is not supported for this cluster")
+	ErrFreedClusterNotSupportedRestart = errors.New("freed cluster is not supported to restart")
 
 	// pipelinerun
 

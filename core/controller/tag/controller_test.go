@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -50,7 +51,7 @@ func TestMain(m *testing.M) {
 	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&tagmodels.Tag{}, &membermodels.Member{}, &regionmodels.Region{},
-		&trmodels.TemplateRelease{}, &templatemodels.Template{}); err != nil {
+		&trmodels.TemplateRelease{}, &templatemodels.Template{}, &tagmodels.Metatag{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -109,12 +110,10 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	c = &controller{
-		clusterMgr:     clusterMgr,
-		tagMgr:         manager.TagMgr,
-		clusterGitRepo: clusterGitRepo,
-		applicationMgr: appMgr,
-	}
+	c = NewController(&param.Param{
+		Manager:        manager,
+		ClusterGitRepo: clusterGitRepo,
+	})
 
 	clusterID := cluster.ID
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
@@ -249,4 +248,33 @@ func Test(t *testing.T) {
 	resp, err = c.ListSubResourceTags(ctx, common.ResourceApplication, cluster.ApplicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
+
+	// test meta tag
+	err = c.CreateMetatags(ctx, &CreateMetatagsRequest{
+		Metatags: []*tagmodels.Metatag{
+			{
+				TagKey:      "k1",
+				TagValue:    "v1",
+				Description: "desc1",
+			},
+			{
+				TagKey:      "k1",
+				TagValue:    "v2",
+				Description: "desc2",
+			},
+			{
+				TagKey:      "k2",
+				TagValue:    "v3",
+				Description: "desc3",
+			},
+		},
+	})
+	assert.Nil(t, err)
+	metatags, err := c.GetMetatagsByKey(ctx, "k1")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(metatags))
+
+	metakeys, err := c.GetMetatagKeys(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(metakeys))
 }

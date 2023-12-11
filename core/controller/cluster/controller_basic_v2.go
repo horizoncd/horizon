@@ -657,7 +657,7 @@ func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 找一下是否需要check，如果不需要则直接设为ready
+	// if checks is empty, set status to ready
 	checks, err := c.prSvc.GetCheckByResource(ctx, clusterID, common.ResourceCluster)
 	if err != nil {
 		return nil, err
@@ -683,19 +683,22 @@ func (c *controller) CreatePipelineRun(ctx context.Context, clusterID uint,
 func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 	r *CreatePipelineRunRequest) (*prmodels.Pipelinerun, error) {
 	defer wlog.Start(ctx, "cluster controller: create pipeline run").StopPrint()
-	var action string
-	var err error
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
-	if r.Action == prmodels.ActionBuildDeploy && cluster.GitURL == "" {
-		return nil, herrors.ErrBuildDeployNotSupported
-	}
 
-	var gitURL, gitRef, gitRefType, imageURL, codeCommitID = cluster.GitURL,
-		cluster.GitRef, cluster.GitRefType, cluster.Image, cluster.GitRef
+	var (
+		title        = r.Title
+		action       string
+		gitURL       = cluster.GitURL
+		gitRefType   = cluster.GitRefType
+		gitRef       = cluster.GitRef
+		codeCommitID string
+		imageURL     = cluster.Image
+		rollbackFrom *uint
+	)
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
@@ -717,6 +720,9 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 	switch r.Action {
 	case prmodels.ActionBuildDeploy:
 		action = prmodels.ActionBuildDeploy
+		if cluster.GitURL == "" {
+			return nil, herrors.ErrBuildDeployNotSupported
+		}
 
 		if r.Git != nil {
 			if r.Git.Commit != "" {
@@ -768,6 +774,7 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		}
 
 	case prmodels.ActionRollback:
+		title = prmodels.ActionRollback
 		action = prmodels.ActionRollback
 
 		// get pipelinerun to rollback, and do some validation
@@ -787,14 +794,20 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 				"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID)
 		}
 
-		// Deprecated: for internal usage
-		err = c.checkAndSyncGitOpsBranch(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
-		if err != nil {
-			return nil, err
-		}
+		gitURL = pipelinerun.GitURL
+		gitRefType = pipelinerun.GitRefType
+		gitRef = pipelinerun.GitRef
+		codeCommitID = pipelinerun.GitCommit
+		imageURL = pipelinerun.ImageURL
+		rollbackFrom = &pipelinerun.ID
+		configCommitSHA = configCommit.Master
 
-		gitURL, gitRefType, gitRef, codeCommitID, imageURL =
-			cluster.GitURL, cluster.GitRefType, cluster.GitRef, pipelinerun.GitCommit, pipelinerun.ImageURL
+	case prmodels.ActionRestart:
+		title = prmodels.ActionRestart
+		action = prmodels.ActionRestart
+		if cluster.Status == common.ClusterStatusFreed {
+			return nil, herrors.ErrFreedClusterNotSupportedRestart
+		}
 		configCommitSHA = configCommit.Master
 
 	default:
@@ -805,7 +818,7 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		ClusterID:        clusterID,
 		Action:           action,
 		Status:           string(prmodels.StatusPending),
-		Title:            r.Title,
+		Title:            title,
 		Description:      r.Description,
 		GitURL:           gitURL,
 		GitRefType:       gitRefType,
@@ -814,5 +827,6 @@ func (c *controller) createPipelineRun(ctx context.Context, clusterID uint,
 		ImageURL:         imageURL,
 		LastConfigCommit: lastConfigCommitSHA,
 		ConfigCommit:     configCommitSHA,
+		RollbackFrom:     rollbackFrom,
 	}, nil
 }
