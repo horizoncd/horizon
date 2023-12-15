@@ -1,7 +1,10 @@
 package admission
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/horizoncd/horizon/core/common"
@@ -30,10 +33,24 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			return
 		}
 		var object interface{}
-		if err := c.ShouldBind(object); err != nil {
+		// read request body and avoid side-effects on c.Request.Body
+		bodyBytes, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
 			response.AbortWithRPCError(c,
 				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
 			return
+		}
+		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		if err := json.Unmarshal(bodyBytes, &object); err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("unmarshal request body failed, err: %v", err)))
+			return
+		}
+		// fill in the request url query into admission request options
+		queries := c.Request.URL.Query()
+		options := make(map[string]interface{}, len(queries))
+		for k, v := range queries {
+			options[k] = v
 		}
 		admissionRequest := &admissionwebhook.Request{
 			Operation:    admissionmodels.Operation(attr.GetVerb()),
@@ -42,7 +59,7 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			SubResource:  attr.GetSubResource(),
 			Version:      attr.GetAPIVersion(),
 			Object:       object,
-			OldObject:    nil,
+			Options:      options,
 		}
 		if err := admissionwebhook.Validating(c, admissionRequest); err != nil {
 			response.AbortWithRPCError(c,
