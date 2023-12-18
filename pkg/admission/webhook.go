@@ -2,10 +2,8 @@ package admission
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
-	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -48,7 +46,7 @@ type Request struct {
 }
 
 type Response struct {
-	Allowed   *bool  `json:"allowed,omitempty"`
+	Allowed   *bool  `json:"allowed"`
 	Result    string `json:"result,omitempty"`
 	Patch     []byte `json:"patch,omitempty"`
 	PatchType string `json:"patchType,omitempty"`
@@ -82,10 +80,16 @@ func Validating(ctx context.Context, request *Request) error {
 				resCh <- validateResult{err, nil}
 				return
 			}
-			if response.Allowed != nil {
-				resCh <- validateResult{nil, response}
+			if response == nil || response.Allowed == nil {
+				if webhook.IgnoreError() {
+					log.Errorf(ctx, "failed to admit request: response is nil or allowed is nil")
+					resCh <- validateResult{nil, nil}
+					return
+				}
+				resCh <- validateResult{perror.New("response is nil or allowed is nil"), nil}
 				return
 			}
+			resCh <- validateResult{nil, response}
 		}(webhook)
 	}
 
@@ -105,36 +109,4 @@ func Validating(ctx context.Context, request *Request) error {
 	}
 
 	return nil
-}
-
-func jsonPatch(obj interface{}, patchJSON []byte) (interface{}, error) {
-	objJSON, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
-	}
-	patch, err := jsonpatch.DecodePatch(patchJSON)
-	if err != nil {
-		return nil, err
-	}
-
-	objPatched, err := patch.Apply(objJSON)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(objPatched, &obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
-}
-
-func loggingError(ctx context.Context, err error, webhook Webhook) error {
-	if err != nil {
-		if webhook.IgnoreError() {
-			log.Errorf(ctx, "failed to admit request: %v", err)
-			return nil
-		}
-		return err
-	}
-	return err
 }

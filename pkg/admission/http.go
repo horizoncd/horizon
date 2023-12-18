@@ -17,6 +17,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/admission/models"
 	config "github.com/horizoncd/horizon/pkg/config/admission"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/util/common"
 )
 
 type HTTPAdmissionClient struct {
@@ -24,6 +25,7 @@ type HTTPAdmissionClient struct {
 	http.Client
 }
 
+// NewHTTPAdmissionClient creates a new HTTPAdmissionClient
 func NewHTTPAdmissionClient(config config.ClientConfig, timeout time.Duration) *HTTPAdmissionClient {
 	var transport = &http.Transport{}
 	if config.CABundle != "" {
@@ -52,6 +54,7 @@ func NewHTTPAdmissionClient(config config.ClientConfig, timeout time.Duration) *
 	}
 }
 
+// Get sends the admission request to the webhook server and returns the response
 func (c *HTTPAdmissionClient) Get(ctx context.Context, admitData *Request) (*Response, error) {
 	body, err := json.Marshal(admitData)
 	if err != nil {
@@ -87,6 +90,7 @@ type ResourceMatcher struct {
 	versions   map[string]struct{}
 }
 
+// NewResourceMatcher creates a new ResourceMatcher
 func NewResourceMatcher(rule config.Rule) *ResourceMatcher {
 	matcher := &ResourceMatcher{
 		resources:  make(map[string]struct{}),
@@ -117,6 +121,7 @@ func NewResourceMatcher(rule config.Rule) *ResourceMatcher {
 	return matcher
 }
 
+// Match returns true if the request matches the matcher
 func (m *ResourceMatcher) Match(req *Request) bool {
 	if m.resources != nil {
 		resource := req.Resource
@@ -142,6 +147,7 @@ func (m *ResourceMatcher) Match(req *Request) bool {
 
 type ResourceMatchers []*ResourceMatcher
 
+// NewResourceMatchers creates a new ResourceMatchers
 func NewResourceMatchers(rules []config.Rule) ResourceMatchers {
 	matchers := make(ResourceMatchers, len(rules))
 	for i, rule := range rules {
@@ -150,6 +156,7 @@ func NewResourceMatchers(rules []config.Rule) ResourceMatchers {
 	return matchers
 }
 
+// Match returns true if any matcher matches the request
 func (m ResourceMatchers) Match(req *Request) bool {
 	for _, matcher := range m {
 		if matcher.Match(req) {
@@ -165,6 +172,7 @@ type HTTPAdmissionWebhook struct {
 	matchers   ResourceMatchers
 }
 
+// NewHTTPWebhooks registers the webhooks
 func NewHTTPWebhooks(config config.Admission) {
 	for _, webhook := range config.Webhooks {
 		switch webhook.Kind {
@@ -184,6 +192,7 @@ func NewHTTPWebhook(config config.Webhook) Webhook {
 	}
 }
 
+// Handle handles the admission request and returns the response
 func (m *HTTPAdmissionWebhook) Handle(ctx context.Context, req *Request) (*Response, error) {
 	resp, err := m.httpclient.Get(ctx, req)
 	if err != nil {
@@ -192,20 +201,23 @@ func (m *HTTPAdmissionWebhook) Handle(ctx context.Context, req *Request) (*Respo
 	return resp, nil
 }
 
+// IgnoreError returns true if the webhook is allowed to ignore the error
 func (m *HTTPAdmissionWebhook) IgnoreError() bool {
 	return m.config.FailurePolicy.Eq(config.FailurePolicyIgnore)
 }
 
+// Interest returns true if the request matches the webhook
 func (m *HTTPAdmissionWebhook) Interest(req *Request) bool {
 	return m.matchers.Match(req)
 }
 
-type DummyMutatingWebhookServer struct {
+type DummyValidatingWebhookServer struct {
 	server *httptest.Server
 }
 
-func NewDummyWebhookServer() *DummyMutatingWebhookServer {
-	webhook := &DummyMutatingWebhookServer{}
+// NewDummyWebhookServer creates a dummy validating webhook server for testing
+func NewDummyWebhookServer() *DummyValidatingWebhookServer {
+	webhook := &DummyValidatingWebhookServer{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/validate", webhook.Validating)
@@ -215,7 +227,7 @@ func NewDummyWebhookServer() *DummyMutatingWebhookServer {
 	return webhook
 }
 
-func (*DummyMutatingWebhookServer) ReadAndResponse(resp http.ResponseWriter,
+func (*DummyValidatingWebhookServer) ReadAndResponse(resp http.ResponseWriter,
 	req *http.Request, fn func(Request, *Response)) {
 	bodyBytes, _ := ioutil.ReadAll(req.Body)
 
@@ -230,55 +242,60 @@ func (*DummyMutatingWebhookServer) ReadAndResponse(resp http.ResponseWriter,
 	_, _ = resp.Write(respBytes)
 }
 
-type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-func (w *DummyMutatingWebhookServer) Validating(resp http.ResponseWriter, req *http.Request) {
+func (w *DummyValidatingWebhookServer) Validating(resp http.ResponseWriter, req *http.Request) {
 	w.ReadAndResponse(resp, req, w.validating)
 }
 
-func (w *DummyMutatingWebhookServer) validating(req Request, resp *Response) {
+func (w *DummyValidatingWebhookServer) validating(req Request, resp *Response) {
 	obj := req.Object.(map[string]interface{})
 
-	allow := true
-
-	name, ok := obj["name"].(string)
-	if !ok {
-		allow = false
-		resp.Result = "no name found"
-	}
-
-	if strings.Contains(name, "invalid") {
-		allow = false
-		resp.Result = fmt.Sprintf("name contains invalid: %s", name)
-	}
-
-	if obj["tags"] != nil {
-		tags := obj["tags"].([]interface{})
-		for _, tag := range tags {
-			tag := tag.(map[string]interface{})
-			tagKey := tag["key"].(string)
-			if strings.Contains(tagKey, "invalid") {
-				allow = false
-				resp.Result = fmt.Sprintf("tag key contains invalid: %s", tagKey)
-				break
-			}
+	if req.Operation.Eq(models.OperationCreate) {
+		// check name
+		name, ok := obj["name"].(string)
+		if !ok {
+			resp.Allowed = common.BoolPtr(false)
+			resp.Result = "no name found"
+			return
+		}
+		if strings.Contains(name, "invalid") {
+			resp.Allowed = common.BoolPtr(false)
+			resp.Result = fmt.Sprintf("name contains invalid: %s", name)
+			return
 		}
 	}
-	if !allow {
-		allow = false
-		resp.Allowed = &allow
+
+	// check tags
+	tagsMap, ok := obj["tags"].([]interface{})
+	if !ok {
+		// skip tag validation if no tags found
+		resp.Allowed = common.BoolPtr(true)
 		return
 	}
-	resp.Allowed = &allow
+	targetKey := "scope"
+	exist := false
+	for _, tag := range tagsMap {
+		t, ok := tag.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if t["key"] == targetKey {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		resp.Allowed = common.BoolPtr(false)
+		resp.Result = fmt.Sprintf("no tag with key: %s", targetKey)
+		return
+	}
+
+	resp.Allowed = common.BoolPtr(true)
 }
 
-func (w *DummyMutatingWebhookServer) ValidatingURL() string {
+func (w *DummyValidatingWebhookServer) ValidatingURL() string {
 	return w.server.URL + "/validate"
 }
 
-func (w *DummyMutatingWebhookServer) Stop() {
+func (w *DummyValidatingWebhookServer) Stop() {
 	w.server.Close()
 }

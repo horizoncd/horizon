@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware"
 	admissionwebhook "github.com/horizoncd/horizon/pkg/admission"
@@ -14,6 +15,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 // Middleware to validate and mutate admission request
@@ -41,10 +43,17 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			return
 		}
 		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		if err := json.Unmarshal(bodyBytes, &object); err != nil {
-			response.AbortWithRPCError(c,
-				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("unmarshal request body failed, err: %v", err)))
-			return
+		if len(bodyBytes) > 0 {
+			contentType := c.ContentType()
+			if contentType == binding.MIMEJSON {
+				if err := json.Unmarshal(bodyBytes, &object); err != nil {
+					response.AbortWithRPCError(c,
+						rpcerror.ParamError.WithErrMsg(fmt.Sprintf("unmarshal request body failed, err: %v", err)))
+					return
+				}
+			} else {
+				log.Warningf(c, "unsupported content type: %s", contentType)
+			}
 		}
 		// fill in the request url query into admission request options
 		queries := c.Request.URL.Query()

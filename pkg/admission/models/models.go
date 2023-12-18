@@ -19,7 +19,10 @@ func (o Operation) Eq(other Operation) bool {
 }
 
 const (
+	KindValidating Kind = "validating"
+
 	MatchAll string = "*"
 
-	KindValidating Kind = "validating"
+	OperationCreate Operation = "create"
+	OperationUpdate Operation = "update"
 )
