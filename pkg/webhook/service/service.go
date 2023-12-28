@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,7 +35,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/util/common"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 	"github.com/horizoncd/horizon/pkg/webhook/models"
@@ -153,8 +153,7 @@ func (s *service) Start() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Errorf(s.ctx, "webhook service reconcile panic: %v", err)
-				common.PrintStack()
+				log.Errorf(s.ctx, "webhook service reconcile panic: %s", string(debug.Stack()))
 			}
 		}()
 
@@ -286,8 +285,7 @@ func (w *worker) start() {
 	ctx := w.ctx
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf(ctx, "webhook worker panic: %v", err)
-			common.PrintStack()
+			log.Errorf(ctx, "webhook worker panic: %s", string(debug.Stack()))
 		}
 	}()
 L:
