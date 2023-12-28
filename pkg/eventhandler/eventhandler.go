@@ -16,6 +16,7 @@ package eventhandler
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 
 	corecommon "github.com/horizoncd/horizon/core/common"
@@ -26,7 +27,6 @@ import (
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	"github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	"github.com/horizoncd/horizon/pkg/util/common"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
@@ -92,8 +92,7 @@ func (e *eventHandlerService) Start() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Errorf(e.ctx, "event handler service panic: %v", err)
-				common.PrintStack()
+				log.Errorf(e.ctx, "event handler service panic: %s", string(debug.Stack()))
 			}
 		}()
 
