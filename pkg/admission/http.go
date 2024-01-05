@@ -20,6 +20,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/common"
 )
 
+const DefaultTimeout = 5 * time.Second
+
 type HTTPAdmissionClient struct {
 	config config.ClientConfig
 	http.Client
@@ -45,6 +47,9 @@ func NewHTTPAdmissionClient(config config.ClientConfig, timeout time.Duration) *
 			},
 		}
 	}
+	if timeout == 0 {
+		timeout = DefaultTimeout
+	}
 	return &HTTPAdmissionClient{
 		config: config,
 		Client: http.Client{
@@ -61,7 +66,7 @@ func (c *HTTPAdmissionClient) Get(ctx context.Context, admitData *Request) (*Res
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", c.config.URL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.config.URL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +188,7 @@ func NewHTTPWebhooks(config config.Admission) {
 }
 
 func NewHTTPWebhook(config config.Webhook) Webhook {
-	client := NewHTTPAdmissionClient(config.ClientConfig, time.Duration(config.TimeoutSeconds)*time.Second)
+	client := NewHTTPAdmissionClient(config.ClientConfig, config.Timeout)
 	matchers := NewResourceMatchers(config.Rules)
 	return &HTTPAdmissionWebhook{
 		config:     config,

@@ -2,6 +2,7 @@ package admission
 
 import (
 	"strings"
+	"time"
 
 	"github.com/horizoncd/horizon/pkg/admission/models"
 )
@@ -30,12 +31,11 @@ type Rule struct {
 }
 
 type Webhook struct {
-	Name           string        `yaml:"name"`
-	Kind           models.Kind   `yaml:"kind"`
-	FailurePolicy  FailurePolicy `yaml:"failurePolicy"`
-	TimeoutSeconds int32         `yaml:"timeoutSeconds"`
-	Rules          []Rule        `yaml:"rules"`
-	ClientConfig   ClientConfig  `yaml:"clientConfig"`
+	Kind          models.Kind   `yaml:"kind"`
+	FailurePolicy FailurePolicy `yaml:"failurePolicy"`
+	Timeout       time.Duration `yaml:"timeout"`
+	Rules         []Rule        `yaml:"rules"`
+	ClientConfig  ClientConfig  `yaml:"clientConfig"`
 }
 
 type Admission struct {

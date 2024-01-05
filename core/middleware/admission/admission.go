@@ -42,17 +42,21 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
 			return
 		}
+		// restore the request body
 		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 		if len(bodyBytes) > 0 {
 			contentType := c.ContentType()
-			if contentType == binding.MIMEJSON {
+			if contentType == binding.MIMEJSON || contentType == "" {
 				if err := json.Unmarshal(bodyBytes, &object); err != nil {
 					response.AbortWithRPCError(c,
 						rpcerror.ParamError.WithErrMsg(fmt.Sprintf("unmarshal request body failed, err: %v", err)))
 					return
 				}
 			} else {
-				log.Warningf(c, "unsupported content type: %s", contentType)
+				log.Errorf(c, "unsupported content type: %s", contentType)
+				response.AbortWithRPCError(c,
+					rpcerror.ParamError.WithErrMsg(fmt.Sprintf("unsupported content type: %s", contentType)))
+				return
 			}
 		}
 		// fill in the request url query into admission request options
@@ -62,13 +66,13 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			options[k] = v
 		}
 		admissionRequest := &admissionwebhook.Request{
-			Operation:    admissionmodels.Operation(attr.GetVerb()),
-			Resource:     attr.GetResource(),
-			ResourceName: attr.GetName(),
-			SubResource:  attr.GetSubResource(),
-			Version:      attr.GetAPIVersion(),
-			Object:       object,
-			Options:      options,
+			Operation:   admissionmodels.Operation(attr.GetVerb()),
+			Resource:    attr.GetResource(),
+			Name:        attr.GetName(),
+			SubResource: attr.GetSubResource(),
+			Version:     attr.GetAPIVersion(),
+			Object:      object,
+			Options:     options,
 		}
 		if err := admissionwebhook.Validating(c, admissionRequest); err != nil {
 			response.AbortWithRPCError(c,

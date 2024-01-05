@@ -3,6 +3,7 @@ package admission
 import (
 	"context"
 	"testing"
+	"time"
 
 	clusterctrl "github.com/horizoncd/horizon/core/controller/cluster"
 	"github.com/horizoncd/horizon/pkg/admission/models"
@@ -22,10 +23,9 @@ func TestWebhook(t *testing.T) {
 	config := admissionconfig.Admission{
 		Webhooks: []admissionconfig.Webhook{
 			{
-				Name:           "test1",
-				Kind:           models.KindValidating,
-				FailurePolicy:  admissionconfig.FailurePolicyFail,
-				TimeoutSeconds: 5,
+				Kind:          models.KindValidating,
+				FailurePolicy: admissionconfig.FailurePolicyFail,
+				Timeout:       5 * time.Second,
 				Rules: []admissionconfig.Rule{
 					{
 						Resources: []string{
@@ -42,10 +42,9 @@ func TestWebhook(t *testing.T) {
 				},
 			},
 			{
-				Name:           "test2",
-				Kind:           models.KindValidating,
-				FailurePolicy:  admissionconfig.FailurePolicyIgnore,
-				TimeoutSeconds: 5,
+				Kind:          models.KindValidating,
+				FailurePolicy: admissionconfig.FailurePolicyIgnore,
+				Timeout:       5 * time.Second,
 				Rules: []admissionconfig.Rule{
 					{
 						Resources: []string{
@@ -80,13 +79,13 @@ func TestWebhook(t *testing.T) {
 	}
 
 	createRequest := &Request{
-		Operation:    models.OperationCreate,
-		Resource:     "applications",
-		ResourceName: "1",
-		SubResource:  "clusters",
-		Version:      "v2",
-		Object:       createBody,
-		OldObject:    nil,
+		Operation:   models.OperationCreate,
+		Resource:    "applications",
+		Name:        "1",
+		SubResource: "clusters",
+		Version:     "v2",
+		Object:      createBody,
+		OldObject:   nil,
 		Options: map[string]interface{}{
 			"scope": []string{"online/hz1"},
 		},
@@ -114,14 +113,14 @@ func TestWebhook(t *testing.T) {
 		},
 	}
 	updateRequest := &Request{
-		Operation:    models.OperationUpdate,
-		Resource:     "clusters",
-		ResourceName: "1",
-		SubResource:  "",
-		Version:      "v2",
-		Object:       updateBody,
-		OldObject:    nil,
-		Options:      nil,
+		Operation:   models.OperationUpdate,
+		Resource:    "clusters",
+		Name:        "1",
+		SubResource: "",
+		Version:     "v2",
+		Object:      updateBody,
+		OldObject:   nil,
+		Options:     nil,
 	}
 	err = Validating(ctx, updateRequest)
 	assert.NoError(t, err)
