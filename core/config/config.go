@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/horizoncd/horizon/pkg/config/admission"
 	"github.com/horizoncd/horizon/pkg/config/argocd"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
@@ -67,6 +68,7 @@ type Config struct {
 	TemplateUpgradeMapper  template.UpgradeMapper  `yaml:"templateUpgradeMapper"`
 	KubernetesEvent        k8sevent.Config         `yaml:"kubernetesEvent"`
 	Clean                  clean.Config            `yaml:"clean"`
+	Admission              admission.Admission     `yaml:"admission"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
