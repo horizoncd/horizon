@@ -35,6 +35,7 @@ import (
 	accesstokenctl "github.com/horizoncd/horizon/core/controller/accesstoken"
 	applicationctl "github.com/horizoncd/horizon/core/controller/application"
 	applicationregionctl "github.com/horizoncd/horizon/core/controller/applicationregion"
+	badgectl "github.com/horizoncd/horizon/core/controller/badge"
 	"github.com/horizoncd/horizon/core/controller/build"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
 	codectl "github.com/horizoncd/horizon/core/controller/code"
@@ -84,6 +85,7 @@ import (
 	accessv2 "github.com/horizoncd/horizon/core/http/api/v2/access"
 	accesstokenv2 "github.com/horizoncd/horizon/core/http/api/v2/accesstoken"
 	applicationregionv2 "github.com/horizoncd/horizon/core/http/api/v2/applicationregion"
+	"github.com/horizoncd/horizon/core/http/api/v2/badge"
 	clusterv2 "github.com/horizoncd/horizon/core/http/api/v2/cluster"
 	codev2 "github.com/horizoncd/horizon/core/http/api/v2/code"
 	environmentv2 "github.com/horizoncd/horizon/core/http/api/v2/environment"
@@ -523,6 +525,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		scopeCtl             = scopectl.NewController(parameter)
 		webhookCtl           = webhookctl.NewController(parameter)
 		eventCtl             = eventctl.NewController(parameter)
+		badgeCtl             = badgectl.NewController(parameter)
 	)
 
 	var (
@@ -582,6 +585,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2          = terminalv2.NewAPI(terminalCtl)
 		userAPIV2              = userv2.NewAPI(userCtl, store)
 		webhookAPIV2           = webhookv2.NewAPI(webhookCtl)
+		badgeAPIV2             = badge.NewAPI(badgeCtl)
 	)
 
 	// start jobs
@@ -693,6 +697,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2,
 		userAPIV2,
 		webhookAPIV2,
+		badgeAPIV2,
 	}
 
 	// start cloud event server

@@ -43,6 +43,10 @@ func (e RPCError) WithErrMsgf(format string, params ...interface{}) RPCError {
 	}
 }
 
+func (e RPCError) Error() string {
+	return fmt.Sprintf("HTTPCode: %d, ErrorCode: %s, ErrorMessage: %s", e.HTTPCode, e.ErrorCode, e.ErrorMessage)
+}
+
 var (
 	ForbiddenError = RPCError{
 		HTTPCode:  http.StatusForbidden,
