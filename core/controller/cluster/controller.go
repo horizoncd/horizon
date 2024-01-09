@@ -17,9 +17,11 @@ package cluster
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	badgemanager "github.com/horizoncd/horizon/pkg/badge/manager"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	templatemanager "github.com/horizoncd/horizon/pkg/template/manager"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/horizoncd/horizon/core/config"
 	"github.com/horizoncd/horizon/core/controller/build"
@@ -145,6 +147,7 @@ type controller struct {
 	envMgr                envmanager.Manager
 	envRegionMgr          environmentregionmapper.Manager
 	regionMgr             regionmanager.Manager
+	badgeMgr              badgemanager.Manager
 	groupSvc              groupsvc.Service
 	prMgr                 *prmanager.PRManager
 	prSvc                 *prservice.Service
@@ -185,6 +188,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		templateSchemaGetter:  param.TemplateSchemaGetter,
 		autoFreeSvc:           param.AutoFreeSvc,
 		outputGetter:          param.OutputGetter,
+		badgeMgr:              param.BadgeMgr,
 		envMgr:                param.EnvMgr,
 		envRegionMgr:          param.EnvRegionMgr,
 		regionMgr:             param.RegionMgr,

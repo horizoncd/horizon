@@ -33,6 +33,8 @@ type DAO interface {
 	GetByName(ctx context.Context, resourceType string, resourceID uint, name string) (*models.Badge, error)
 	Delete(ctx context.Context, id uint) error
 	DeleteByName(ctx context.Context, resourceType string, resourceID uint, name string) error
+
+	DeleteByResource(ctx context.Context, resourceType string, resourceID uint) error
 }
 
 type dao struct {
@@ -113,6 +115,15 @@ func (d *dao) DeleteByName(ctx context.Context, resourceType string, resourceID 
 	if err := d.db.WithContext(ctx).Where(
 		"resource_type = ? AND resource_id = ? AND name = ?",
 		resourceType, resourceID, name).Delete(&models.Badge{}).Error; err != nil {
+		return herrors.NewErrDeleteFailed(herrors.BadgeInDB, err.Error())
+	}
+	return nil
+}
+
+func (d *dao) DeleteByResource(ctx context.Context, resourceType string, resourceID uint) error {
+	if err := d.db.WithContext(ctx).Where(
+		"resource_type = ? AND resource_id = ?",
+		resourceType, resourceID).Delete(&models.Badge{}).Error; err != nil {
 		return herrors.NewErrDeleteFailed(herrors.BadgeInDB, err.Error())
 	}
 	return nil

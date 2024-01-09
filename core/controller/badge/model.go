@@ -13,8 +13,6 @@ type Badge struct {
 	ResourceType string    `json:"resourceType"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
-	CreatedBy    uint      `json:"createdBy"`
-	UpdatedBy    uint      `json:"updatedBy"`
 }
 
 func (b *Badge) FromDAO(daoBadge *models.Badge) {
@@ -26,8 +24,6 @@ func (b *Badge) FromDAO(daoBadge *models.Badge) {
 	b.RedirectLink = daoBadge.RedirectLink
 	b.CreatedAt = daoBadge.CreatedAt
 	b.UpdatedAt = daoBadge.UpdatedAt
-	b.CreatedBy = daoBadge.CreatedBy
-	b.UpdatedBy = daoBadge.UpdatedBy
 }
 
 type Update struct {

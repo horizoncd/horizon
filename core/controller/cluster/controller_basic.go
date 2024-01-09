@@ -905,6 +905,11 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		// 5. record event
 		c.eventSvc.CreateEventIgnoreError(newctx, common.ResourceCluster, clusterID,
 			eventmodels.ClusterDeleted, nil)
+
+		// 6. delete badge related to cluster
+		if err = c.badgeMgr.DeleteByResource(ctx, common.ResourceCluster, clusterID); err != nil {
+			log.Errorf(newctx, "failed to delete badge of cluster: %v, err: %v", cluster.Name, err)
+		}
 	}()
 
 	return nil

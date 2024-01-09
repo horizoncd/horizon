@@ -2,6 +2,7 @@ package badge
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -67,6 +68,17 @@ func (c *controller) CreateBadge(ctx context.Context, resourceType string,
 	if err := c.checkResource(ctx, resourceType, resourceID); err != nil {
 		return nil, err
 	}
+
+	svgURL, err := url.Parse(badge.SvgLink)
+	if err != nil || (svgURL.Scheme != "https" && svgURL.Scheme != "http") {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "invalid svg link: %s", badge.SvgLink)
+	}
+	if badge.RedirectLink != "" {
+		redirectURL, err := url.Parse(badge.RedirectLink)
+		if err != nil || (redirectURL.Scheme != "https" && redirectURL.Scheme != "http") {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid, "invalid redirect link: %s", badge.RedirectLink)
+		}
+	}
 	daoBadge := &models.Badge{
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
@@ -74,7 +86,6 @@ func (c *controller) CreateBadge(ctx context.Context, resourceType string,
 		SvgLink:      badge.SvgLink,
 		RedirectLink: badge.RedirectLink,
 	}
-	var err error
 	daoBadge, err = c.badgeMgr.Create(ctx, daoBadge)
 	if err != nil {
 		return nil, err

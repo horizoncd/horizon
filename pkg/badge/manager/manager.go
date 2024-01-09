@@ -20,6 +20,7 @@ type Manager interface {
 	GetByName(ctx context.Context, resourceType string, resourceID uint, name string) (*models.Badge, error)
 	Delete(ctx context.Context, id uint) error
 	DeleteByName(ctx context.Context, resourceType string, resourceID uint, name string) error
+	DeleteByResource(ctx context.Context, resourceType string, resourceID uint) error
 }
 
 type manager struct {
@@ -62,4 +63,8 @@ func (m *manager) Delete(ctx context.Context, id uint) error {
 
 func (m *manager) DeleteByName(ctx context.Context, resourceType string, resourceID uint, name string) error {
 	return m.dao.DeleteByName(ctx, resourceType, resourceID, name)
+}
+
+func (m *manager) DeleteByResource(ctx context.Context, resourceType string, resourceID uint) error {
+	return m.dao.DeleteByResource(ctx, resourceType, resourceID)
 }
