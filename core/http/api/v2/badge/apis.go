@@ -69,13 +69,20 @@ func (a *API) Create(c *gin.Context) {
 	}
 }
 
-func (a *API) Update(c *gin.Context) {
-	// op := "badge: update"
-	resourceType, resourceID, err := getResourceContext(c)
+func (a *API) UpdateClusterBadge(c *gin.Context) {
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+
 	if err != nil {
+		errMsg := fmt.Sprintf("invalid : %s, err: %s", clusterIDStr, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(errMsg))
 		return
 	}
+	a.update(c, common.ResourceCluster, uint(clusterID))
+}
 
+func (a *API) update(c *gin.Context, resourceType string, resourceID uint) {
+	// op := "badge: update"
 	badgeIDorName := c.Param(_paramBadgeIDorName)
 
 	badgeID, err := strconv.ParseUint(badgeIDorName, 10, 0)
@@ -100,7 +107,7 @@ func (a *API) Update(c *gin.Context) {
 			response.SuccessWithData(c, b)
 		}
 	} else {
-		if b, err := a.badgeCtl.UpdateBadgeByName(c, resourceType, resourceID, badgeName, &badgeUpdate); err != nil {
+		if b, err := a.badgeCtl.UpdateBadgeByName(c, resourceType, uint(resourceID), badgeName, &badgeUpdate); err != nil {
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("failed to update badge, err: %s",
 				err.Error())))
 		} else {

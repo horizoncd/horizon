@@ -31,9 +31,9 @@ func (a *API) RegisterRoute(engine *gin.Engine) {
 		},
 		{
 			Method: http.MethodPut,
-			Pattern: fmt.Sprintf("/:%v/:%v/badges/:%v",
-				common.ParamResourceType, common.ParamResourceID, _paramBadgeIDorName),
-			HandlerFunc: a.Update,
+			Pattern: fmt.Sprintf("/clusters/:%v/badges/:%v",
+				common.ParamClusterID, _paramBadgeIDorName),
+			HandlerFunc: a.UpdateClusterBadge,
 		},
 		{
 			Method: http.MethodDelete,
