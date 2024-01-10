@@ -22,6 +22,7 @@ import (
 	accesstokenmanager "github.com/horizoncd/horizon/pkg/accesstoken/manager"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationregionmanager "github.com/horizoncd/horizon/pkg/applicationregion/manager"
+	badgemanager "github.com/horizoncd/horizon/pkg/badge/manager"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	environmentregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
@@ -70,6 +71,7 @@ type Manager struct {
 	WebhookMgr           webhookManager.Manager
 	EventMgr             eventManager.Manager
 	TokenMgr             tokenmanager.Manager
+	BadgeMgr             badgemanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
@@ -99,5 +101,6 @@ func InitManager(db *gorm.DB) *Manager {
 		WebhookMgr:           webhookManager.New(db),
 		EventMgr:             eventManager.New(db),
 		TokenMgr:             tokenmanager.New(db),
+		BadgeMgr:             badgemanager.New(db),
 	}
 }

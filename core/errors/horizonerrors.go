@@ -33,6 +33,7 @@ var (
 	CollectionInDB            = sourceType{name: "CollectionInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
 	TagInDB                   = sourceType{name: "TagInDB"}
+	BadgeInDB                 = sourceType{name: "BadgeInDB"}
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}

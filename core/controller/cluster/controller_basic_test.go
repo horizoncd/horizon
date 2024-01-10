@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	"github.com/stretchr/testify/assert"
+
+	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
@@ -32,6 +33,7 @@ import (
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	badgemodels "github.com/horizoncd/horizon/pkg/badge/models"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	envmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
@@ -306,6 +308,7 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
 		groupManager:   manager.GroupMgr,
 		envMgr:         manager.EnvMgr,
+		badgeMgr:       manager.BadgeMgr,
 		regionMgr:      manager.RegionMgr,
 		eventSvc:       eventservice.New(manager),
 	}
@@ -369,6 +372,24 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "", cluster.Status)
 
+	_, err = manager.BadgeMgr.Create(ctx, &badgemodels.Badge{
+		ResourceType: common.ResourceCluster,
+		ResourceID:   cluster.ID,
+		Name:         "horizon",
+	})
+	assert.Nil(t, err)
+
+	_, err = manager.BadgeMgr.Create(ctx, &badgemodels.Badge{
+		ResourceType: common.ResourceCluster,
+		ResourceID:   cluster.ID,
+		Name:         "horizon1",
+	})
+	assert.Nil(t, err)
+
+	badges, err := manager.BadgeMgr.List(ctx, common.ResourceCluster, cluster.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(badges))
+
 	cluster, err = manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
 		ApplicationID:   application.ID,
 		Name:            "TestController_FreeOrDeleteClusterFailed2",
@@ -381,4 +402,8 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 
 	err = c.DeleteCluster(ctx, cluster.ID, true)
 	assert.Nil(t, err)
+
+	badges, err = manager.BadgeMgr.List(ctx, common.ResourceCluster, cluster.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(badges))
 }

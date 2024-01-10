@@ -87,6 +87,7 @@ Roles:
         - clusters/resume
         - clusters/containers
         - clusters/webhooks
+        - clusters/badges
       verbs:
         - "*"
       scopes:
@@ -302,6 +303,7 @@ Roles:
         - clusters/accesstokens
         - personalaccesstokens
         - accesstokens
+        - clusters/badges
       verbs:
         - "*"
       scopes:
@@ -457,6 +459,7 @@ Roles:
         - clusters/accesstokens
         - personalccesstokens
         - accesstokens
+        - clusters/badges
       verbs:
         - "*"
       scopes:
@@ -514,6 +517,7 @@ Roles:
         - applications/accesstokens
         - clusters/accesstokens
         - personalaccesstokens
+        - clusters/badges
       verbs:
         - get
       scopes:

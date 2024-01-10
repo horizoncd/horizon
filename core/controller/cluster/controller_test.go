@@ -26,6 +26,7 @@ import (
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
 	appservice "github.com/horizoncd/horizon/pkg/application/service"
+	badgemodels "github.com/horizoncd/horizon/pkg/badge/models"
 	clustercd "github.com/horizoncd/horizon/pkg/cd"
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
@@ -459,7 +460,7 @@ func TestMain(m *testing.M) {
 		&registrymodels.Registry{}, eventmodels.Event{}, &templatemodels.Template{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
 		&prmodels.Pipelinerun{}, &schematagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
-		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
+		&envmodels.Environment{}, &tokenmodels.Token{}, &badgemodels.Badge{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -504,12 +505,12 @@ func TestAll(t *testing.T) {
 	t.Run("TestRenderOutPutObjectMissingKey", testRenderOutPutObjectMissingKey)
 	t.Run("testRenderOutPutObjectRepetitiveKey", testRenderOutPutObjectRepetitiveKey)
 	t.Run("TestIsClusterActuallyHealthy", testIsClusterActuallyHealthy)
+	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
 	t.Run("TestImageURL", testImageURL)
 	t.Run("TestPinyin", testPinyin)
 	t.Run("TestListClusterByNameFuzzily", testListClusterByNameFuzzily)
 	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
 	t.Run("TestListClusterWithExpiry", testListClusterWithExpiry)
-	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
 	t.Run("TestGetClusterStatusV2", testGetClusterStatusV2)
 }
 
@@ -1421,6 +1422,7 @@ func testV2(t *testing.T) {
 		groupSvc:             groupservice.NewService(manager),
 		prMgr:                manager.PRMgr,
 		userManager:          manager.UserMgr,
+		badgeMgr:             manager.BadgeMgr,
 		autoFreeSvc:          parameter.AutoFreeSvc,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
@@ -1646,6 +1648,7 @@ func testUpgrade(t *testing.T) {
 		prMgr:                 manager.PRMgr,
 		userManager:           manager.UserMgr,
 		autoFreeSvc:           parameter.AutoFreeSvc,
+		badgeMgr:              manager.BadgeMgr,
 		userSvc:               userservice.NewService(manager),
 		schemaTagManager:      manager.ClusterSchemaTagMgr,
 		applicationGitRepo:    applicationGitRepo,
