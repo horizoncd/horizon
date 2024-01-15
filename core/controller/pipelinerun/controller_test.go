@@ -541,13 +541,21 @@ func TestExecutePipelineRun(t *testing.T) {
 	mockCD.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockCD.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	prPending, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+	prPendingToForceRun, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    prmodels.ActionBuildDeploy,
 		Status:    string(pipelinemodel.StatusPending),
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, string(pipelinemodel.StatusPending), prPending.Status)
+	assert.Equal(t, string(pipelinemodel.StatusPending), prPendingToForceRun.Status)
+
+	prPendingToForceReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Action:    prmodels.ActionBuildDeploy,
+		Status:    string(pipelinemodel.StatusPending),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusPending), prPendingToForceReady.Status)
 
 	prDeployReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
@@ -593,11 +601,16 @@ func TestExecutePipelineRun(t *testing.T) {
 	err = ctrl.Execute(ctx, prRollbackReady.ID, false)
 	assert.NoError(t, err)
 
-	err = ctrl.Execute(ctx, prPending.ID, false)
+	err = ctrl.Execute(ctx, prPendingToForceRun.ID, false)
 	assert.NotNil(t, err)
 
-	err = ctrl.Execute(ctx, prPending.ID, true)
+	err = ctrl.Execute(ctx, prPendingToForceRun.ID, true)
 	assert.NoError(t, err)
+
+	err = ctrl.Ready(ctx, prPendingToForceReady.ID)
+	assert.NoError(t, err)
+	err = ctrl.Execute(ctx, prPendingToForceReady.ID, false)
+	assert.Nil(t, err)
 
 	PRCancel, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,

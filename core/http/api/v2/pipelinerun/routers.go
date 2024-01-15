@@ -61,6 +61,11 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		},
 		{
 			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/forceready", _pipelinerunIDParam),
+			HandlerFunc: api.ForceReady,
+		},
+		{
+			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/cancel", _pipelinerunIDParam),
 			HandlerFunc: api.Cancel,
 		},

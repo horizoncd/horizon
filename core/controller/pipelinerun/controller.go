@@ -73,6 +73,8 @@ type Controller interface {
 
 	// Execute runs a pipelineRun only if its state is ready.
 	Execute(ctx context.Context, pipelinerunID uint, force bool) error
+	// Ready marks a pipelineRun as ready if its state is pending.
+	Ready(ctx context.Context, pipelinerunID uint) error
 	// Cancel withdraws a pipelineRun only if its state is pending.
 	Cancel(ctx context.Context, pipelinerunID uint) error
 
@@ -391,6 +393,20 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunExecuted, nil)
 	return nil
+}
+
+func (c *controller) Ready(ctx context.Context, pipelinerunID uint) error {
+	const op = "pipelinerun controller: ready pipelinerun"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return err
+	}
+	if pr.Status != string(prmodels.StatusPending) {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not pending")
+	}
+	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusReady)
 }
 
 func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) error {

@@ -257,6 +257,18 @@ paths:
       responses:
         "200":
           description: Success
+  /apis/core/v2/pipelineruns/{pipelinerunID}/forceready:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
+    post:
+      tags:
+        - pipelinerun
+      operationId: forceReadyPipelinerun
+      summary: |
+        Ignore checks and mark the pipelinerun as ready.
+      responses:
+        "200":
+          description: Success
   /apis/core/v2/pipelineruns/{pipelinerunID}/cancel:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"

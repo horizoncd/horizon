@@ -173,6 +173,7 @@ func (a *API) Stop(c *gin.Context) {
 	})
 }
 
+// Deprecated: Use ForceReady instead
 func (a *API) ExecuteForce(c *gin.Context) {
 	a.execute(c, true)
 }
@@ -187,6 +188,25 @@ func (a *API) execute(c *gin.Context, force bool) {
 		if err != nil {
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
+		response.Success(c)
+	})
+}
+
+func (a *API) ForceReady(c *gin.Context) {
+	a.withPipelinerunID(c, func(prID uint) {
+		err := a.prCtl.Ready(c, prID)
+		if err != nil {
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
+			if perror.Cause(err) == herrors.ErrParamInvalid {
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 				return
 			}
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
