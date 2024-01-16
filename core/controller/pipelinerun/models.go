@@ -46,8 +46,8 @@ type BuildDeployRequestGit struct {
 	Commit string `json:"commit"`
 }
 
-type CreatePrMessageRequest struct {
-	Content string `json:"string"`
+type CreatePRMessageRequest struct {
+	Content string `json:"content"`
 }
 
 type User struct {
@@ -56,7 +56,7 @@ type User struct {
 	UserType string `json:"userType,omitempty"`
 }
 
-type PrMessage struct {
+type PRMessage struct {
 	Content   string    `json:"content"`
 	CreatedBy User      `json:"createdBy"`
 	UpdatedBy User      `json:"updatedBy"`

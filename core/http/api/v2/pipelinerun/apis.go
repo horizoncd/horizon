@@ -282,19 +282,23 @@ func (a *API) UpdateCheckRun(c *gin.Context) {
 }
 
 func (a *API) CreatePrMessage(c *gin.Context) {
-	var req prctl.CreatePrMessageRequest
+	var req prctl.CreatePRMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
 	a.withPipelinerunID(c, func(prID uint) {
-		checkMessage, err := a.prCtl.CreatePRMessage(c, prID, &req)
+		message, err := a.prCtl.CreatePRMessage(c, prID, &req)
 		if err != nil {
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
 			response.AbortWithError(c, err)
 			return
 		}
-		response.SuccessWithData(c, checkMessage)
+		response.SuccessWithData(c, message)
 	})
 }
 

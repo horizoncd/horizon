@@ -81,8 +81,8 @@ type Controller interface {
 	ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*prmodels.CheckRun, error)
 	CreateCheckRun(ctx context.Context, pipelineRunID uint,
 		request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
-	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
-	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*prmodels.PRMessage, error)
+	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PRMessage, error)
+	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePRMessageRequest) (*PRMessage, error)
 }
 
 type controller struct {
@@ -727,7 +727,7 @@ func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
 }
 
 func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
-	request *CreatePrMessageRequest) (*prmodels.PRMessage, error) {
+	request *CreatePRMessageRequest) (*PRMessage, error) {
 	const op = "pipelinerun controller: create pr message"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -736,16 +736,32 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 		return nil, err
 	}
 
-	return c.prMgr.Message.Create(ctx, &prmodels.PRMessage{
-		PipelineRunID: pipelineRunID,
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, pipelineRunID)
+	if err != nil {
+		return nil, err
+	}
+
+	message, err := c.prMgr.Message.Create(ctx, &prmodels.PRMessage{
+		PipelineRunID: pipelinerun.ID,
 		Content:       request.Content,
 		CreatedBy:     currentUser.GetID(),
 		UpdatedBy:     currentUser.GetID(),
 	})
+	if err != nil {
+		return nil, err
+	}
+	return &PRMessage{
+		Content:   message.Content,
+		CreatedAt: message.CreatedAt,
+		CreatedBy: User{
+			ID:   currentUser.GetID(),
+			Name: currentUser.GetFullName(),
+		},
+	}, nil
 }
 
 func (c *controller) ListPRMessages(ctx context.Context,
-	pipelineRunID uint, query *q.Query) (int, []*PrMessage, error) {
+	pipelineRunID uint, query *q.Query) (int, []*PRMessage, error) {
 	const op = "pipelinerun controller: list pr messages"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -777,9 +793,9 @@ func (c *controller) ListPRMessages(ctx context.Context,
 	for _, u := range users {
 		userMap[u.ID] = u
 	}
-	result := make([]*PrMessage, 0, len(messages))
+	result := make([]*PRMessage, 0, len(messages))
 	for _, message := range messages {
-		resultMsg := &PrMessage{
+		resultMsg := &PRMessage{
 			Content:   message.Content,
 			CreatedAt: message.CreatedAt,
 		}

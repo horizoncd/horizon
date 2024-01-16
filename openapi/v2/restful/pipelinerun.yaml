@@ -384,7 +384,7 @@ paths:
       responses:
         "200":
           description: Success
-  /apis/core/v2/pipelineruns/{pipelinerunID}/message:
+  /apis/core/v2/pipelineruns/{pipelinerunID}/messages:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     post:

@@ -713,7 +713,7 @@ func TestCheckRun(t *testing.T) {
 
 func TestMessage(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&prmodels.PRMessage{}, &usermodel.User{}); err != nil {
+	if err := db.AutoMigrate(&prmodels.PRMessage{}, &usermodel.User{}, &prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
 	param := managerparam.InitManager(db)
@@ -729,12 +729,17 @@ func TestMessage(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	pr, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		Action: prmodels.ActionBuildDeploy,
+	})
+	assert.NoError(t, err)
+
 	ctrl := controller{
 		prMgr:   param.PRMgr,
 		userMgr: param.UserMgr,
 	}
 
-	message1, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+	message1, err := ctrl.CreatePRMessage(ctx, pr.ID, &CreatePRMessageRequest{
 		Content: "first",
 	})
 	assert.NoError(t, err)
@@ -742,13 +747,13 @@ func TestMessage(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	message2, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+	message2, err := ctrl.CreatePRMessage(ctx, pr.ID, &CreatePRMessageRequest{
 		Content: "second",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, message2.Content, "second")
 
-	count, messages, err := ctrl.ListPRMessages(ctx, 1, &q.Query{})
+	count, messages, err := ctrl.ListPRMessages(ctx, pr.ID, &q.Query{})
 	assert.NoError(t, err)
 	assert.Equal(t, count, 2)
 	assert.Equal(t, len(messages), 2)
