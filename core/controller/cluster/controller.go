@@ -17,6 +17,7 @@ package cluster
 import (
 	"context"
 
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	badgemanager "github.com/horizoncd/horizon/pkg/badge/manager"
@@ -46,7 +47,6 @@ import (
 	grafanaservice "github.com/horizoncd/horizon/pkg/grafana"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
@@ -156,7 +156,7 @@ type controller struct {
 	registryFty           registryfty.RegistryGetter
 	userManager           usermanager.Manager
 	userSvc               usersvc.Service
-	memberManager         member.Manager
+	memberManager         membermanager.Manager
 	groupManager          groupmanager.Manager
 	schemaTagManager      templateschematagmanager.Manager
 	tagMgr                tagmanager.Manager

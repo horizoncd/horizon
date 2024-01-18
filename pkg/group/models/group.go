@@ -20,6 +20,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
+const RootGroupID = 0
+
 type Group struct {
 	global.Model
 	Name            string

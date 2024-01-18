@@ -36,7 +36,7 @@ import (
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/member"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	pipelinemanager "github.com/horizoncd/horizon/pkg/pr/pipeline/manager"
@@ -93,7 +93,7 @@ type controller struct {
 	templateReleaseMgr   trmanager.Manager
 	clusterMgr           clustermanager.Manager
 	userSvc              usersvc.Service
-	memberManager        member.Manager
+	memberManager        membermanager.Manager
 	eventSvc             eventservice.Service
 	tagMgr               tagmanager.Manager
 	applicationRegionMgr applicationregionmanager.Manager

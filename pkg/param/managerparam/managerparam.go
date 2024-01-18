@@ -15,6 +15,7 @@
 package managerparam
 
 import (
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"gorm.io/gorm"
 
 	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
@@ -29,7 +30,6 @@ import (
 	eventManager "github.com/horizoncd/horizon/pkg/event/manager"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	idpmanager "github.com/horizoncd/horizon/pkg/idp/manager"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	pipelinemanager "github.com/horizoncd/horizon/pkg/pr/pipeline/manager"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"

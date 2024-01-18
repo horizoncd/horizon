@@ -44,7 +44,6 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 		// 1. get user from token and set user context
 		token, err := common.GetToken(c)
 		if err != nil {
-			log.Warning(c, "Have not got token")
 			c.Next()
 			return
 		}

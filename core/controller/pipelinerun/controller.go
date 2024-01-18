@@ -42,7 +42,7 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"

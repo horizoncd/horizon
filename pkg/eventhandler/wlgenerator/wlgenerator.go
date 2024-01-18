@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	membermanager "github.com/horizoncd/horizon/pkg/member"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	"gopkg.in/yaml.v3"

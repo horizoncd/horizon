@@ -26,7 +26,7 @@ import (
 )
 
 type Controller interface {
-	// CreateMember create a member of the group
+	// CreateMember creates a member of the resource
 	CreateMember(ctx context.Context, postMember *PostMember) (*Member, error)
 	// UpdateMember update a member of the group
 	UpdateMember(ctx context.Context, id uint, role string) (*Member, error)

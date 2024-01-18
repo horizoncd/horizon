@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	rootGroupID = 0
-
 	// _updateAt one of the field of the group table
 	_updateAt = "updated_at"
 
@@ -90,7 +88,7 @@ type Manager interface {
 	// GetDefaultRegions return default region the group
 	GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmodels.EnvironmentRegion, error)
 	// IsRootGroup returns whether it is the root group(groupID equals 0)
-	IsRootGroup(ctx context.Context, groupID uint) bool
+	IsRootGroup(groupID uint) bool
 	// GroupExist returns whether the group exists in db
 	GroupExist(ctx context.Context, groupID uint) bool
 }
@@ -395,13 +393,13 @@ func (m manager) GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmo
 }
 
 // IsRootGroup return whether it is the root group(groupID equals 0)
-func (m manager) IsRootGroup(ctx context.Context, groupID uint) bool {
-	return groupID == rootGroupID
+func (m manager) IsRootGroup(groupID uint) bool {
+	return groupID == models.RootGroupID
 }
 
 // GroupExist returns whether the group exists in db
 func (m manager) GroupExist(ctx context.Context, groupID uint) bool {
-	if m.IsRootGroup(ctx, groupID) {
+	if m.IsRootGroup(groupID) {
 		return true
 	}
 

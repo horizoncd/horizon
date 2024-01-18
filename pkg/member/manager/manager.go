@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package member
+package manager
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/member/manager/mock_manager.go -package=mock_manager
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/member/manager/mock_manager.go -package=mock_manager
 type Manager interface {
 	// Create a new member
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
