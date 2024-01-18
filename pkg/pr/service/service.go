@@ -10,19 +10,35 @@ import (
 	gmodels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/pr/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-type Service struct {
+type Service interface {
+	OfPipelineBasic(ctx context.Context, pr,
+		firstCanRollbackPipelinerun *models.Pipelinerun) (*models.PipelineBasic, error)
+	OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
+		firstCanRollbackPipelinerun *models.Pipelinerun) ([]*models.PipelineBasic, error)
+	GetCheckByResource(ctx context.Context, resourceID uint,
+		resourceType string) ([]*models.Check, error)
+	// CreateUserMessage creates a user message on pipeline run
+	CreateUserMessage(ctx context.Context, prID uint, content string) (*models.PRMessage, error)
+	// CreateSystemMessage creates a system message on pipeline run
+	CreateSystemMessage(ctx context.Context, prID uint, content string)
+}
+
+type service struct {
 	manager *managerparam.Manager
 }
 
-func NewService(manager *managerparam.Manager) *Service {
-	return &Service{
+var _ Service = (*service)(nil)
+
+func NewService(manager *managerparam.Manager) Service {
+	return &service{
 		manager,
 	}
 }
 
-func (s *Service) OfPipelineBasic(ctx context.Context,
+func (s *service) OfPipelineBasic(ctx context.Context,
 	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*models.PipelineBasic, error) {
 	user, err := s.manager.UserMgr.GetUserByID(ctx, pr.CreatedBy)
 	if err != nil {
@@ -67,7 +83,7 @@ func (s *Service) OfPipelineBasic(ctx context.Context,
 	return prBasic, nil
 }
 
-func (s *Service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
+func (s *service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
 	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*models.PipelineBasic, error) {
 	pipelineBasics := make([]*models.PipelineBasic, 0, len(prs))
 	for _, pr := range prs {
@@ -79,7 +95,7 @@ func (s *Service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelineru
 	}
 	return pipelineBasics, nil
 }
-func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
+func (s *service) GetCheckByResource(ctx context.Context, resourceID uint,
 	resourceType string) ([]*models.Check, error) {
 	var (
 		id      = resourceID
@@ -136,4 +152,32 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 	})
 
 	return s.manager.PRMgr.Check.GetByResource(ctx, resources...)
+}
+
+func (s *service) CreateUserMessage(ctx context.Context, prID uint,
+	content string) (*models.PRMessage, error) {
+	return s.createMessage(ctx, prID, content, false)
+}
+
+func (s *service) CreateSystemMessage(ctx context.Context, prID uint,
+	content string) {
+	_, err := s.createMessage(ctx, prID, content, true)
+	if err != nil {
+		log.Warningf(ctx, "failed to create system message: %v", err.Error())
+	}
+}
+
+func (s *service) createMessage(ctx context.Context, prID uint, content string,
+	system bool) (*models.PRMessage, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.manager.PRMgr.Message.Create(ctx, &models.PRMessage{
+		PipelineRunID: prID,
+		Content:       content,
+		System:        system,
+		CreatedBy:     currentUser.GetID(),
+		UpdatedBy:     currentUser.GetID(),
+	})
 }

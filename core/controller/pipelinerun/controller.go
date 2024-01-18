@@ -90,7 +90,7 @@ type controller struct {
 	appMgr             appmanager.Manager
 	clusterMgr         clustermanager.Manager
 	envMgr             envmanager.Manager
-	prSvc              *prservice.Service
+	prSvc              prservice.Service
 	regionMgr          regionmanager.Manager
 	tektonFty          factory.Factory
 	tokenSvc           tokensvc.Service
@@ -312,7 +312,12 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	err = tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "stopped the pipelinerun")
+	return nil
 }
 
 func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID uint) (err error) {
@@ -340,7 +345,12 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	err = tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessage(ctx, pipelinerun.ID, "stopped the pipelinerun")
+	return nil
 }
 
 func (c *controller) CreateCheck(ctx context.Context, check *prmodels.Check) (*prmodels.Check, error) {
@@ -392,6 +402,11 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunExecuted, nil)
+	if force {
+		c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "forced to execute the pipelinerun")
+	} else {
+		c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "executed the pipelinerun")
+	}
 	return nil
 }
 
@@ -406,7 +421,12 @@ func (c *controller) Ready(ctx context.Context, pipelinerunID uint) error {
 	if pr.Status != string(prmodels.StatusPending) {
 		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not pending")
 	}
-	return c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusReady)
+	err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusReady)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "marked the pipelinerun as ready")
+	return nil
 }
 
 func (c *controller) execute(ctx context.Context, pr *prmodels.Pipelinerun) error {
@@ -688,6 +708,7 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunCancelled, nil)
+	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "cancelled the pipelinerun")
 	return nil
 }
 
@@ -741,17 +762,13 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 		return nil, err
 	}
 
-	message, err := c.prMgr.Message.Create(ctx, &prmodels.PRMessage{
-		PipelineRunID: pipelinerun.ID,
-		Content:       request.Content,
-		CreatedBy:     currentUser.GetID(),
-		UpdatedBy:     currentUser.GetID(),
-	})
+	message, err := c.prSvc.CreateUserMessage(ctx, pipelinerun.ID, request.Content)
 	if err != nil {
 		return nil, err
 	}
 	return &PRMessage{
 		Content:   message.Content,
+		System:    message.System,
 		CreatedAt: message.CreatedAt,
 		CreatedBy: User{
 			ID:   currentUser.GetID(),
@@ -797,6 +814,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 	for _, message := range messages {
 		resultMsg := &PRMessage{
 			Content:   message.Content,
+			System:    message.System,
 			CreatedAt: message.CreatedAt,
 		}
 		if u, ok := userMap[message.CreatedBy]; ok {

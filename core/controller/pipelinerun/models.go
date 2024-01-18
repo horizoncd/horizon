@@ -58,6 +58,7 @@ type User struct {
 
 type PRMessage struct {
 	Content   string    `json:"content"`
+	System    bool      `json:"system"`
 	CreatedBy User      `json:"createdBy"`
 	UpdatedBy User      `json:"updatedBy"`
 	CreatedAt time.Time `json:"createdAt"`

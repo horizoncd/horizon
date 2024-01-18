@@ -8,6 +8,7 @@ type PRMessage struct {
 	global.Model
 	PipelineRunID uint `gorm:"column:pipeline_run_id"`
 	Content       string
+	System        bool
 	CreatedBy     uint
 	UpdatedBy     uint
 }

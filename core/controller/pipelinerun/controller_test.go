@@ -737,6 +737,9 @@ func TestMessage(t *testing.T) {
 	ctrl := controller{
 		prMgr:   param.PRMgr,
 		userMgr: param.UserMgr,
+		prSvc: prservice.NewService(&managerparam.Manager{
+			PRMgr: param.PRMgr,
+		}),
 	}
 
 	message1, err := ctrl.CreatePRMessage(ctx, pr.ID, &CreatePRMessageRequest{

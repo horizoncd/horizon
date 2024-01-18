@@ -150,7 +150,7 @@ type controller struct {
 	badgeMgr              badgemanager.Manager
 	groupSvc              groupsvc.Service
 	prMgr                 *prmanager.PRManager
-	prSvc                 *prservice.Service
+	prSvc                 prservice.Service
 	pipelineMgr           pipelinemanager.Manager
 	tektonFty             factory.Factory
 	registryFty           registryfty.RegistryGetter

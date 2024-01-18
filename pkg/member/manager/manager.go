@@ -22,6 +22,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// nolint:lll
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/member/manager/mock_manager.go -package=mock_manager
 type Manager interface {
 	// Create a new member

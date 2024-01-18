@@ -312,6 +312,18 @@ func (a *API) ListPrMessages(c *gin.Context) {
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	}
+	systemStr := c.Query(common.MessageQueryBySystem)
+	if systemStr != "" {
+		system, err := strconv.ParseBool(systemStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+		query.Keywords = map[string]interface{}{
+			common.MessageQueryBySystem: system,
+		}
+	}
+
 	a.withPipelinerunID(c, func(prID uint) {
 		count, messages, err := a.prCtl.ListPRMessages(c, prID, query)
 		if err != nil {
