@@ -17,6 +17,7 @@ package dao
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -89,6 +90,9 @@ func (d *dao) UpdateByName(ctx context.Context, resourceType string,
 func (d *dao) Get(ctx context.Context, id uint) (*models.Badge, error) {
 	var badge models.Badge
 	if err := d.db.WithContext(ctx).First(&badge, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.NewErrNotFound(herrors.BadgeInDB, err.Error())
+		}
 		return nil, herrors.NewErrGetFailed(herrors.BadgeInDB, err.Error())
 	}
 	return &badge, nil
@@ -99,6 +103,9 @@ func (d *dao) GetByName(ctx context.Context, resourceType string, resourceID uin
 	if err := d.db.WithContext(ctx).Where(
 		"resource_type = ? AND resource_id = ? AND name = ?",
 		resourceType, resourceID, name).First(&badge).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.NewErrNotFound(herrors.BadgeInDB, err.Error())
+		}
 		return nil, herrors.NewErrGetFailed(herrors.BadgeInDB, err.Error())
 	}
 	return &badge, nil

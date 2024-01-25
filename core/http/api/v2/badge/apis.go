@@ -165,6 +165,10 @@ func (a *API) Get(c *gin.Context) {
 
 	if badgeName == "" {
 		if b, err := a.badgeCtl.GetBadge(c, uint(badgeID)); err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("failed to get badge, err: %s",
 				err.Error())))
 		} else {
@@ -172,6 +176,10 @@ func (a *API) Get(c *gin.Context) {
 		}
 	} else {
 		if b, err := a.badgeCtl.GetBadgeByName(c, resourceType, resourceID, badgeName); err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("failed to get badge, err: %s",
 				err.Error())))
 		} else {
