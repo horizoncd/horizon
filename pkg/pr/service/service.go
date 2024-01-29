@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
@@ -22,8 +23,8 @@ type Service interface {
 		resourceType string) ([]*models.Check, error)
 	// CreateUserMessage creates a user message on pipeline run
 	CreateUserMessage(ctx context.Context, prID uint, content string) (*models.PRMessage, error)
-	// CreateSystemMessage creates a system message on pipeline run
-	CreateSystemMessage(ctx context.Context, prID uint, content string)
+	// CreateSystemMessageAsync creates a system message on pipeline run
+	CreateSystemMessageAsync(ctx context.Context, prID uint, content string)
 }
 
 type service struct {
@@ -159,12 +160,24 @@ func (s *service) CreateUserMessage(ctx context.Context, prID uint,
 	return s.createMessage(ctx, prID, content, false)
 }
 
-func (s *service) CreateSystemMessage(ctx context.Context, prID uint,
+func (s *service) CreateSystemMessageAsync(ctx context.Context, prID uint,
 	content string) {
-	_, err := s.createMessage(ctx, prID, content, true)
+	rid, err := requestid.FromContext(ctx)
 	if err != nil {
-		log.Warningf(ctx, "failed to create system message: %v", err.Error())
+		log.Warningf(ctx, "failed to get request id from context")
 	}
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		log.Warningf(ctx, "failed to get current user from context")
+	}
+	newCtx := log.WithContext(context.Background(), rid)
+	newCtx = common.WithContext(newCtx, currentUser)
+	go func() {
+		_, err := s.createMessage(newCtx, prID, content, true)
+		if err != nil {
+			log.Warningf(newCtx, "failed to create system message: %v", err.Error())
+		}
+	}()
 }
 
 func (s *service) createMessage(ctx context.Context, prID uint, content string,

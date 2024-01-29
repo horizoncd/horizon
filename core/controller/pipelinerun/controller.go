@@ -316,7 +316,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 	if err != nil {
 		return err
 	}
-	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "stopped the pipelinerun")
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunStopped)
 	return nil
 }
 
@@ -349,7 +349,7 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 	if err != nil {
 		return err
 	}
-	c.prSvc.CreateSystemMessage(ctx, pipelinerun.ID, "stopped the pipelinerun")
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerun.ID, common.MessagePipelinerunStopped)
 	return nil
 }
 
@@ -403,9 +403,9 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunExecuted, nil)
 	if force {
-		c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "forced to execute the pipelinerun")
+		c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecutedForcefully)
 	} else {
-		c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "executed the pipelinerun")
+		c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecuted)
 	}
 	return nil
 }
@@ -425,7 +425,7 @@ func (c *controller) Ready(ctx context.Context, pipelinerunID uint) error {
 	if err != nil {
 		return err
 	}
-	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "marked the pipelinerun as ready")
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunReady)
 	return nil
 }
 
@@ -708,7 +708,7 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunCancelled, nil)
-	c.prSvc.CreateSystemMessage(ctx, pipelinerunID, "cancelled the pipelinerun")
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunCancelled)
 	return nil
 }
 
