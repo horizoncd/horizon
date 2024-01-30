@@ -72,7 +72,7 @@ type Controller interface {
 	UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error
 
 	// Execute runs a pipelineRun only if its state is ready.
-	Execute(ctx context.Context, pipelinerunID uint, force bool) error
+	Execute(ctx context.Context, pipelinerunID uint) error
 	// Ready marks a pipelineRun as ready if its state is pending.
 	Ready(ctx context.Context, pipelinerunID uint) error
 	// Cancel withdraws a pipelineRun only if its state is pending.
@@ -377,7 +377,7 @@ func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint,
 	return c.updatePrStatusByCheckrunID(ctx, checkRunID)
 }
 
-func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool) error {
+func (c *controller) Execute(ctx context.Context, pipelinerunID uint) error {
 	const op = "pipelinerun controller: execute pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -386,14 +386,8 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 		return err
 	}
 
-	if force {
-		if pr.Status != string(prmodels.StatusReady) && pr.Status != string(prmodels.StatusPending) {
-			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
-		}
-	} else {
-		if pr.Status != string(prmodels.StatusReady) {
-			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
-		}
+	if pr.Status != string(prmodels.StatusReady) {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
 	}
 
 	err = c.execute(ctx, pr)
@@ -402,11 +396,7 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunExecuted, nil)
-	if force {
-		c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecutedForcefully)
-	} else {
-		c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecuted)
-	}
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecuted)
 	return nil
 }
 

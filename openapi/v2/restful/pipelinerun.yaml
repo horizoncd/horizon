@@ -245,18 +245,6 @@ paths:
       responses:
         "200":
           description: Success
-  /apis/core/v2/pipelineruns/{pipelinerunID}/forcerun:
-    parameters:
-      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
-    post:
-      tags:
-        - pipelinerun
-      operationId: forceRunPipelinerun
-      summary: |
-        Force run the specified pipelinerun.
-      responses:
-        "200":
-          description: Success
   /apis/core/v2/pipelineruns/{pipelinerunID}/forceready:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"

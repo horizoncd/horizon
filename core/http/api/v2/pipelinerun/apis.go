@@ -173,18 +173,9 @@ func (a *API) Stop(c *gin.Context) {
 	})
 }
 
-// Deprecated: Use ForceReady instead
-func (a *API) ExecuteForce(c *gin.Context) {
-	a.execute(c, true)
-}
-
 func (a *API) Execute(c *gin.Context) {
-	a.execute(c, false)
-}
-
-func (a *API) execute(c *gin.Context, force bool) {
 	a.withPipelinerunID(c, func(prID uint) {
-		err := a.prCtl.Execute(c, prID, force)
+		err := a.prCtl.Execute(c, prID)
 		if err != nil {
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
