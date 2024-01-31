@@ -157,7 +157,7 @@ func (s *service) GetCheckByResource(ctx context.Context, resourceID uint,
 
 func (s *service) CreateUserMessage(ctx context.Context, prID uint,
 	content string) (*models.PRMessage, error) {
-	return s.createMessage(ctx, prID, content, false)
+	return s.createMessage(ctx, prID, content, models.MessageTypeUser)
 }
 
 func (s *service) CreateSystemMessageAsync(ctx context.Context, prID uint,
@@ -173,7 +173,7 @@ func (s *service) CreateSystemMessageAsync(ctx context.Context, prID uint,
 	newCtx := log.WithContext(context.Background(), rid)
 	newCtx = common.WithContext(newCtx, currentUser)
 	go func() {
-		_, err := s.createMessage(newCtx, prID, content, true)
+		_, err := s.createMessage(newCtx, prID, content, models.MessageTypeSystem)
 		if err != nil {
 			log.Warningf(newCtx, "failed to create system message: %v", err.Error())
 		}
@@ -181,7 +181,7 @@ func (s *service) CreateSystemMessageAsync(ctx context.Context, prID uint,
 }
 
 func (s *service) createMessage(ctx context.Context, prID uint, content string,
-	system bool) (*models.PRMessage, error) {
+	messageType uint) (*models.PRMessage, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (s *service) createMessage(ctx context.Context, prID uint, content string,
 	return s.manager.PRMgr.Message.Create(ctx, &models.PRMessage{
 		PipelineRunID: prID,
 		Content:       content,
-		System:        system,
+		MessageType:   messageType,
 		CreatedBy:     currentUser.GetID(),
 		UpdatedBy:     currentUser.GetID(),
 	})

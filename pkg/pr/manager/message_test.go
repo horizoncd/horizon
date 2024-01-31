@@ -14,20 +14,24 @@ import (
 func TestMessage(t *testing.T) {
 	prMessageManager := NewPRMessageManager(db)
 
-	prMessage := &models.PRMessage{PipelineRunID: 1, Content: "message 1", System: true}
+	prMessage := &models.PRMessage{
+		PipelineRunID: 1,
+		Content:       "message 1",
+		MessageType:   models.MessageTypeSystem,
+	}
 	createdPRMessage, err := prMessageManager.Create(context.Background(), prMessage)
 	assert.NoError(t, err)
 	assert.NotNil(t, createdPRMessage)
 	assert.Equal(t, prMessage.PipelineRunID, createdPRMessage.PipelineRunID)
 	assert.Equal(t, prMessage.Content, createdPRMessage.Content)
-	assert.Equal(t, prMessage.System, createdPRMessage.System)
+	assert.Equal(t, prMessage.MessageType, createdPRMessage.MessageType)
 
 	// Create some PRMessages to test with
 	prMessages := []*models.PRMessage{
-		{PipelineRunID: 2, Content: "user message 1", System: false},
-		{PipelineRunID: 2, Content: "user message 2", System: false},
-		{PipelineRunID: 2, Content: "system message 1", System: true},
-		{PipelineRunID: 3, Content: "user message 3", System: false},
+		{PipelineRunID: 2, Content: "user message 1", MessageType: models.MessageTypeUser},
+		{PipelineRunID: 2, Content: "user message 2", MessageType: models.MessageTypeUser},
+		{PipelineRunID: 2, Content: "system message 1", MessageType: models.MessageTypeSystem},
+		{PipelineRunID: 3, Content: "user message 3", MessageType: models.MessageTypeUser},
 	}
 	for _, message := range prMessages {
 		_, err := prMessageManager.Create(context.Background(), message)
@@ -52,7 +56,7 @@ func TestMessage(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, listedPRMessages, 1)
 	for m := range listedPRMessages {
-		assert.True(t, listedPRMessages[m].System)
+		assert.Equal(t, listedPRMessages[m].MessageType, uint(models.MessageTypeSystem))
 	}
 	assert.Equal(t, 1, totalCount)
 
@@ -62,7 +66,7 @@ func TestMessage(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, listedPRMessages, 2)
 	for m := range listedPRMessages {
-		assert.False(t, listedPRMessages[m].System)
+		assert.Equal(t, listedPRMessages[m].MessageType, uint(models.MessageTypeUser))
 	}
 	assert.Equal(t, 2, totalCount)
 }

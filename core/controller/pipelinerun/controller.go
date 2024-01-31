@@ -85,6 +85,8 @@ type Controller interface {
 	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePRMessageRequest) (*PRMessage, error)
 }
 
+const _userTypeBot = "bot"
+
 type controller struct {
 	prMgr              *prmanager.PRManager
 	appMgr             appmanager.Manager
@@ -758,7 +760,7 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 	}
 	return &PRMessage{
 		Content:   message.Content,
-		System:    message.System,
+		System:    message.MessageType == prmodels.MessageTypeSystem,
 		CreatedAt: message.CreatedAt,
 		CreatedBy: User{
 			ID:   currentUser.GetID(),
@@ -804,7 +806,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 	for _, message := range messages {
 		resultMsg := &PRMessage{
 			Content:   message.Content,
-			System:    message.System,
+			System:    message.MessageType == prmodels.MessageTypeSystem,
 			CreatedAt: message.CreatedAt,
 		}
 		if u, ok := userMap[message.CreatedBy]; ok {
@@ -813,7 +815,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 				Name: u.FullName,
 			}
 			if u.UserType == usermodels.UserTypeRobot {
-				resultMsg.CreatedBy.UserType = "bot"
+				resultMsg.CreatedBy.UserType = _userTypeBot
 			}
 		}
 		if u, ok := userMap[message.UpdatedBy]; ok {
@@ -822,7 +824,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 				Name: u.FullName,
 			}
 			if u.UserType == usermodels.UserTypeRobot {
-				resultMsg.CreatedBy.UserType = "bot"
+				resultMsg.CreatedBy.UserType = _userTypeBot
 			}
 		}
 		result = append(result, resultMsg)

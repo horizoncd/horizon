@@ -43,7 +43,11 @@ func (d *prMessageDAO) List(ctx context.Context, pipelineRunID uint, query *q.Qu
 		Where("pipeline_run_id = ?", pipelineRunID).
 		Order("created_at asc")
 	if system, ok := query.Keywords[common.MessageQueryBySystem].(bool); ok {
-		sql.Where("system = ?", system)
+		messageType := models.MessageTypeUser
+		if system {
+			messageType = models.MessageTypeSystem
+		}
+		sql.Where("message_type = ?", messageType)
 	}
 	sql.Count(&total)
 	result := sql.Limit(query.Limit()).Offset(query.Offset()).Find(&prMessages)
