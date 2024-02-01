@@ -6,7 +6,7 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/event/manager"
 	"github.com/horizoncd/horizon/pkg/event/models"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/util/log"

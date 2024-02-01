@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"github.com/horizoncd/horizon/core/common"
 	"gorm.io/gorm"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -11,9 +12,9 @@ import (
 )
 
 type PRMessageDAO interface {
-	// Create create a PRMessage
+	// Create creates a PRMessage
 	Create(ctx context.Context, prMessage *models.PRMessage) (*models.PRMessage, error)
-	// List list PRMessage order by created_at asc
+	// List lists PRMessage order by created_at asc
 	List(ctx context.Context, pipelineRunID uint, query *q.Query) (int, []*models.PRMessage, error)
 }
 
@@ -38,10 +39,16 @@ func (d *prMessageDAO) List(ctx context.Context, pipelineRunID uint, query *q.Qu
 		total      int64
 		prMessages []*models.PRMessage
 	)
-
 	sql := d.db.WithContext(ctx).Table("tb_pr_msg").
 		Where("pipeline_run_id = ?", pipelineRunID).
 		Order("created_at asc")
+	if system, ok := query.Keywords[common.MessageQueryBySystem].(bool); ok {
+		messageType := models.MessageTypeUser
+		if system {
+			messageType = models.MessageTypeSystem
+		}
+		sql.Where("message_type = ?", messageType)
+	}
 	sql.Count(&total)
 	result := sql.Limit(query.Limit()).Offset(query.Offset()).Find(&prMessages)
 	if result.Error != nil {

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
@@ -31,7 +32,6 @@ import (
 	accesstokenmanager "github.com/horizoncd/horizon/pkg/accesstoken/manager"
 	"github.com/horizoncd/horizon/pkg/accesstoken/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"

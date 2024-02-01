@@ -42,7 +42,7 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	eventservice "github.com/horizoncd/horizon/pkg/event/service"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pr/manager"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
@@ -72,23 +72,27 @@ type Controller interface {
 	UpdateCheckRunByID(ctx context.Context, checkRunID uint, request *CreateOrUpdateCheckRunRequest) error
 
 	// Execute runs a pipelineRun only if its state is ready.
-	Execute(ctx context.Context, pipelinerunID uint, force bool) error
+	Execute(ctx context.Context, pipelinerunID uint) error
+	// Ready marks a pipelineRun as ready if its state is pending.
+	Ready(ctx context.Context, pipelinerunID uint) error
 	// Cancel withdraws a pipelineRun only if its state is pending.
 	Cancel(ctx context.Context, pipelinerunID uint) error
 
 	ListCheckRuns(ctx context.Context, pipelinerunID uint) ([]*prmodels.CheckRun, error)
 	CreateCheckRun(ctx context.Context, pipelineRunID uint,
 		request *CreateOrUpdateCheckRunRequest) (*prmodels.CheckRun, error)
-	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PrMessage, error)
-	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePrMessageRequest) (*prmodels.PRMessage, error)
+	ListPRMessages(ctx context.Context, pipelineRunID uint, q *q.Query) (int, []*PRMessage, error)
+	CreatePRMessage(ctx context.Context, pipelineRunID uint, request *CreatePRMessageRequest) (*PRMessage, error)
 }
+
+const _userTypeBot = "bot"
 
 type controller struct {
 	prMgr              *prmanager.PRManager
 	appMgr             appmanager.Manager
 	clusterMgr         clustermanager.Manager
 	envMgr             envmanager.Manager
-	prSvc              *prservice.Service
+	prSvc              prservice.Service
 	regionMgr          regionmanager.Manager
 	tektonFty          factory.Factory
 	tokenSvc           tokensvc.Service
@@ -310,7 +314,12 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	err = tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunStopped)
+	return nil
 }
 
 func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID uint) (err error) {
@@ -338,7 +347,12 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	err = tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerun.ID, common.MessagePipelinerunStopped)
+	return nil
 }
 
 func (c *controller) CreateCheck(ctx context.Context, check *prmodels.Check) (*prmodels.Check, error) {
@@ -365,7 +379,7 @@ func (c *controller) UpdateCheckRunByID(ctx context.Context, checkRunID uint,
 	return c.updatePrStatusByCheckrunID(ctx, checkRunID)
 }
 
-func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool) error {
+func (c *controller) Execute(ctx context.Context, pipelinerunID uint) error {
 	const op = "pipelinerun controller: execute pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -374,14 +388,8 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 		return err
 	}
 
-	if force {
-		if pr.Status != string(prmodels.StatusReady) && pr.Status != string(prmodels.StatusPending) {
-			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
-		}
-	} else {
-		if pr.Status != string(prmodels.StatusReady) {
-			return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
-		}
+	if pr.Status != string(prmodels.StatusReady) {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not ready to execute")
 	}
 
 	err = c.execute(ctx, pr)
@@ -390,6 +398,26 @@ func (c *controller) Execute(ctx context.Context, pipelinerunID uint, force bool
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunExecuted, nil)
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunExecuted)
+	return nil
+}
+
+func (c *controller) Ready(ctx context.Context, pipelinerunID uint) error {
+	const op = "pipelinerun controller: ready pipelinerun"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pr, err := c.prMgr.PipelineRun.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return err
+	}
+	if pr.Status != string(prmodels.StatusPending) {
+		return perror.Wrapf(herrors.ErrParamInvalid, "pipelinerun is not pending")
+	}
+	err = c.prMgr.PipelineRun.UpdateStatusByID(ctx, pipelinerunID, prmodels.StatusReady)
+	if err != nil {
+		return err
+	}
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunReady)
 	return nil
 }
 
@@ -672,6 +700,7 @@ func (c *controller) Cancel(ctx context.Context, pipelinerunID uint) error {
 	}
 	c.eventSvc.CreateEventIgnoreError(ctx, common.ResourcePipelinerun, pipelinerunID,
 		eventmodels.PipelinerunCancelled, nil)
+	c.prSvc.CreateSystemMessageAsync(ctx, pipelinerunID, common.MessagePipelinerunCancelled)
 	return nil
 }
 
@@ -711,7 +740,7 @@ func (c *controller) CreateCheckRun(ctx context.Context, pipelineRunID uint,
 }
 
 func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
-	request *CreatePrMessageRequest) (*prmodels.PRMessage, error) {
+	request *CreatePRMessageRequest) (*PRMessage, error) {
 	const op = "pipelinerun controller: create pr message"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -720,16 +749,28 @@ func (c *controller) CreatePRMessage(ctx context.Context, pipelineRunID uint,
 		return nil, err
 	}
 
-	return c.prMgr.Message.Create(ctx, &prmodels.PRMessage{
-		PipelineRunID: pipelineRunID,
-		Content:       request.Content,
-		CreatedBy:     currentUser.GetID(),
-		UpdatedBy:     currentUser.GetID(),
-	})
+	pipelinerun, err := c.prMgr.PipelineRun.GetByID(ctx, pipelineRunID)
+	if err != nil {
+		return nil, err
+	}
+
+	message, err := c.prSvc.CreateUserMessage(ctx, pipelinerun.ID, request.Content)
+	if err != nil {
+		return nil, err
+	}
+	return &PRMessage{
+		Content:   message.Content,
+		System:    message.MessageType == prmodels.MessageTypeSystem,
+		CreatedAt: message.CreatedAt,
+		CreatedBy: User{
+			ID:   currentUser.GetID(),
+			Name: currentUser.GetFullName(),
+		},
+	}, nil
 }
 
 func (c *controller) ListPRMessages(ctx context.Context,
-	pipelineRunID uint, query *q.Query) (int, []*PrMessage, error) {
+	pipelineRunID uint, query *q.Query) (int, []*PRMessage, error) {
 	const op = "pipelinerun controller: list pr messages"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -761,10 +802,11 @@ func (c *controller) ListPRMessages(ctx context.Context,
 	for _, u := range users {
 		userMap[u.ID] = u
 	}
-	result := make([]*PrMessage, 0, len(messages))
+	result := make([]*PRMessage, 0, len(messages))
 	for _, message := range messages {
-		resultMsg := &PrMessage{
+		resultMsg := &PRMessage{
 			Content:   message.Content,
+			System:    message.MessageType == prmodels.MessageTypeSystem,
 			CreatedAt: message.CreatedAt,
 		}
 		if u, ok := userMap[message.CreatedBy]; ok {
@@ -773,7 +815,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 				Name: u.FullName,
 			}
 			if u.UserType == usermodels.UserTypeRobot {
-				resultMsg.CreatedBy.UserType = "bot"
+				resultMsg.CreatedBy.UserType = _userTypeBot
 			}
 		}
 		if u, ok := userMap[message.UpdatedBy]; ok {
@@ -782,7 +824,7 @@ func (c *controller) ListPRMessages(ctx context.Context,
 				Name: u.FullName,
 			}
 			if u.UserType == usermodels.UserTypeRobot {
-				resultMsg.CreatedBy.UserType = "bot"
+				resultMsg.CreatedBy.UserType = _userTypeBot
 			}
 		}
 		result = append(result, resultMsg)

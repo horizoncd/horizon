@@ -28,7 +28,8 @@ import (
 	memberctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
-	"github.com/horizoncd/horizon/pkg/member"
+	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/member/manager"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -58,12 +59,12 @@ type Service interface {
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
 	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
 	GetMemberOfResource(ctx context.Context, resourceType string, resourceID string) (*models.Member, error)
-	// IsYourPermissionHigher helps to check if your permission is higher then specified member
+	// RequirePermissionEqualOrHigher helps to check if your permission is higher than specified member
 	RequirePermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error
 }
 
 type service struct {
-	memberManager             member.Manager
+	memberManager             manager.Manager
 	groupManager              groupmanager.Manager
 	applicationManager        applicationmanager.Manager
 	applicationClusterManager clustermanager.Manager
@@ -380,7 +381,7 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 }
 
 func DeduplicateMember(members []models.Member) []models.Member {
-	// deduplicate by memberType, memberInfo
+	// deduplicate by memberType, memberNameID
 	memberMap := make(map[string]models.Member)
 
 	var retMembers []models.Member
@@ -431,16 +432,15 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 		return DeduplicateMember(members), nil
 	}
 
-	// 1. list all the groups of the group
-	if s.groupManager.IsRootGroup(ctx, resourceID) {
-		// XXX: make sure only admins could access root group
-		return []models.Member{}, nil
+	// 1. list all parent groups of the group
+	groupIDs := []uint{groupmodels.RootGroupID}
+	if !s.groupManager.IsRootGroup(resourceID) {
+		groupInfo, err := s.groupManager.GetByID(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+		groupIDs = append(groupIDs, groupmanager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)...)
 	}
-	groupInfo, err := s.groupManager.GetByID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	groupIDs := groupmanager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
 
 	// 2. get all the direct service of group
 	for i := len(groupIDs) - 1; i >= 0; i-- {

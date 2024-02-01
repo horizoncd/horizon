@@ -56,7 +56,7 @@ type Param struct {
 	UserSvc        userservice.Service
 	TokenSvc       tokenservice.Service
 	RoleService    role.Service
-	PRService      *prservice.Service
+	PRService      prservice.Service
 	ScopeService   scope.Service
 	GrafanaService grafana.Service
 

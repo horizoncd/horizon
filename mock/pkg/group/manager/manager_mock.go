@@ -309,17 +309,17 @@ func (mr *MockManagerMockRecorder) GroupExist(ctx, groupID interface{}) *gomock.
 }
 
 // IsRootGroup mocks base method.
-func (m *MockManager) IsRootGroup(ctx context.Context, groupID uint) bool {
+func (m *MockManager) IsRootGroup(groupID uint) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsRootGroup", ctx, groupID)
+	ret := m.ctrl.Call(m, "IsRootGroup", groupID)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // IsRootGroup indicates an expected call of IsRootGroup.
-func (mr *MockManagerMockRecorder) IsRootGroup(ctx, groupID interface{}) *gomock.Call {
+func (mr *MockManagerMockRecorder) IsRootGroup(groupID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRootGroup", reflect.TypeOf((*MockManager)(nil).IsRootGroup), ctx, groupID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRootGroup", reflect.TypeOf((*MockManager)(nil).IsRootGroup), groupID)
 }
 
 // Transfer mocks base method.

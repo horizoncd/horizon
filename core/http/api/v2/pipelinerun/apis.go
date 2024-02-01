@@ -173,20 +173,31 @@ func (a *API) Stop(c *gin.Context) {
 	})
 }
 
-func (a *API) ExecuteForce(c *gin.Context) {
-	a.execute(c, true)
-}
-
 func (a *API) Execute(c *gin.Context) {
-	a.execute(c, false)
-}
-
-func (a *API) execute(c *gin.Context, force bool) {
 	a.withPipelinerunID(c, func(prID uint) {
-		err := a.prCtl.Execute(c, prID, force)
+		err := a.prCtl.Execute(c, prID)
 		if err != nil {
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
+		response.Success(c)
+	})
+}
+
+func (a *API) ForceReady(c *gin.Context) {
+	a.withPipelinerunID(c, func(prID uint) {
+		err := a.prCtl.Ready(c, prID)
+		if err != nil {
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
+			if perror.Cause(err) == herrors.ErrParamInvalid {
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 				return
 			}
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -262,19 +273,23 @@ func (a *API) UpdateCheckRun(c *gin.Context) {
 }
 
 func (a *API) CreatePrMessage(c *gin.Context) {
-	var req prctl.CreatePrMessageRequest
+	var req prctl.CreatePRMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
 	a.withPipelinerunID(c, func(prID uint) {
-		checkMessage, err := a.prCtl.CreatePRMessage(c, prID, &req)
+		message, err := a.prCtl.CreatePRMessage(c, prID, &req)
 		if err != nil {
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+				return
+			}
 			response.AbortWithError(c, err)
 			return
 		}
-		response.SuccessWithData(c, checkMessage)
+		response.SuccessWithData(c, message)
 	})
 }
 
@@ -288,6 +303,18 @@ func (a *API) ListPrMessages(c *gin.Context) {
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	}
+	systemStr := c.Query(common.MessageQueryBySystem)
+	if systemStr != "" {
+		system, err := strconv.ParseBool(systemStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+		query.Keywords = map[string]interface{}{
+			common.MessageQueryBySystem: system,
+		}
+	}
+
 	a.withPipelinerunID(c, func(prID uint) {
 		count, messages, err := a.prCtl.ListPRMessages(c, prID, query)
 		if err != nil {

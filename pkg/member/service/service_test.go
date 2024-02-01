@@ -51,10 +51,10 @@ import (
 )
 
 var (
-	s       Service
-	ctx     context.Context
-	db      *gorm.DB
-	manager *managerparam.Manager
+	s        Service
+	ctx      context.Context
+	db       *gorm.DB
+	managers *managerparam.Manager
 )
 
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
@@ -75,10 +75,10 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
 	roleMockService := rolemock.NewMockService(mockCtrl)
 	originService := &service{
-		memberManager: manager.MemberMgr,
+		memberManager: managers.MemberMgr,
 		groupManager:  groupManager,
 		roleService:   roleMockService,
-		userManager:   manager.UserMgr,
+		userManager:   managers.UserMgr,
 	}
 	s = originService
 
@@ -203,7 +203,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(2)
-	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
+	groupManager.EXPECT().IsRootGroup(gomock.Any()).AnyTimes().Return(false)
 	postMemberCat2 := PostMember{
 		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
@@ -314,9 +314,9 @@ func TestListGroupMember(t *testing.T) {
 
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
 	originService := &service{
-		memberManager: manager.MemberMgr,
+		memberManager: managers.MemberMgr,
 		groupManager:  groupManager,
-		userManager:   manager.UserMgr,
+		userManager:   managers.UserMgr,
 	}
 	s = originService
 
@@ -436,7 +436,7 @@ func TestListGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
+	groupManager.EXPECT().IsRootGroup(gomock.Any()).AnyTimes().Return(false)
 	members, err := s.ListMember(ctx, common.ResourceGroup, group2ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(members))
@@ -520,7 +520,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
+	groupManager.EXPECT().IsRootGroup(gomock.Any()).AnyTimes().Return(false)
 
 	// mock the applicationManager
 	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
@@ -547,7 +547,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	}).Times(1)
 
 	originService := &service{
-		memberManager:             manager.MemberMgr,
+		memberManager:             managers.MemberMgr,
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
@@ -701,7 +701,7 @@ func TestGetPipelinerunAndCheckrunMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).AnyTimes()
-	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
+	groupManager.EXPECT().IsRootGroup(gomock.Any()).AnyTimes().Return(false)
 
 	// mock the applicationManager
 	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
@@ -741,7 +741,7 @@ func TestGetPipelinerunAndCheckrunMember(t *testing.T) {
 
 	roleSvc := rolemock.NewMockService(mockCtrl)
 	originService := &service{
-		memberManager:             manager.MemberMgr,
+		memberManager:             managers.MemberMgr,
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
@@ -750,7 +750,7 @@ func TestGetPipelinerunAndCheckrunMember(t *testing.T) {
 			Check:       checkMockManager,
 		},
 		roleService: roleSvc,
-		userManager: manager.UserMgr,
+		userManager: managers.UserMgr,
 	}
 	s = originService
 
@@ -833,12 +833,12 @@ func TestListTemplateMember(t *testing.T) {
 	createEnv(t)
 
 	s = &service{
-		memberManager:             manager.MemberMgr,
-		groupManager:              manager.GroupMgr,
-		applicationManager:        manager.ApplicationMgr,
-		applicationClusterManager: manager.ClusterMgr,
-		templateManager:           manager.TemplateMgr,
-		prMgr:                     manager.PRMgr,
+		memberManager:             managers.MemberMgr,
+		groupManager:              managers.GroupMgr,
+		applicationManager:        managers.ApplicationMgr,
+		applicationClusterManager: managers.ClusterMgr,
+		templateManager:           managers.TemplateMgr,
+		prMgr:                     managers.PRMgr,
 		roleService:               nil,
 	}
 
@@ -849,7 +849,7 @@ func TestListTemplateMember(t *testing.T) {
 		Phone:    "",
 		Admin:    false,
 	}
-	jerry, err := manager.UserMgr.Create(ctx, jerry)
+	jerry, err := managers.UserMgr.Create(ctx, jerry)
 	assert.Nil(t, err)
 
 	// nolint
@@ -869,7 +869,7 @@ func TestListTemplateMember(t *testing.T) {
 		ParentID:        0,
 		TraversalIDs:    "1",
 	}
-	group1, err = manager.GroupMgr.Create(ctx, group1)
+	group1, err = managers.GroupMgr.Create(ctx, group1)
 	assert.Nil(t, err)
 
 	group2 := &groupModels.Group{
@@ -880,7 +880,7 @@ func TestListTemplateMember(t *testing.T) {
 		ParentID:        group1.ID,
 		TraversalIDs:    "1,2",
 	}
-	group2, err = manager.GroupMgr.Create(ctx, group2)
+	group2, err = managers.GroupMgr.Create(ctx, group2)
 	assert.Nil(t, err)
 
 	template := &templatemodels.Template{
@@ -888,10 +888,10 @@ func TestListTemplateMember(t *testing.T) {
 		Repository: "repo",
 		GroupID:    group2.ID,
 	}
-	template, err = manager.TemplateMgr.Create(ctx, template)
+	template, err = managers.TemplateMgr.Create(ctx, template)
 	assert.Nil(t, err)
 
-	_, err = manager.MemberMgr.Create(ctx, &models.Member{
+	_, err = managers.MemberMgr.Create(ctx, &models.Member{
 		ResourceType: models.TypeGroup,
 		ResourceID:   group1.ID,
 		Role:         "pe",
@@ -899,9 +899,9 @@ func TestListTemplateMember(t *testing.T) {
 		MemberNameID: jerry.ID,
 	})
 	assert.Nil(t, err)
-	err = manager.MemberMgr.DeleteMember(ctx, 1)
+	err = managers.MemberMgr.DeleteMember(ctx, 1)
 	assert.Nil(t, err)
-	err = manager.MemberMgr.DeleteMember(ctx, 2)
+	err = managers.MemberMgr.DeleteMember(ctx, 2)
 	assert.Nil(t, err)
 
 	memberInfo, err := s.GetMemberOfResource(ctx, common.ResourceTemplate, fmt.Sprintf("%d", template.ID))
@@ -915,14 +915,14 @@ func TestListWebhookMember(t *testing.T) {
 	createEnv(t)
 
 	s = &service{
-		memberManager:             manager.MemberMgr,
-		groupManager:              manager.GroupMgr,
-		applicationManager:        manager.ApplicationMgr,
-		applicationClusterManager: manager.ClusterMgr,
-		templateManager:           manager.TemplateMgr,
-		prMgr:                     manager.PRMgr,
+		memberManager:             managers.MemberMgr,
+		groupManager:              managers.GroupMgr,
+		applicationManager:        managers.ApplicationMgr,
+		applicationClusterManager: managers.ClusterMgr,
+		templateManager:           managers.TemplateMgr,
+		prMgr:                     managers.PRMgr,
 		roleService:               nil,
-		webhookManager:            manager.WebhookMgr,
+		webhookManager:            managers.WebhookMgr,
 	}
 
 	jerry := &usermodels.User{
@@ -932,7 +932,7 @@ func TestListWebhookMember(t *testing.T) {
 		Phone:    "",
 		Admin:    false,
 	}
-	jerry, err := manager.UserMgr.Create(ctx, jerry)
+	jerry, err := managers.UserMgr.Create(ctx, jerry)
 	assert.Nil(t, err)
 
 	// nolint
@@ -952,7 +952,7 @@ func TestListWebhookMember(t *testing.T) {
 		ParentID:        0,
 		TraversalIDs:    "1",
 	}
-	group1, err = manager.GroupMgr.Create(ctx, group1)
+	group1, err = managers.GroupMgr.Create(ctx, group1)
 	assert.Nil(t, err)
 
 	webhook := &webhookmodels.Webhook{
@@ -960,16 +960,16 @@ func TestListWebhookMember(t *testing.T) {
 		ResourceType: "groups",
 		ResourceID:   group1.ID,
 	}
-	webhook, err = manager.WebhookMgr.CreateWebhook(ctx, webhook)
+	webhook, err = managers.WebhookMgr.CreateWebhook(ctx, webhook)
 	assert.Nil(t, err)
 
 	webhookLog := &webhookmodels.WebhookLog{
 		WebhookID: webhook.ID,
 	}
-	webhookLog, err = manager.WebhookMgr.CreateWebhookLog(ctx, webhookLog)
+	webhookLog, err = managers.WebhookMgr.CreateWebhookLog(ctx, webhookLog)
 	assert.Nil(t, err)
 
-	_, err = manager.MemberMgr.Create(ctx, &models.Member{
+	_, err = managers.MemberMgr.Create(ctx, &models.Member{
 		ResourceType: models.TypeGroup,
 		ResourceID:   group1.ID,
 		Role:         "pe",
@@ -978,7 +978,7 @@ func TestListWebhookMember(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	err = manager.MemberMgr.DeleteMember(ctx, 1)
+	err = managers.MemberMgr.DeleteMember(ctx, 1)
 	assert.Nil(t, err)
 
 	memberInfo, err := s.GetMemberOfResource(ctx, common.ResourceWebhook, fmt.Sprintf("%d", webhook.ID))
@@ -1009,5 +1009,5 @@ func createEnv(t *testing.T) {
 	assert.Nil(t, err)
 
 	ctx = context.Background()
-	manager = managerparam.InitManager(db)
+	managers = managerparam.InitManager(db)
 }

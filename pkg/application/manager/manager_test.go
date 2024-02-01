@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -30,7 +31,6 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	groupdao "github.com/horizoncd/horizon/pkg/group/dao"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"

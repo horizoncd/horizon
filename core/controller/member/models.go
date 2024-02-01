@@ -22,6 +22,7 @@ import (
 
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
+	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
@@ -99,6 +100,7 @@ type ConvertMemberHelp interface {
 
 type converter struct {
 	userManager    usermanager.Manager
+	groupMgr       groupmanager.Manager
 	groupSvc       groupservice.Service
 	applicationSvc applicationservice.Service
 	clusterSvc     clusterservice.Service
@@ -109,6 +111,7 @@ type converter struct {
 func New(param *param.Param) ConvertMemberHelp {
 	return &converter{
 		userManager:    param.UserMgr,
+		groupMgr:       param.GroupMgr,
 		groupSvc:       param.GroupSvc,
 		applicationSvc: param.ApplicationSvc,
 		clusterSvc:     param.ClusterSvc,
@@ -170,12 +173,14 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		var resourceName, resourcePath string
 		switch member.ResourceType {
 		case models.TypeGroup:
-			group, err := c.groupSvc.GetChildByID(ctx, member.ResourceID)
-			if err != nil {
-				return nil, err
+			if !c.groupMgr.IsRootGroup(member.ResourceID) {
+				group, err := c.groupSvc.GetChildByID(ctx, member.ResourceID)
+				if err != nil {
+					return nil, err
+				}
+				resourceName = group.Name
+				resourcePath = group.FullPath
 			}
-			resourceName = group.Name
-			resourcePath = group.FullPath
 		case models.TypeApplication:
 			application, err := c.applicationSvc.GetByID(ctx, member.ResourceID)
 			if err != nil {

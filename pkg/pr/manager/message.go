@@ -11,9 +11,9 @@ import (
 )
 
 type PRMessageManager interface {
-	// Create create a PRMessage
+	// Create creates a pipelinerun message
 	Create(ctx context.Context, prMessage *models.PRMessage) (*models.PRMessage, error)
-	// List list PRMessage order by created_at asc
+	// List lists messages order by created_at asc
 	List(ctx context.Context, pipelineRunID uint, query *q.Query) (int, []*models.PRMessage, error)
 }
 

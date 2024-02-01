@@ -245,15 +245,15 @@ paths:
       responses:
         "200":
           description: Success
-  /apis/core/v2/pipelineruns/{pipelinerunID}/forcerun:
+  /apis/core/v2/pipelineruns/{pipelinerunID}/forceready:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     post:
       tags:
         - pipelinerun
-      operationId: forceRunPipelinerun
+      operationId: forceReadyPipelinerun
       summary: |
-        Force run the specified pipelinerun.
+        Ignore checks and mark the pipelinerun as ready.
       responses:
         "200":
           description: Success
@@ -372,7 +372,7 @@ paths:
       responses:
         "200":
           description: Success
-  /apis/core/v2/pipelineruns/{pipelinerunID}/message:
+  /apis/core/v2/pipelineruns/{pipelinerunID}/messages:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     post:

@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -28,7 +29,6 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	pipelinemodel "github.com/horizoncd/horizon/pkg/pr/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"

@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	membermanager "github.com/horizoncd/horizon/pkg/member/manager"
 	"helm.sh/helm/v3/pkg/chart/loader"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -35,7 +36,6 @@ import (
 	gmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/group/service"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
@@ -151,7 +151,7 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 		}
 
 		if groupID, ok := query.Keywords[common.TemplateQueryByGroupRecursive].(uint); ok {
-			if !c.groupMgr.IsRootGroup(ctx, groupID) {
+			if !c.groupMgr.IsRootGroup(groupID) {
 				group, err := c.groupMgr.GetByID(ctx, groupID)
 				if err != nil {
 					return nil, err
@@ -450,7 +450,7 @@ func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context,
 
 	groupIDs := make([]uint, 0)
 
-	if c.groupMgr.IsRootGroup(ctx, groupID) {
+	if c.groupMgr.IsRootGroup(groupID) {
 		return c.ListTemplate(ctx)
 	}
 	group, err := c.groupMgr.GetByID(ctx, groupID)

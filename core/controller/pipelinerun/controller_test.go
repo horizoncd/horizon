@@ -549,6 +549,14 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusPending), prPending.Status)
 
+	prPendingToForceReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Action:    prmodels.ActionBuildDeploy,
+		Status:    string(pipelinemodel.StatusPending),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, string(pipelinemodel.StatusPending), prPendingToForceReady.Status)
+
 	prDeployReady, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    prmodels.ActionDeploy,
@@ -584,20 +592,22 @@ func TestExecutePipelineRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(pipelinemodel.StatusReady), prRollbackReady.Status)
 
-	err = ctrl.Execute(ctx, prDeployReady.ID, false)
+	err = ctrl.Execute(ctx, prDeployReady.ID)
 	assert.NoError(t, err)
 
-	err = ctrl.Execute(ctx, prRestartReady.ID, false)
+	err = ctrl.Execute(ctx, prRestartReady.ID)
 	assert.NoError(t, err)
 
-	err = ctrl.Execute(ctx, prRollbackReady.ID, false)
+	err = ctrl.Execute(ctx, prRollbackReady.ID)
 	assert.NoError(t, err)
 
-	err = ctrl.Execute(ctx, prPending.ID, false)
+	err = ctrl.Execute(ctx, prPending.ID)
 	assert.NotNil(t, err)
 
-	err = ctrl.Execute(ctx, prPending.ID, true)
+	err = ctrl.Ready(ctx, prPendingToForceReady.ID)
 	assert.NoError(t, err)
+	err = ctrl.Execute(ctx, prPendingToForceReady.ID)
+	assert.Nil(t, err)
 
 	PRCancel, err := mgr.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
@@ -700,7 +710,7 @@ func TestCheckRun(t *testing.T) {
 
 func TestMessage(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&prmodels.PRMessage{}, &usermodel.User{}); err != nil {
+	if err := db.AutoMigrate(&prmodels.PRMessage{}, &usermodel.User{}, &prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
 	param := managerparam.InitManager(db)
@@ -716,12 +726,20 @@ func TestMessage(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	pr, err := param.PRMgr.PipelineRun.Create(ctx, &prmodels.Pipelinerun{
+		Action: prmodels.ActionBuildDeploy,
+	})
+	assert.NoError(t, err)
+
 	ctrl := controller{
 		prMgr:   param.PRMgr,
 		userMgr: param.UserMgr,
+		prSvc: prservice.NewService(&managerparam.Manager{
+			PRMgr: param.PRMgr,
+		}),
 	}
 
-	message1, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+	message1, err := ctrl.CreatePRMessage(ctx, pr.ID, &CreatePRMessageRequest{
 		Content: "first",
 	})
 	assert.NoError(t, err)
@@ -729,13 +747,13 @@ func TestMessage(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	message2, err := ctrl.CreatePRMessage(ctx, 1, &CreatePrMessageRequest{
+	message2, err := ctrl.CreatePRMessage(ctx, pr.ID, &CreatePRMessageRequest{
 		Content: "second",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, message2.Content, "second")
 
-	count, messages, err := ctrl.ListPRMessages(ctx, 1, &q.Query{})
+	count, messages, err := ctrl.ListPRMessages(ctx, pr.ID, &q.Query{})
 	assert.NoError(t, err)
 	assert.Equal(t, count, 2)
 	assert.Equal(t, len(messages), 2)

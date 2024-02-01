@@ -4,25 +4,42 @@ import (
 	"context"
 
 	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	gmodels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/pr/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-type Service struct {
+type Service interface {
+	OfPipelineBasic(ctx context.Context, pr,
+		firstCanRollbackPipelinerun *models.Pipelinerun) (*models.PipelineBasic, error)
+	OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
+		firstCanRollbackPipelinerun *models.Pipelinerun) ([]*models.PipelineBasic, error)
+	GetCheckByResource(ctx context.Context, resourceID uint,
+		resourceType string) ([]*models.Check, error)
+	// CreateUserMessage creates a user message on pipeline run
+	CreateUserMessage(ctx context.Context, prID uint, content string) (*models.PRMessage, error)
+	// CreateSystemMessageAsync creates a system message on pipeline run
+	CreateSystemMessageAsync(ctx context.Context, prID uint, content string)
+}
+
+type service struct {
 	manager *managerparam.Manager
 }
 
-func NewService(manager *managerparam.Manager) *Service {
-	return &Service{
+var _ Service = (*service)(nil)
+
+func NewService(manager *managerparam.Manager) Service {
+	return &service{
 		manager,
 	}
 }
 
-func (s *Service) OfPipelineBasic(ctx context.Context,
+func (s *service) OfPipelineBasic(ctx context.Context,
 	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*models.PipelineBasic, error) {
 	user, err := s.manager.UserMgr.GetUserByID(ctx, pr.CreatedBy)
 	if err != nil {
@@ -67,7 +84,7 @@ func (s *Service) OfPipelineBasic(ctx context.Context,
 	return prBasic, nil
 }
 
-func (s *Service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
+func (s *service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
 	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*models.PipelineBasic, error) {
 	pipelineBasics := make([]*models.PipelineBasic, 0, len(prs))
 	for _, pr := range prs {
@@ -79,7 +96,7 @@ func (s *Service) OfPipelineBasics(ctx context.Context, prs []*models.Pipelineru
 	}
 	return pipelineBasics, nil
 }
-func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
+func (s *service) GetCheckByResource(ctx context.Context, resourceID uint,
 	resourceType string) ([]*models.Check, error) {
 	var (
 		id      = resourceID
@@ -136,4 +153,44 @@ func (s *Service) GetCheckByResource(ctx context.Context, resourceID uint,
 	})
 
 	return s.manager.PRMgr.Check.GetByResource(ctx, resources...)
+}
+
+func (s *service) CreateUserMessage(ctx context.Context, prID uint,
+	content string) (*models.PRMessage, error) {
+	return s.createMessage(ctx, prID, content, models.MessageTypeUser)
+}
+
+func (s *service) CreateSystemMessageAsync(ctx context.Context, prID uint,
+	content string) {
+	rid, err := requestid.FromContext(ctx)
+	if err != nil {
+		log.Warningf(ctx, "failed to get request id from context")
+	}
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		log.Warningf(ctx, "failed to get current user from context")
+	}
+	newCtx := log.WithContext(context.Background(), rid)
+	newCtx = common.WithContext(newCtx, currentUser)
+	go func() {
+		_, err := s.createMessage(newCtx, prID, content, models.MessageTypeSystem)
+		if err != nil {
+			log.Warningf(newCtx, "failed to create system message: %v", err.Error())
+		}
+	}()
+}
+
+func (s *service) createMessage(ctx context.Context, prID uint, content string,
+	messageType uint) (*models.PRMessage, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.manager.PRMgr.Message.Create(ctx, &models.PRMessage{
+		PipelineRunID: prID,
+		Content:       content,
+		MessageType:   messageType,
+		CreatedBy:     currentUser.GetID(),
+		UpdatedBy:     currentUser.GetID(),
+	})
 }
