@@ -18,9 +18,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/code"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
@@ -56,6 +59,10 @@ func (a *API) ListBranch(c *gin.Context) {
 	})
 	if err != nil {
 		log.Errorf(c, "List branch error: %+v", err)
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -81,6 +88,10 @@ func (a *API) ListTag(c *gin.Context) {
 		PageSize:   pageSize,
 	})
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
