@@ -146,7 +146,7 @@ import (
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	metricsmiddle "github.com/horizoncd/horizon/core/middleware/metrics"
 	prehandlemiddle "github.com/horizoncd/horizon/core/middleware/prehandle"
-	regionmiddle "github.com/horizoncd/horizon/core/middleware/region"
+	scopemiddle "github.com/horizoncd/horizon/core/middleware/scope"
 	tagmiddle "github.com/horizoncd/horizon/core/middleware/tag"
 	tokenmiddle "github.com/horizoncd/horizon/core/middleware/token"
 	usermiddle "github.com/horizoncd/horizon/core/middleware/user"
@@ -621,7 +621,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		regionmiddle.Middleware(parameter, applicationRegionCtl),
+		scopemiddle.Middleware(parameter, applicationRegionCtl, manager.ClusterMgr), 
 		tokenmiddle.MiddleWare(oauthCheckerCtl, authnSkippers...),
 		//  user middleware, check user and attach current user to context.
 		usermiddle.Middleware(parameter, store, coreConfig,
