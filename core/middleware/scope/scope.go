@@ -26,6 +26,7 @@ import (
 	middleware "github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -34,14 +35,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 )
 
-var _createClusterUrlPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
-
-var _clusterUrlPattern = regexp.MustCompile(`/apis/core/v[12]/clusters/(\d+)`)
+var _createClusterURLPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
 
 const (
 	_method     = http.MethodPost
@@ -58,11 +56,11 @@ func init() {
 
 // Middleware to set region for create cluster API and set scope param for other cluster APIs
 func Middleware(param *param.Param, applicationRegionCtl applicationregion.Controller,
-	clusterMgr clustermanager.Manager, skippers ...middleware.Skipper) gin.HandlerFunc {
+	mgr *managerparam.Manager, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// for request to create cluster, set default region to scope if not provided
-		if _createClusterUrlPattern.MatchString(c.Request.URL.Path) && c.Request.Method != _method {
-			matches := _createClusterUrlPattern.FindStringSubmatch(c.Request.URL.Path)
+		if _createClusterURLPattern.MatchString(c.Request.URL.Path) && c.Request.Method == _method {
+			matches := _createClusterURLPattern.FindStringSubmatch(c.Request.URL.Path)
 			applicationIDStr := matches[1]
 			applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 			if err != nil {
@@ -102,6 +100,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 
 			query.Set(_scopeParam, fmt.Sprintf("%v/%v", environment, r))
 			c.Request.URL.RawQuery = query.Encode()
+			log.Debugf(c, "success to set default region to param: %s", query.Get(_scopeParam))
 			c.Next()
 			return
 		}
@@ -110,37 +109,73 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
 		}
-		// for request to access cluster, set scope param
-		if requestInfo.APIGroup == common.GroupCore && requestInfo.Resource == common.ResourceCluster {
-			var (
-				clusterID int
-				cluster   *clustermodels.Cluster
-				err       error
-			)
-			clusterID, err = strconv.Atoi(requestInfo.Name)
-			if err != nil {
-				cluster, err = clusterMgr.GetByName(c, requestInfo.Name)
-			} else {
-				cluster, err = clusterMgr.GetByID(c, uint(clusterID))
-			}
-			if err != nil {
-				if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-					response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-					return
-				}
-				response.AbortWithInternalError(c, fmt.Sprintf("failed to get cluster by resource name: %v", requestInfo.Name))
-				return
-			}
-			// set scope param
+		// for request to access cluster and its sub resources, set scope param
+		if requestInfo.APIGroup == common.GroupCore && (requestInfo.Resource == common.ResourceCluster ||
+			requestInfo.Resource == common.ResourcePipelinerun ||
+			requestInfo.Resource == common.ResourceCheckrun) && requestInfo.Name != "" {
 			query := c.Request.URL.Query()
 			if query.Get(_scopeParam) == "" {
-				query.Set(_scopeParam, fmt.Sprintf("%v/%v", cluster.EnvironmentName, cluster.RegionName))
+				scope, err := getScope(c, mgr, requestInfo.Resource, requestInfo.Name)
+				if err != nil {
+					if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+						response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+						return
+					}
+					log.Errorf(c, "failed to get scope: %v", err.Error())
+					c.Next()
+					return
+				}
+				query.Set(_scopeParam, scope)
 				c.Request.URL.RawQuery = query.Encode()
+				log.Debugf(c, "success to set scope to param: %s", query.Get(_scopeParam))
 				c.Next()
 			}
 		}
 		c.Next()
 	}, skippers...)
+}
+
+func getScope(c *gin.Context, mgr *managerparam.Manager, resourceType, resourceName string) (string, error) {
+	var (
+		resourceID uint
+		cluster    *clustermodels.Cluster
+		err        error
+	)
+	id, err := strconv.Atoi(resourceName)
+	if err == nil {
+		resourceID = uint(id)
+		if resourceType == common.ResourceCheckrun {
+			checkrun, err := mgr.PRMgr.Check.GetCheckRunByID(c, resourceID)
+			if err != nil {
+				return "", err
+			}
+			resourceID = checkrun.PipelineRunID
+			resourceType = common.ResourcePipelinerun
+		}
+		if resourceType == common.ResourcePipelinerun {
+			pipelineRun, err := mgr.PRMgr.PipelineRun.GetByID(c, resourceID)
+			if err != nil {
+				return "", err
+			}
+			resourceID = pipelineRun.ClusterID
+			resourceType = common.ResourceCluster
+		}
+		if resourceType == common.ResourceCluster {
+			cluster, err = mgr.ClusterMgr.GetByID(c, resourceID)
+			if err != nil {
+				return "", err
+			}
+		}
+	} else {
+		if resourceType != common.ResourceCluster {
+			return "", herrors.ErrUnsupportedResourceType
+		}
+		cluster, err = mgr.ClusterMgr.GetByName(c, resourceName)
+		if err != nil {
+			return "", err
+		}
+	}
+	return fmt.Sprintf("%s/%s", cluster.EnvironmentName, cluster.RegionName), nil
 }
 
 func getRegion(c *gin.Context, applicationRegions applicationregion.ApplicationRegion,

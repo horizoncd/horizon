@@ -286,9 +286,8 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	var roleConfig roleconfig.Config
 	if err := yaml.Unmarshal(content, &roleConfig); err != nil {
 		panic(err)
-	} else {
-		log.Printf("the roleConfig = %+v\n", roleConfig)
 	}
+	log.Printf("the roleConfig = %+v\n", roleConfig)
 
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
@@ -407,9 +406,9 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	var oauthConfig oauthconfig.Scopes
 	if err = yaml.Unmarshal(content, &oauthConfig); err != nil {
 		panic(err)
-	} else {
-		log.Printf("the oauthScopeConfig = %+v\n", oauthConfig)
 	}
+	log.Printf("the oauthScopeConfig = %+v\n", oauthConfig)
+
 	scopeService, err := scopeservice.NewFileScopeService(oauthConfig)
 	if err != nil {
 		panic(err)
@@ -621,7 +620,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		scopemiddle.Middleware(parameter, applicationRegionCtl, manager.ClusterMgr), 
+		scopemiddle.Middleware(parameter, applicationRegionCtl, manager),
 		tokenmiddle.MiddleWare(oauthCheckerCtl, authnSkippers...),
 		//  user middleware, check user and attach current user to context.
 		usermiddle.Middleware(parameter, store, coreConfig,
