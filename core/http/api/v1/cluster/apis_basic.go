@@ -183,7 +183,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Request.URL.Query().Get(common.ClusterQueryScope)
+	scope := common.GetScope(c, c.Request)
 	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {

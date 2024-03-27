@@ -24,7 +24,6 @@ const (
 	ClusterQueryByRelease     = "templateRelease"
 	ClusterQueryByRegion      = "region"
 	ClusterQueryTagSelector   = "tagSelector"
-	ClusterQueryScope         = "scope"
 	ClusterQueryMergePatch    = "mergePatch"
 	ClusterQueryTargetBranch  = "targetBranch"
 	ClusterQueryTargetCommit  = "targetCommit"

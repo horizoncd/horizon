@@ -74,7 +74,7 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 		}
 		common.SetUser(c, user)
 
-		requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
+		requestInfo, err := RequestInfoFty.NewRequestInfo(c, c.Request)
 		if err != nil {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
