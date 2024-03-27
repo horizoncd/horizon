@@ -15,6 +15,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -157,11 +158,12 @@ func TestRequestInfo(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
 	for _, v := range caseTable {
 		assert.Equal(t, &v.expectRequestInfo, func(method, url string) *RequestInfo {
 			req, _ := http.NewRequest(method, url, nil)
-			requestInfo, _ := requestInfoFactory.NewRequestInfo(req)
+			requestInfo, _ := requestInfoFactory.NewRequestInfo(ctx, req)
 			return requestInfo
 		}(v.method, v.path))
 	}

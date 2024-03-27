@@ -39,14 +39,10 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 )
 
-var _createClusterURLPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
-
-const (
-	_method     = http.MethodPost
-	_scopeParam = "scope"
+var (
+	_createClusterURLPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
+	RequestInfoFty           auth.RequestInfoFactory
 )
-
-var RequestInfoFty auth.RequestInfoFactory
 
 func init() {
 	RequestInfoFty = auth.RequestInfoFactory{
@@ -59,7 +55,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 	mgr *managerparam.Manager, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// for request to create cluster, set default region to scope if not provided
-		if _createClusterURLPattern.MatchString(c.Request.URL.Path) && c.Request.Method == _method {
+		if _createClusterURLPattern.MatchString(c.Request.URL.Path) &&
+			c.Request.Method == http.MethodPost {
 			matches := _createClusterURLPattern.FindStringSubmatch(c.Request.URL.Path)
 			applicationIDStr := matches[1]
 			applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
@@ -70,7 +67,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			}
 			// scope format is: {environment}/{region}
 			query := c.Request.URL.Query()
-			scope := query.Get(_scopeParam)
+			scope := query.Get(common.ParamScope)
 			params := strings.Split(scope, "/")
 			// invalid scope
 			if scope == "" || len(params) > 2 {
@@ -98,13 +95,13 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 				return
 			}
 
-			query.Set(_scopeParam, fmt.Sprintf("%v/%v", environment, r))
-			c.Request.URL.RawQuery = query.Encode()
-			log.Debugf(c, "success to set default region to param: %s", query.Get(_scopeParam))
+			scope = fmt.Sprintf("%v/%v", environment, r)
+			common.SetScope(c, scope)
+			log.Debugf(c, "success to set default region to param: %s", scope)
 			c.Next()
 			return
 		}
-		requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
+		requestInfo, err := RequestInfoFty.NewRequestInfo(c, c.Request)
 		if err != nil {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
@@ -114,7 +111,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			requestInfo.Resource == common.ResourcePipelinerun ||
 			requestInfo.Resource == common.ResourceCheckrun) && requestInfo.Name != "" {
 			query := c.Request.URL.Query()
-			if query.Get(_scopeParam) == "" {
+			if query.Get(common.ParamScope) == "" {
 				scope, err := getScope(c, mgr, requestInfo.Resource, requestInfo.Name)
 				if err != nil {
 					if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -125,9 +122,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 					c.Next()
 					return
 				}
-				query.Set(_scopeParam, scope)
-				c.Request.URL.RawQuery = query.Encode()
-				log.Debugf(c, "success to set scope to param: %s", query.Get(_scopeParam))
+				common.SetScope(c, scope)
+				log.Debugf(c, "success to set scope to param: %s", scope)
 				c.Next()
 			}
 		}
@@ -135,7 +131,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 	}, skippers...)
 }
 
-func getScope(c *gin.Context, mgr *managerparam.Manager, resourceType, resourceName string) (string, error) {
+func getScope(c *gin.Context, mgr *managerparam.Manager, resourceType,
+	resourceName string) (string, error) {
 	var (
 		resourceID uint
 		cluster    *clustermodels.Cluster
