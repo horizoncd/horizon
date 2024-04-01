@@ -1,4 +1,4 @@
-package common
+package context
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 const ParamScope = "scope"
 
-func ContextScopeKey() string {
+func scopeKey() string {
 	return "contextScope"
 }
 
@@ -22,11 +22,11 @@ func GetScope(ctx context.Context, req *http.Request) string {
 }
 
 func ScopeFromContext(ctx context.Context) (string, bool) {
-	scope, ok := ctx.Value(ContextScopeKey()).(string)
+	scope, ok := ctx.Value(scopeKey()).(string)
 	return scope, ok
 }
 
 func SetScope(c *gin.Context, scope string) {
 	// attach cluster scope to context
-	c.Set(ContextScopeKey(), scope)
+	c.Set(scopeKey(), scope)
 }

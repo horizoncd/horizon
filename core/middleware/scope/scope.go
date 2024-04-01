@@ -36,6 +36,7 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 )
 
@@ -67,7 +68,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			}
 			// scope format is: {environment}/{region}
 			query := c.Request.URL.Query()
-			scope := query.Get(common.ParamScope)
+			scope := query.Get(hctx.ParamScope)
 			params := strings.Split(scope, "/")
 			// invalid scope
 			if scope == "" || len(params) > 2 {
@@ -96,7 +97,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			}
 
 			scope = fmt.Sprintf("%v/%v", environment, r)
-			common.SetScope(c, scope)
+			hctx.SetScope(c, scope)
 			log.Debugf(c, "success to set default region to param: %s", scope)
 			c.Next()
 			return
@@ -111,7 +112,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			requestInfo.Resource == common.ResourcePipelinerun ||
 			requestInfo.Resource == common.ResourceCheckrun) && requestInfo.Name != "" {
 			query := c.Request.URL.Query()
-			if query.Get(common.ParamScope) == "" {
+			if query.Get(hctx.ParamScope) == "" {
 				scope, err := getScope(c, mgr, requestInfo.Resource, requestInfo.Name)
 				if err != nil {
 					if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -122,7 +123,7 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 					c.Next()
 					return
 				}
-				common.SetScope(c, scope)
+				hctx.SetScope(c, scope)
 				log.Debugf(c, "success to set scope to param: %s", scope)
 				c.Next()
 			}

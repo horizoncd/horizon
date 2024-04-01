@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "PREFIX=$(go list -m)" >> $GITHUB_OUTPUT
 
-      - uses: paambaati/codeclimate-action@v3.2.0
+      - uses: paambaati/codeclimate-action@v5.0.0
         env:
           CC_TEST_REPORTER_ID: e47aa5e6270db938ee1bdd6dc9486f4f581beb1bcaee5d28be1633d68c8550c6
         with:

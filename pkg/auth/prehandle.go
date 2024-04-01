@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/horizoncd/horizon/core/common"
+	hctx "github.com/horizoncd/horizon/pkg/context"
 	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
@@ -65,7 +65,7 @@ func (r *RequestInfoFactory) NewRequestInfo(ctx context.Context,
 		IsResourceRequest: false,
 		Path:              req.URL.Path,
 		Verb:              strings.ToLower(req.Method),
-		Scope:             common.GetScope(ctx, req),
+		Scope:             hctx.GetScope(ctx, req),
 	}
 
 	currentParts := splitPath(req.URL.Path)
