@@ -83,7 +83,7 @@ func (c *controller) Review(ctx context.Context, apis []API) (map[string]map[str
 			continue
 		}
 		// 4.new request info by request
-		requestInfo, err := c.requestInfoFty.NewRequestInfo(req)
+		requestInfo, err := c.requestInfoFty.NewRequestInfo(ctx, req)
 		if err != nil {
 			return nil, perror.WithMessagef(err, "invalid api, url: %s, method: %s", api.URL, api.Method)
 		}

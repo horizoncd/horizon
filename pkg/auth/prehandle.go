@@ -15,9 +15,11 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
+	hctx "github.com/horizoncd/horizon/pkg/context"
 	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
@@ -57,12 +59,13 @@ type RequestInfoFactory struct {
 	APIPrefixes sets.String
 }
 
-func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
+func (r *RequestInfoFactory) NewRequestInfo(ctx context.Context,
+	req *http.Request) (*RequestInfo, error) {
 	requestInfo := RequestInfo{
 		IsResourceRequest: false,
 		Path:              req.URL.Path,
 		Verb:              strings.ToLower(req.Method),
-		Scope:             req.URL.Query().Get("scope"),
+		Scope:             hctx.GetScope(ctx, req),
 	}
 
 	currentParts := splitPath(req.URL.Path)
@@ -119,10 +122,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 	if len(requestInfo.Name) == 0 && requestInfo.Verb == "get" {
 		requestInfo.Verb = "list"
 	}
-
-	// TODO(tom): the subresource name
-	// get the scope from the query
-	requestInfo.Scope = req.URL.Query().Get("scope")
 
 	return &requestInfo, nil
 }

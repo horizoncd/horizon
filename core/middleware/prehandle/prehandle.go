@@ -46,7 +46,7 @@ func init() {
 
 func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
+		requestInfo, err := RequestInfoFty.NewRequestInfo(c, c.Request)
 		if err != nil {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
@@ -88,7 +88,7 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 }
 
 func constructRBACParam(c *gin.Context) (*auth.AttributesRecord, error) {
-	requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
+	requestInfo, err := RequestInfoFty.NewRequestInfo(c, c.Request)
 	if err != nil {
 		return nil, err
 	}

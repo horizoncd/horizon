@@ -25,6 +25,7 @@ import (
 	"github.com/horizoncd/horizon/core/controller/cluster"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
+	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/response"
@@ -191,7 +192,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Request.URL.Query().Get(common.ClusterQueryScope)
+	scope := hctx.GetScope(c, c.Request)
 	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {
