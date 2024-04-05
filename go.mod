@@ -38,7 +38,7 @@ require (
 	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/evanphx/json-patch.v5 v5.6.0
+	gopkg.in/evanphx/json-patch.v5 v5.9.0
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1

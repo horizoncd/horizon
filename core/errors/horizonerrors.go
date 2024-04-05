@@ -213,6 +213,7 @@ var (
 	ErrGenerateRandomID        = errors.New("failed to generate random id")
 	ErrDisabled                = errors.New("entity is disabled")
 	ErrDuplicatedKey           = errors.New("duplicated keys")
+	ErrMutatingFailed          = errors.New("mutating failed")
 	ErrValidatingFailed        = errors.New("validating failed")
 	ErrUnsupportedResourceType = errors.New("unsupported resource type")
 

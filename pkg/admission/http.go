@@ -18,6 +18,7 @@ import (
 	config "github.com/horizoncd/horizon/pkg/config/admission"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/common"
+	"github.com/mattbaird/jsonpatch"
 )
 
 const DefaultTimeout = 5 * time.Second
@@ -181,6 +182,8 @@ type HTTPAdmissionWebhook struct {
 func NewHTTPWebhooks(config config.Admission) {
 	for _, webhook := range config.Webhooks {
 		switch webhook.Kind {
+		case models.KindMutating:
+			Register(models.KindMutating, NewHTTPWebhook(webhook))
 		case models.KindValidating:
 			Register(models.KindValidating, NewHTTPWebhook(webhook))
 		}
@@ -216,15 +219,16 @@ func (m *HTTPAdmissionWebhook) Interest(req *Request) bool {
 	return m.matchers.Match(req)
 }
 
-type DummyValidatingWebhookServer struct {
+type DummyWebhookServer struct {
 	server *httptest.Server
 }
 
 // NewDummyWebhookServer creates a dummy validating webhook server for testing
-func NewDummyWebhookServer() *DummyValidatingWebhookServer {
-	webhook := &DummyValidatingWebhookServer{}
+func NewDummyWebhookServer() *DummyWebhookServer {
+	webhook := &DummyWebhookServer{}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/mutate", webhook.Mutating)
 	mux.HandleFunc("/validate", webhook.Validating)
 
 	server := httptest.NewServer(mux)
@@ -232,7 +236,7 @@ func NewDummyWebhookServer() *DummyValidatingWebhookServer {
 	return webhook
 }
 
-func (*DummyValidatingWebhookServer) ReadAndResponse(resp http.ResponseWriter,
+func (*DummyWebhookServer) ReadAndResponse(resp http.ResponseWriter,
 	req *http.Request, fn func(Request, *Response)) {
 	bodyBytes, _ := ioutil.ReadAll(req.Body)
 
@@ -247,11 +251,40 @@ func (*DummyValidatingWebhookServer) ReadAndResponse(resp http.ResponseWriter,
 	_, _ = resp.Write(respBytes)
 }
 
-func (w *DummyValidatingWebhookServer) Validating(resp http.ResponseWriter, req *http.Request) {
+func (w *DummyWebhookServer) Mutating(resp http.ResponseWriter, req *http.Request) {
+	w.ReadAndResponse(resp, req, w.mutating)
+}
+
+func (w *DummyWebhookServer) mutating(req Request, resp *Response) {
+	obj := req.Object.(map[string]interface{})
+
+	jsonObj, _ := json.Marshal(obj)
+
+	var newObj map[string]interface{}
+	_ = json.Unmarshal(jsonObj, &newObj)
+	if obj["tags"] != nil {
+		tags := obj["tags"].([]interface{})
+		tags = append(tags, map[string]interface{}{"key": "scope", "value": "online/hz"})
+		newObj["tags"] = tags
+	}
+
+	newObj["name"] = fmt.Sprintf("%v-%s", obj["name"], "mutated")
+
+	jsonNewObj, _ := json.Marshal(newObj)
+
+	patch, _ := jsonpatch.CreatePatch(jsonObj, jsonNewObj)
+
+	patchJSON, _ := json.Marshal(patch)
+
+	resp.Patch = patchJSON
+	resp.PatchType = models.PatchTypeJSONPatch
+}
+
+func (w *DummyWebhookServer) Validating(resp http.ResponseWriter, req *http.Request) {
 	w.ReadAndResponse(resp, req, w.validating)
 }
 
-func (w *DummyValidatingWebhookServer) validating(req Request, resp *Response) {
+func (w *DummyWebhookServer) validating(req Request, resp *Response) {
 	obj := req.Object.(map[string]interface{})
 
 	if req.Operation.Eq(models.OperationCreate) {
@@ -297,10 +330,14 @@ func (w *DummyValidatingWebhookServer) validating(req Request, resp *Response) {
 	resp.Allowed = common.BoolPtr(true)
 }
 
-func (w *DummyValidatingWebhookServer) ValidatingURL() string {
+func (w *DummyWebhookServer) MutatingURL() string {
+	return w.server.URL + "/mutate"
+}
+
+func (w *DummyWebhookServer) ValidatingURL() string {
 	return w.server.URL + "/validate"
 }
 
-func (w *DummyValidatingWebhookServer) Stop() {
+func (w *DummyWebhookServer) Stop() {
 	w.server.Close()
 }

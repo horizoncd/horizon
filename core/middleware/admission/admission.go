@@ -74,6 +74,12 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			Object:      object,
 			Options:     options,
 		}
+		admissionRequest, err = admissionwebhook.Mutating(c, admissionRequest)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("admission mutating failed: %v", err)))
+			return
+		}
 		if err := admissionwebhook.Validating(c, admissionRequest); err != nil {
 			response.AbortWithRPCError(c,
 				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("admission validating failed: %v", err)))

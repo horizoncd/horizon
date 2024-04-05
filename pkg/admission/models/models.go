@@ -20,9 +20,12 @@ func (o Operation) Eq(other Operation) bool {
 
 const (
 	KindValidating Kind = "validating"
+	KindMutating   Kind = "mutating"
 
 	MatchAll string = "*"
 
 	OperationCreate Operation = "create"
 	OperationUpdate Operation = "update"
+
+	PatchTypeJSONPatch = "JSONPatch"
 )
