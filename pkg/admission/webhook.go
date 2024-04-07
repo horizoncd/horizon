@@ -58,6 +58,8 @@ type Webhook interface {
 }
 
 func Mutating(ctx context.Context, request *Request) (*Request, error) {
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
 	if request.Object == nil {
 		return request, nil
 	}
@@ -69,9 +71,11 @@ func Mutating(ctx context.Context, request *Request) (*Request, error) {
 		if err = loggingError(ctx, err, webhook); err != nil {
 			return nil, err
 		}
-		request.Object, err = jsonPatch(request.Object, response.Patch)
-		if err = loggingError(ctx, err, webhook); err != nil {
-			return nil, err
+		if response != nil && response.Patch != nil {
+			request.Object, err = jsonPatch(request.Object, response.Patch)
+			if err = loggingError(ctx, err, webhook); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return request, nil
@@ -136,12 +140,13 @@ func Validating(ctx context.Context, request *Request) error {
 func loggingError(ctx context.Context, err error, webhook Webhook) error {
 	if err != nil {
 		if webhook.IgnoreError() {
-			log.Errorf(ctx, "failed to admit request: %v", err)
+			log.Warningf(ctx, "failed to admit request: %v", err.Error())
 			return nil
 		}
+		log.Errorf(ctx, "failed to admit request: %v", err.Error())
 		return err
 	}
-	return err
+	return nil
 }
 
 func jsonPatch(obj interface{}, patchJSON []byte) (interface{}, error) {
