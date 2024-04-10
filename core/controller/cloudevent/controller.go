@@ -73,6 +73,10 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 
 	horizonMetaData, err := c.getHorizonMetaData(ctx, wpr)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.Warningf(ctx, "horizon resource not found, err: %v", err.Error())
+			return nil
+		}
 		return err
 	}
 	log.Infof(ctx, "got cloudEvent of pipelineRun %v, event id: %v",
@@ -179,6 +183,9 @@ func (c *controller) getHorizonMetaData(ctx context.Context, wpr *WrappedPipelin
 	pipelinerun, err := c.prMgr.PipelineRun.GetByCIEventID(ctx, eventID)
 	if err != nil {
 		return nil, err
+	}
+	if pipelinerun == nil {
+		return nil, herrors.NewErrNotFound(herrors.PipelinerunInDB, "cannot find pipelinerun by eventID")
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
 	if err != nil {
