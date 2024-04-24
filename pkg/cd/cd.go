@@ -27,6 +27,14 @@ import (
 	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	kubeutil "github.com/argoproj/gitops-engine/pkg/utils/kube"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/argocd"
@@ -40,13 +48,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/horizoncd/horizon/pkg/workload"
 	"github.com/horizoncd/horizon/pkg/workload/getter"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -208,8 +209,40 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 	gt := getter.New(pd)
+
+	nodesMap := make(map[string][]ResourceNode)
 	for _, node := range resourceTreeInArgo.Nodes {
-		n := ResourceNode{ResourceNode: node}
+		nodesMap[node.Kind] = append(nodesMap[node.Kind], ResourceNode{ResourceNode: node})
+	}
+
+	if rolloutNodes, ok := nodesMap["Rollout"]; ok {
+		nodesMap["Pod"] = make([]ResourceNode, 0)
+		for _, rolloutNode := range rolloutNodes {
+			err := c.informerFactories.GetDynamicFactory(params.RegionEntity.ID, func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+				pods, err := gt.ListPods(&rolloutNode.ResourceNode, factory)
+				if err != nil {
+					return err
+				}
+				for _, pod := range pods {
+					t := Compact(pod)
+					n := ResourceNode{ResourceNode: podToResourceNode(pod), PodDetail: &t}
+					nodesMap["Pod"] = append(nodesMap["Pod"], n)
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		resources := make([]ResourceNode, 0)
+		for _, nodes := range nodesMap {
+			resources = append(resources, nodes...)
+		}
+		return resources, nil
+	}
+
+	for _, n := range nodesMap["Pod"] {
+		node := n.ResourceNode
 		if n.Kind == "Pod" {
 			var podDetail corev1.Pod
 			err = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
@@ -232,6 +265,11 @@ func (c *cd) GetResourceTree(ctx context.Context,
 			n.PodDetail = &t
 		}
 		resourceTree = append(resourceTree, n)
+	}
+	for k, nodes := range nodesMap {
+		if k != "Pod" {
+			resourceTree = append(resourceTree, nodes...)
+		}
 	}
 
 	return resourceTree, nil

@@ -24,18 +24,23 @@ import (
 	"strconv"
 	"sync"
 
+	argocache "github.com/argoproj/argo-cd/controller/cache"
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
-	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/pkg/util/kube"
-	"github.com/horizoncd/horizon/pkg/util/log"
+	kubeutil "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/kubectl/pkg/cmd/exec"
 	"k8s.io/kubectl/pkg/describe"
 	kubectlresource "k8s.io/kubectl/pkg/util/resource"
+	nodeutil "k8s.io/kubernetes/pkg/util/node"
+
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 func resourceTreeContains(resourceTree *applicationV1alpha1.ApplicationTree, resourceKind string) bool {
@@ -45,6 +50,138 @@ func resourceTreeContains(resourceTree *applicationV1alpha1.ApplicationTree, res
 		}
 	}
 	return false
+}
+
+func populatePodInfo(pod *corev1.Pod, res *argocache.ResourceInfo) {
+	if pod == nil {
+		return
+	}
+	restarts := 0
+	totalContainers := len(pod.Spec.Containers)
+	readyContainers := 0
+
+	reason := string(pod.Status.Phase)
+	if pod.Status.Reason != "" {
+		reason = pod.Status.Reason
+	}
+
+	imagesSet := make(map[string]bool)
+	for _, container := range pod.Spec.InitContainers {
+		imagesSet[container.Image] = true
+	}
+	for _, container := range pod.Spec.Containers {
+		imagesSet[container.Image] = true
+	}
+
+	res.Images = nil
+	for image := range imagesSet {
+		res.Images = append(res.Images, image)
+	}
+
+	initializing := false
+	for i := range pod.Status.InitContainerStatuses {
+		container := pod.Status.InitContainerStatuses[i]
+		restarts += int(container.RestartCount)
+		switch {
+		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
+			continue
+		case container.State.Terminated != nil:
+			// initialization is failed
+			if len(container.State.Terminated.Reason) == 0 {
+				if container.State.Terminated.Signal != 0 {
+					reason = fmt.Sprintf("Init:Signal:%d", container.State.Terminated.Signal)
+				} else {
+					reason = fmt.Sprintf("Init:ExitCode:%d", container.State.Terminated.ExitCode)
+				}
+			} else {
+				reason = "Init:" + container.State.Terminated.Reason
+			}
+			initializing = true
+		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 && container.State.Waiting.Reason != "PodInitializing":
+			reason = "Init:" + container.State.Waiting.Reason
+			initializing = true
+		default:
+			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
+			initializing = true
+		}
+		break
+	}
+	if !initializing {
+		restarts = 0
+		hasRunning := false
+		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
+			container := pod.Status.ContainerStatuses[i]
+
+			restarts += int(container.RestartCount)
+			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
+				reason = container.State.Waiting.Reason
+			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
+				reason = container.State.Terminated.Reason
+			} else if container.State.Terminated != nil && container.State.Terminated.Reason == "" {
+				if container.State.Terminated.Signal != 0 {
+					reason = fmt.Sprintf("Signal:%d", container.State.Terminated.Signal)
+				} else {
+					reason = fmt.Sprintf("ExitCode:%d", container.State.Terminated.ExitCode)
+				}
+			} else if container.Ready && container.State.Running != nil {
+				hasRunning = true
+				readyContainers++
+			}
+		}
+
+		// change pod status back to "Running" if there is at least one container still reporting as "Running" status
+		if reason == "Completed" && hasRunning {
+			reason = "Running"
+		}
+	}
+
+	if pod.DeletionTimestamp != nil && pod.Status.Reason == nodeutil.NodeUnreachablePodReason {
+		reason = "Unknown"
+	} else if pod.DeletionTimestamp != nil {
+		reason = "Terminating"
+	}
+
+	if reason != "" {
+		res.Info = append(res.Info, applicationV1alpha1.InfoItem{Name: "Status Reason", Value: reason})
+	}
+	res.Info = append(res.Info, applicationV1alpha1.InfoItem{Name: "Containers", Value: fmt.Sprintf("%d/%d", readyContainers, totalContainers)})
+	res.NetworkingInfo = &applicationV1alpha1.ResourceNetworkingInfo{Labels: pod.GetLabels()}
+}
+
+func podToResourceNode(pod corev1.Pod) applicationV1alpha1.ResourceNode {
+	gv, err := schema.ParseGroupVersion(pod.APIVersion)
+	if err != nil {
+		gv = schema.GroupVersion{}
+	}
+	parentRefs := make([]applicationV1alpha1.ResourceRef, len(pod.OwnerReferences))
+	for i, ownerRef := range pod.OwnerReferences {
+		ownerGvk := schema.FromAPIVersionAndKind(ownerRef.APIVersion, ownerRef.Kind)
+		ownerKey := kubeutil.ResourceKey{Group: ownerGvk.Group, Kind: ownerGvk.Kind, Namespace: pod.Namespace, Name: ownerRef.Name}
+		parentRefs[i] = applicationV1alpha1.ResourceRef{Name: ownerRef.Name, Kind: ownerKey.Kind, Namespace: pod.Namespace, Group: ownerKey.Group, UID: string(ownerRef.UID)}
+	}
+	var resHealth *applicationV1alpha1.HealthStatus
+	var resourceInfo argocache.ResourceInfo
+	populatePodInfo(&pod, &resourceInfo)
+	if resourceInfo.Health != nil {
+		resHealth = &applicationV1alpha1.HealthStatus{Status: resourceInfo.Health.Status, Message: resourceInfo.Health.Message}
+	}
+	return applicationV1alpha1.ResourceNode{
+		ResourceRef: applicationV1alpha1.ResourceRef{
+			UID:       string(pod.UID),
+			Name:      pod.Name,
+			Group:     gv.Group,
+			Version:   gv.Version,
+			Kind:      pod.Kind,
+			Namespace: pod.Namespace,
+		},
+		ParentRefs:      parentRefs,
+		Info:            resourceInfo.Info,
+		ResourceVersion: pod.ResourceVersion,
+		NetworkingInfo:  resourceInfo.NetworkingInfo,
+		Images:          resourceInfo.Images,
+		Health:          resHealth,
+		CreatedAt:       &pod.CreationTimestamp,
+	}
 }
 
 func parsePod(ctx context.Context, clusterInfo *ClusterState,
