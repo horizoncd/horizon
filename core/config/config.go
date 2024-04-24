@@ -53,6 +53,7 @@ type Config struct {
 	SessionConfig          session.Config          `yaml:"sessionConfig"`
 	GitopsRepoConfig       gitlab.GitopsRepoConfig `yaml:"gitopsRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
+	RegionArgoCDMapper     argocd.RegionMapper     `yaml:"regionArgoCDMapper"`
 	RedisConfig            redis.Redis             `yaml:"redisConfig"`
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
 	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
@@ -90,6 +91,15 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.ArgoCDMapper = newArgoCDMapper
+
+	newRegionCDMapper := argocd.RegionMapper{}
+	for key, v := range config.RegionArgoCDMapper {
+		ks := strings.Split(key, ",")
+		for i := 0; i < len(ks); i++ {
+			newRegionCDMapper[ks[i]] = v
+		}
+	}
+	config.RegionArgoCDMapper = newRegionCDMapper
 
 	newTektonMapper := tekton.Mapper{}
 	for key, v := range config.TektonMapper {

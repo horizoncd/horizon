@@ -62,6 +62,7 @@ type DeployClusterParams struct {
 	Environment string
 	Cluster     string
 	Revision    string
+	Region      string
 }
 
 type GetPodEventsParams struct {
@@ -88,6 +89,7 @@ type DeletePodsParams struct {
 type DeleteClusterParams struct {
 	Environment string
 	Cluster     string
+	Region      string
 }
 
 type ExecuteActionParams struct {

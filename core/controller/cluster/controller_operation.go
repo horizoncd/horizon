@@ -95,6 +95,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    commit,
+		Region:      cluster.RegionName,
 	}); err != nil {
 		return nil, err
 	}
@@ -412,6 +413,7 @@ func (c *controller) Rollback(ctx context.Context,
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
+		Region:      cluster.RegionName,
 	}); err != nil {
 		return nil, err
 	}

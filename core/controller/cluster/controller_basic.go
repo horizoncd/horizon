@@ -845,6 +845,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
 			Environment: cluster.EnvironmentName,
 			Cluster:     cluster.Name,
+			Region:      cluster.RegionName,
 		}); err != nil {
 			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
 			return
@@ -966,6 +967,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
 			Environment: cluster.EnvironmentName,
 			Cluster:     cluster.Name,
+			Region:      cluster.RegionName,
 		}); err != nil {
 			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
 			return

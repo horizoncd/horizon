@@ -471,7 +471,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		CD: cd.NewCD(regionInformers, clusterGitRepo, coreConfig.ArgoCDMapper,
+		CD: cd.NewCD(regionInformers, clusterGitRepo, coreConfig.ArgoCDMapper, coreConfig.RegionArgoCDMapper,
 			coreConfig.GitopsRepoConfig.DefaultBranch),
 		K8sUtil:        cd.NewK8sUtil(regionInformers, manager.EventMgr),
 		OutputGetter:   outputGetter,
