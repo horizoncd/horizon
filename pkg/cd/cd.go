@@ -218,18 +218,19 @@ func (c *cd) GetResourceTree(ctx context.Context,
 	if rolloutNodes, ok := nodesMap["Rollout"]; ok {
 		nodesMap["Pod"] = make([]ResourceNode, 0)
 		for _, rolloutNode := range rolloutNodes {
-			err := c.informerFactories.GetDynamicFactory(params.RegionEntity.ID, func(factory dynamicinformer.DynamicSharedInformerFactory) error {
-				pods, err := gt.ListPods(&rolloutNode.ResourceNode, factory)
-				if err != nil {
-					return err
-				}
-				for _, pod := range pods {
-					t := Compact(pod)
-					n := ResourceNode{ResourceNode: podToResourceNode(pod), PodDetail: &t}
-					nodesMap["Pod"] = append(nodesMap["Pod"], n)
-				}
-				return nil
-			})
+			err := c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
+				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+					pods, err := gt.ListPods(&rolloutNode.ResourceNode, factory)
+					if err != nil {
+						return err
+					}
+					for _, pod := range pods {
+						t := Compact(pod)
+						n := ResourceNode{ResourceNode: podToResourceNode(pod), PodDetail: &t}
+						nodesMap["Pod"] = append(nodesMap["Pod"], n)
+					}
+					return nil
+				})
 			if err != nil {
 				return nil, err
 			}

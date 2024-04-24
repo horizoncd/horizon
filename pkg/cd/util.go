@@ -24,9 +24,9 @@ import (
 	"strconv"
 	"sync"
 
-	argocache "github.com/argoproj/argo-cd/controller/cache"
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
+	"github.com/argoproj/gitops-engine/pkg/health"
 	kubeutil "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,7 +52,16 @@ func resourceTreeContains(resourceTree *applicationV1alpha1.ApplicationTree, res
 	return false
 }
 
-func populatePodInfo(pod *corev1.Pod, res *argocache.ResourceInfo) {
+type ResourceInfo struct {
+	Info    []applicationV1alpha1.InfoItem
+	AppName string
+	// networkingInfo are available only for known types involved into networking: Ingress, Service, Pod
+	NetworkingInfo *applicationV1alpha1.ResourceNetworkingInfo
+	Images         []string
+	Health         *health.HealthStatus
+}
+
+func populatePodInfo(pod *corev1.Pod, res *ResourceInfo) {
 	if pod == nil {
 		return
 	}
@@ -97,7 +106,8 @@ func populatePodInfo(pod *corev1.Pod, res *argocache.ResourceInfo) {
 				reason = "Init:" + container.State.Terminated.Reason
 			}
 			initializing = true
-		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 && container.State.Waiting.Reason != "PodInitializing":
+		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 &&
+			container.State.Waiting.Reason != "PodInitializing":
 			reason = "Init:" + container.State.Waiting.Reason
 			initializing = true
 		default:
@@ -144,7 +154,8 @@ func populatePodInfo(pod *corev1.Pod, res *argocache.ResourceInfo) {
 	if reason != "" {
 		res.Info = append(res.Info, applicationV1alpha1.InfoItem{Name: "Status Reason", Value: reason})
 	}
-	res.Info = append(res.Info, applicationV1alpha1.InfoItem{Name: "Containers", Value: fmt.Sprintf("%d/%d", readyContainers, totalContainers)})
+	res.Info = append(res.Info, applicationV1alpha1.InfoItem{
+		Name: "Containers", Value: fmt.Sprintf("%d/%d", readyContainers, totalContainers)})
 	res.NetworkingInfo = &applicationV1alpha1.ResourceNetworkingInfo{Labels: pod.GetLabels()}
 }
 
@@ -156,14 +167,25 @@ func podToResourceNode(pod corev1.Pod) applicationV1alpha1.ResourceNode {
 	parentRefs := make([]applicationV1alpha1.ResourceRef, len(pod.OwnerReferences))
 	for i, ownerRef := range pod.OwnerReferences {
 		ownerGvk := schema.FromAPIVersionAndKind(ownerRef.APIVersion, ownerRef.Kind)
-		ownerKey := kubeutil.ResourceKey{Group: ownerGvk.Group, Kind: ownerGvk.Kind, Namespace: pod.Namespace, Name: ownerRef.Name}
-		parentRefs[i] = applicationV1alpha1.ResourceRef{Name: ownerRef.Name, Kind: ownerKey.Kind, Namespace: pod.Namespace, Group: ownerKey.Group, UID: string(ownerRef.UID)}
+		ownerKey := kubeutil.ResourceKey{
+			Group:     ownerGvk.Group,
+			Kind:      ownerGvk.Kind,
+			Namespace: pod.Namespace,
+			Name:      ownerRef.Name}
+		parentRefs[i] = applicationV1alpha1.ResourceRef{
+			Name:      ownerRef.Name,
+			Kind:      ownerKey.Kind,
+			Namespace: pod.Namespace,
+			Group:     ownerKey.Group,
+			UID:       string(ownerRef.UID)}
 	}
 	var resHealth *applicationV1alpha1.HealthStatus
-	var resourceInfo argocache.ResourceInfo
+	var resourceInfo ResourceInfo
 	populatePodInfo(&pod, &resourceInfo)
 	if resourceInfo.Health != nil {
-		resHealth = &applicationV1alpha1.HealthStatus{Status: resourceInfo.Health.Status, Message: resourceInfo.Health.Message}
+		resHealth = &applicationV1alpha1.HealthStatus{
+			Status:  resourceInfo.Health.Status,
+			Message: resourceInfo.Health.Message}
 	}
 	return applicationV1alpha1.ResourceNode{
 		ResourceRef: applicationV1alpha1.ResourceRef{
