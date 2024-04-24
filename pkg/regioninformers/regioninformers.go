@@ -20,10 +20,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/util/kube"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
+
+	"github.com/horizoncd/horizon/pkg/util/kube"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -68,34 +69,6 @@ type Target struct {
 	Regions map[uint]struct{}
 }
 
-type LoggingMutext struct {
-	sync.RWMutex
-}
-
-func (m *LoggingMutext) Lock() {
-	log.Debugf(context.Background(), "Lock")
-	m.RWMutex.Lock()
-	log.Debugf(context.Background(), "Locked")
-}
-
-func (m *LoggingMutext) Unlock() {
-	log.Debugf(context.Background(), "Unlock")
-	m.RWMutex.Unlock()
-	log.Debugf(context.Background(), "Unlocked")
-}
-
-func (m *LoggingMutext) RLock() {
-	log.Debugf(context.Background(), "RLock")
-	m.RWMutex.RLock()
-	log.Debugf(context.Background(), "RLocked")
-}
-
-func (m *LoggingMutext) RUnlock() {
-	log.Debugf(context.Background(), "RUnlock")
-	m.RWMutex.RUnlock()
-	log.Debugf(context.Background(), "RUnlocked")
-}
-
 // RegionInformers is a collection of informer factories for each region
 type RegionInformers struct {
 	regionMgr manager.Manager
@@ -105,15 +78,14 @@ type RegionInformers struct {
 	handlers []Resource
 
 	// mu protects factories, lastUpdated and stopChanMap
-	mu      LoggingMutext
-	clients map[uint]*RegionClient
+	// mu      LoggingMutext
+	clients sync.Map
 }
 
 // NewRegionInformers is called when initializing
 func NewRegionInformers(regionMgr manager.Manager, defaultResync time.Duration) *RegionInformers {
 	f := RegionInformers{
 		regionMgr:     regionMgr,
-		clients:       make(map[uint]*RegionClient),
 		handlers:      make([]Resource, 0, 16),
 		defaultResync: defaultResync,
 	}
@@ -127,7 +99,7 @@ func NewRegionInformers(regionMgr manager.Manager, defaultResync time.Duration) 
 		go func(region *models.Region) {
 			log.Debugf(context.Background(), "Creating informer for region %s", region.Name)
 			defer wg.Done()
-			if err := f.NewRegionInformers(region); err != nil {
+			if err := f.NewRegionInformer(region); err != nil {
 				log.Errorf(context.Background(), "Failed to create informer for region %s(%d): %v", region.Name, region.ID, err)
 			}
 		}(region)
@@ -136,7 +108,7 @@ func NewRegionInformers(regionMgr manager.Manager, defaultResync time.Duration) 
 	return &f
 }
 
-func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
+func (f *RegionInformers) NewRegionInformer(region *models.Region) error {
 	if region == nil {
 		return nil
 	}
@@ -195,21 +167,18 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 
 	f.registerHandler(&client)
 
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.clients[region.ID] = &client
+	f.clients.Store(region.ID, &client)
 	return nil
 }
 
 func (f *RegionInformers) DeleteRegionInformer(regionID uint) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	client, ok := f.clients[regionID]
-	if !ok {
-		return
+	client, existed := f.clients.LoadAndDelete(regionID)
+	if existed {
+		regionClient, ok := client.(*RegionClient)
+		if ok && regionClient != nil && regionClient.stopCh != nil {
+			close(regionClient.stopCh)
+		}
 	}
-	close(client.stopCh)
-	delete(f.clients, regionID)
 }
 
 // listRegion list all regions which are not disabled
@@ -254,8 +223,8 @@ func (f *RegionInformers) watchDB() {
 	}
 
 	for _, region := range created {
-		if err := f.NewRegionInformers(region); err != nil {
-			log.Errorf(context.Background(), "NewRegionInformers error: %v", err)
+		if err := f.NewRegionInformer(region); err != nil {
+			log.Errorf(context.Background(), "NewRegionInformer error: %v", err)
 		}
 	}
 }
@@ -268,26 +237,28 @@ func (f *RegionInformers) diffRegion() ([]*models.Region, []*models.Region, []*m
 
 	created, updated, deleted := make([]*models.Region, 0), make([]*models.Region, 0), make([]*models.Region, 0)
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-
 	regionsID := make(map[uint]*models.Region)
 	for _, region := range regions {
 		regionsID[region.ID] = region
-		if _, ok := f.clients[region.ID]; !ok {
+		client, existed := f.clients.Load(region.ID)
+		if !existed {
 			created = append(created, region)
 			continue
 		}
-		if region.UpdatedAt.After(f.clients[region.ID].lastUpdated) {
-			updated = append(updated, region)
+		if regionClient, ok := client.(*RegionClient); ok && regionClient != nil {
+			if region.UpdatedAt.After(regionClient.lastUpdated) {
+				updated = append(updated, region)
+			}
 		}
 	}
 
-	for regionID := range f.clients {
-		if region, ok := regionsID[regionID]; !ok {
-			deleted = append(deleted, region)
+	f.clients.Range(func(key, value interface{}) bool {
+		regionID := key.(uint)
+		if _, ok := regionsID[regionID]; !ok {
+			deleted = append(deleted, regionsID[regionID])
 		}
-	}
+		return true
+	})
 
 	return created, updated, deleted, nil
 }
@@ -301,9 +272,11 @@ func (f *RegionInformers) GetClientSet(regionID uint, operation ClientSetOperati
 		return err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return operation(f.clients[regionID].clientset)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return operation(client.(*RegionClient).clientset)
 }
 
 func (f *RegionInformers) GetRestConfig(regionID uint) (*rest.Config, error) {
@@ -311,9 +284,11 @@ func (f *RegionInformers) GetRestConfig(regionID uint) (*rest.Config, error) {
 		return nil, err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return f.clients[regionID].restConfig, nil
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return nil, herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return client.(*RegionClient).restConfig, nil
 }
 
 type DynamicClientSetOperation func(clientset dynamic.Interface) error
@@ -325,42 +300,56 @@ func (f *RegionInformers) GetDynamicClientSet(regionID uint, operation DynamicCl
 		return err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return operation(f.clients[regionID].dynamicClientset)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return operation(client.(*RegionClient).dynamicClientset)
 }
 
 func (f *RegionInformers) whetherGVRExist(regionID uint, gvr schema.GroupVersionResource) bool {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	_, ok := f.clients[regionID].watched[gvr]
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return false
+	}
+	_, ok = client.(*RegionClient).watched[gvr]
 	return ok
 }
 
 func (f *RegionInformers) watchGVR(regionID uint, gvr schema.GroupVersionResource) error {
-	f.mu.Lock()
-	client := f.clients[regionID]
-	informer, err := client.factory.ForResource(gvr)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	informer, err := regionClient.factory.ForResource(gvr)
 	if err != nil {
 		return err
 	}
-	client.watched[gvr] = informer
-	f.mu.Unlock()
+	regionClient.watched[gvr] = informer
 
-	client.factory.Start(client.stopCh)
-	client.factory.WaitForCacheSync(client.stopCh)
+	regionClient.factory.Start(regionClient.stopCh)
+	regionClient.factory.WaitForCacheSync(regionClient.stopCh)
+
 	return nil
 }
 
-func (f *RegionInformers) watchDynamicGvr(regionID uint, gvr schema.GroupVersionResource) {
-	f.mu.Lock()
-	client := f.clients[regionID]
-	informer := client.dynamicFactory.ForResource(gvr)
-	client.dynamicWatched[gvr] = informer
-	f.mu.Unlock()
-
-	client.dynamicFactory.Start(client.stopCh)
-	client.dynamicFactory.WaitForCacheSync(client.stopCh)
+func (f *RegionInformers) watchDynamicGvr(regionID uint, gvr schema.GroupVersionResource) error {
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient.dynamicWatched[gvr] = regionClient.dynamicFactory.ForResource(gvr)
+	regionClient.dynamicFactory.Start(regionClient.stopCh)
+	regionClient.dynamicFactory.WaitForCacheSync(regionClient.stopCh)
+	return nil
 }
 
 func (f *RegionInformers) ensureGVR(regionID uint, gvr schema.GroupVersionResource) error {
@@ -376,10 +365,18 @@ func (f *RegionInformers) ensureGVR(regionID uint, gvr schema.GroupVersionResour
 
 func (f *RegionInformers) ensureDynamicGVR(regionID uint, gvr schema.GroupVersionResource) error {
 	if !f.whetherGVRExist(regionID, gvr) {
-		if !f.resourceExistInK8S(gvr, f.clients[regionID]) {
+		client, ok := f.clients.Load(regionID)
+		if !ok {
+			return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+		}
+		regionClient, ok := client.(*RegionClient)
+		if !ok {
+			return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+		}
+		if !f.resourceExistInK8S(gvr, regionClient) {
 			return fmt.Errorf("resource %s not exist in region %d", gvr.String(), regionID)
 		}
-		f.watchDynamicGvr(regionID, gvr)
+		return f.watchDynamicGvr(regionID, gvr)
 	}
 	return nil
 }
@@ -398,9 +395,15 @@ func (f *RegionInformers) GetInformer(regionID uint,
 		return err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	informer, err := f.clients[regionID].factory.ForResource(gvr)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	informer, err := regionClient.factory.ForResource(gvr)
 	if err != nil {
 		return err
 	}
@@ -414,9 +417,15 @@ func (f *RegionInformers) GetFactory(regionID uint, operation FactoryOperation) 
 		return err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return operation(f.clients[regionID].factory)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return operation(regionClient.factory)
 }
 
 type DynamicInformerOperation func(informer informers.GenericInformer) error
@@ -433,29 +442,40 @@ func (f *RegionInformers) GetDynamicInformer(regionID uint,
 		return err
 	}
 
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return operation(f.clients[regionID].dynamicFactory.ForResource(gvr))
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return operation(regionClient.dynamicFactory.ForResource(gvr))
 }
 
 type DynamicFactoryOperation func(factory dynamicinformer.DynamicSharedInformerFactory) error
 
 func (f *RegionInformers) GetDynamicFactory(regionID uint, operation DynamicFactoryOperation) error {
+	// 确定这个 region 的 factory 是否存在，如果不存在则创建
 	if err := f.ensureRegion(regionID); err != nil {
 		return err
 	}
 
-	log.Debugf(context.Background(), "get dynamic factory: %d", regionID)
-	f.mu.RLock()
-	defer f.mu.RUnlock()
+	// TODO: check this
 	log.Debugf(context.Background(), "got dynamic factory: %d", regionID)
-	return operation(f.clients[regionID].dynamicFactory)
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
+	if !ok {
+		return herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	return operation(regionClient.dynamicFactory)
 }
 
 func (f *RegionInformers) checkExist(regionID uint) bool {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	_, ok := f.clients[regionID]
+	_, ok := f.clients.Load(regionID)
 	return ok
 }
 
@@ -466,19 +486,19 @@ func (f *RegionInformers) ensureRegion(regionID uint) error {
 		if err != nil {
 			return err
 		}
-		return f.NewRegionInformers(region.Region)
+		return f.NewRegionInformer(region.Region)
 	}
 	return nil
 }
 
 func (f *RegionInformers) Register(handlers ...Resource) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
 	f.handlers = append(f.handlers, handlers...)
 
-	for _, client := range f.clients {
+	f.clients.Range(func(key, value interface{}) bool {
+		client := value.(*RegionClient)
 		f.registerHandler(client)
-	}
+		return true
+	})
 }
 
 func (f *RegionInformers) resourceExistInK8S(gvr schema.GroupVersionResource, client *RegionClient) bool {
@@ -544,31 +564,29 @@ func (f *RegionInformers) Start(regionIDs ...uint) error {
 		}
 	}
 
-	for _, regionID := range regionIDs {
-		func() {
-			f.mu.RLock()
-			defer f.mu.RUnlock()
-
-			client := f.clients[regionID]
-			stopCh := client.stopCh
-			client.dynamicFactory.Start(stopCh)
-			client.factory.Start(stopCh)
-		}()
-	}
+	f.clients.Range(func(key, value interface{}) bool {
+		client := value.(*RegionClient)
+		stopCh := client.stopCh
+		client.factory.Start(stopCh)
+		client.dynamicFactory.Start(stopCh)
+		return true
+	})
 	return nil
 }
 
 func (f *RegionInformers) GVK2GVR(regionID uint, GVK schema.GroupVersionKind) (schema.GroupVersionResource, error) {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-
-	client, ok := f.clients[regionID]
+	client, ok := f.clients.Load(regionID)
+	if !ok {
+		return schema.GroupVersionResource{},
+			herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
+	}
+	regionClient, ok := client.(*RegionClient)
 	if !ok {
 		return schema.GroupVersionResource{},
 			herrors.NewErrNotFound(herrors.RegionInDB, fmt.Sprintf("region %d", regionID))
 	}
 
-	mapping, err := client.mapper.RESTMapping(GVK.GroupKind(), GVK.Version)
+	mapping, err := regionClient.mapper.RESTMapping(GVK.GroupKind(), GVK.Version)
 	if err != nil {
 		return schema.GroupVersionResource{},
 			herrors.NewErrNotFound(herrors.ResourceInK8S, fmt.Sprintf("mapping for %s: %s", GVK, err))
