@@ -62,6 +62,10 @@ var (
 		Group: "",
 		Kind:  "Pod",
 	}
+	GKRollout = schema.GroupKind{
+		Group: "argoproj.io",
+		Kind:  "Rollout",
+	}
 )
 
 const (
@@ -204,18 +208,17 @@ func (c *cd) GetResourceTree(ctx context.Context,
 	}
 
 	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
-	pd, err := workload.GetAbility(GKPod)
-	if err != nil {
-		return nil, err
-	}
-	gt := getter.New(pd)
-
 	nodesMap := make(map[string][]ResourceNode)
 	for _, node := range resourceTreeInArgo.Nodes {
 		nodesMap[node.Kind] = append(nodesMap[node.Kind], ResourceNode{ResourceNode: node})
 	}
 
 	if rolloutNodes, ok := nodesMap["Rollout"]; ok {
+		ra, err := workload.GetAbility(GKRollout)
+		if err != nil {
+			return nil, err
+		}
+		gt := getter.New(ra)
 		nodesMap["Pod"] = make([]ResourceNode, 0)
 		for _, rolloutNode := range rolloutNodes {
 			err := c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
@@ -242,6 +245,11 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return resources, nil
 	}
 
+	pd, err := workload.GetAbility(GKPod)
+	if err != nil {
+		return nil, err
+	}
+	gt := getter.New(pd)
 	for _, n := range nodesMap["Pod"] {
 		node := n.ResourceNode
 		if n.Kind == "Pod" {
