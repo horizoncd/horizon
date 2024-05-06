@@ -51,6 +51,9 @@ type Webhook interface {
 }
 
 func Validating(ctx context.Context, request *Request) error {
+	if len(validatingWebhooks) < 1 {
+		return nil
+	}
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 	finishedCount := 0
