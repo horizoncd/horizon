@@ -41,7 +41,7 @@ jobs:
             latest=false
           images: |
             ${{ secrets.DOCKERHUB_USERNAME }}/horizon-${{ matrix.components }}
-            registry.cn-hangzhou.aliyuncs.com/${{ secrets.ALIREGISTRY_NAMESPACE }}/horizon-${{ matrix.components }}
+#            registry.cn-hangzhou.aliyuncs.com/${{ secrets.ALIREGISTRY_NAMESPACE }}/horizon-${{ matrix.components }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-,enable=${{ github.ref_type == 'branch' }}
@@ -52,12 +52,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Login to Ali Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: registry.cn-hangzhou.aliyuncs.com
-          username: ${{ secrets.ALIREGISTRY_USERNAME }}
-          password: ${{ secrets.ALIREGISTRY_TOKEN }}
+#      - name: Login to Ali Container Registry
+#        uses: docker/login-action@v2
+#        with:
+#          registry: registry.cn-hangzhou.aliyuncs.com
+#          username: ${{ secrets.ALIREGISTRY_USERNAME }}
+#          password: ${{ secrets.ALIREGISTRY_TOKEN }}
 
       - name: Condition
         id: condition
