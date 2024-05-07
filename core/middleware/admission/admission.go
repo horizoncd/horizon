@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware"
 	admissionwebhook "github.com/horizoncd/horizon/pkg/admission"
@@ -63,7 +64,11 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		queries := c.Request.URL.Query()
 		options := make(map[string]interface{}, len(queries))
 		for k, v := range queries {
-			options[k] = v
+			if len(v) == 1 {
+				options[k] = v[0]
+			} else {
+				options[k] = v
+			}
 		}
 		admissionRequest := &admissionwebhook.Request{
 			Operation:   admissionmodels.Operation(attr.GetVerb()),
@@ -73,6 +78,12 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			Version:     attr.GetAPIVersion(),
 			Object:      object,
 			Options:     options,
+		}
+		admissionRequest, err = admissionwebhook.Mutating(c, admissionRequest)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("admission mutating failed: %v", err)))
+			return
 		}
 		if err := admissionwebhook.Validating(c, admissionRequest); err != nil {
 			response.AbortWithRPCError(c,

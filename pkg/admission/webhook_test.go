@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	clusterctrl "github.com/horizoncd/horizon/core/controller/cluster"
 	"github.com/horizoncd/horizon/pkg/admission/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	admissionconfig "github.com/horizoncd/horizon/pkg/config/admission"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhook(t *testing.T) {
@@ -18,6 +19,7 @@ func TestWebhook(t *testing.T) {
 
 	server := NewDummyWebhookServer()
 	defer server.Stop()
+	mutatingURL := server.MutatingURL()
 	validatingURL := server.ValidatingURL()
 
 	config := admissionconfig.Admission{
@@ -58,6 +60,25 @@ func TestWebhook(t *testing.T) {
 				},
 				ClientConfig: admissionconfig.ClientConfig{
 					URL: validatingURL,
+				},
+			},
+			{
+				Kind:          models.KindMutating,
+				FailurePolicy: admissionconfig.FailurePolicyIgnore,
+				Timeout:       5 * time.Second,
+				Rules: []admissionconfig.Rule{
+					{
+						Resources: []string{
+							"clusters",
+						},
+						Operations: []models.Operation{
+							models.OperationUpdate,
+						},
+						Versions: []string{"v2"},
+					},
+				},
+				ClientConfig: admissionconfig.ClientConfig{
+					URL: mutatingURL,
 				},
 			},
 		},
@@ -106,10 +127,6 @@ func TestWebhook(t *testing.T) {
 				Key:   "k1",
 				Value: "v1",
 			},
-			{
-				Key:   "scope",
-				Value: "online/hz1",
-			},
 		},
 	}
 	updateRequest := &Request{
@@ -123,16 +140,11 @@ func TestWebhook(t *testing.T) {
 		Options:     nil,
 	}
 	err = Validating(ctx, updateRequest)
-	assert.NoError(t, err)
-
-	updateBody.Tags = tagmodels.TagsBasic{
-		{
-			Key:   "k1",
-			Value: "v1",
-		},
-	}
-	updateRequest.Object = updateBody
-	err = Validating(ctx, updateRequest)
 	assert.Error(t, err)
-	t.Logf("error: %v", err)
+	t.Logf("error: %v", err.Error())
+
+	updateRequest, err = Mutating(ctx, updateRequest)
+	assert.NoError(t, err)
+	err = Validating(ctx, updateRequest)
+	assert.NoError(t, err)
 }

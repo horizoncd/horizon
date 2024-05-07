@@ -2475,8 +2475,8 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntN
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/cheggaaa/pb.v1 v1.0.25/go.mod h1:V/YB90LKu/1FcN3WVnfiiE5oMCibMjukxqG/qStrOgw=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
-gopkg.in/evanphx/json-patch.v5 v5.6.0 h1:BMT6KIwBD9CaU91PJCZIe46bDmBWa9ynTQgJIOpfQBk=
-gopkg.in/evanphx/json-patch.v5 v5.6.0/go.mod h1:/kvTRh1TVm5wuM6OkHxqXtE/1nUZZpihg29RtuIyfvk=
+gopkg.in/evanphx/json-patch.v5 v5.9.0 h1:hx1VU2SGj4F8r9b8GUwJLdc8DNO8sy79ZGui0G05GLo=
+gopkg.in/evanphx/json-patch.v5 v5.9.0/go.mod h1:/kvTRh1TVm5wuM6OkHxqXtE/1nUZZpihg29RtuIyfvk=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
 gopkg.in/gcfg.v1 v1.2.0/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=
 gopkg.in/gcfg.v1 v1.2.3/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=

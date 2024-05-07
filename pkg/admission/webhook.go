@@ -2,6 +2,7 @@ package admission
 
 import (
 	"context"
+	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
 
@@ -9,14 +10,18 @@ import (
 	"github.com/horizoncd/horizon/pkg/admission/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 var (
+	mutatingWebhooks   []Webhook
 	validatingWebhooks []Webhook
 )
 
 func Register(kind models.Kind, webhook Webhook) {
 	switch kind {
+	case models.KindMutating:
+		mutatingWebhooks = append(mutatingWebhooks, webhook)
 	case models.KindValidating:
 		validatingWebhooks = append(validatingWebhooks, webhook)
 	}
@@ -40,14 +45,40 @@ type Request struct {
 }
 
 type Response struct {
-	Allowed *bool  `json:"allowed"`
-	Result  string `json:"result,omitempty"`
+	Allowed   *bool  `json:"allowed"`
+	Result    string `json:"result,omitempty"`
+	Patch     []byte `json:"patch,omitempty"`
+	PatchType string `json:"patchType,omitempty"`
 }
 
 type Webhook interface {
 	Handle(context.Context, *Request) (*Response, error)
 	IgnoreError() bool
 	Interest(*Request) bool
+}
+
+func Mutating(ctx context.Context, request *Request) (*Request, error) {
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	if request.Object == nil {
+		return request, nil
+	}
+	for _, webhook := range mutatingWebhooks {
+		if !webhook.Interest(request) {
+			continue
+		}
+		response, err := webhook.Handle(ctx, request)
+		if err = loggingError(ctx, err, webhook); err != nil {
+			return nil, err
+		}
+		if response != nil && response.Patch != nil {
+			request.Object, err = jsonPatch(request.Object, response.Patch)
+			if err = loggingError(ctx, err, webhook); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return request, nil
 }
 
 func Validating(ctx context.Context, request *Request) error {
@@ -107,4 +138,37 @@ func Validating(ctx context.Context, request *Request) error {
 	}
 
 	return nil
+}
+
+func loggingError(ctx context.Context, err error, webhook Webhook) error {
+	if err != nil {
+		if webhook.IgnoreError() {
+			log.Warningf(ctx, "failed to admit request: %v", err.Error())
+			return nil
+		}
+		log.Errorf(ctx, "failed to admit request: %v", err.Error())
+		return err
+	}
+	return nil
+}
+
+func jsonPatch(obj interface{}, patchJSON []byte) (interface{}, error) {
+	objJSON, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+	patch, err := jsonpatch.DecodePatch(patchJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	objPatched, err := patch.Apply(objJSON)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(objPatched, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
