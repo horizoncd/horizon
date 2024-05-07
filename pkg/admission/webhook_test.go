@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	clusterctrl "github.com/horizoncd/horizon/core/controller/cluster"
 	"github.com/horizoncd/horizon/pkg/admission/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	admissionconfig "github.com/horizoncd/horizon/pkg/config/admission"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhook(t *testing.T) {
