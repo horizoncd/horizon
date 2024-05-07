@@ -43,8 +43,6 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
 			return
 		}
-		// restore the request body
-		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 		if len(bodyBytes) > 0 {
 			contentType := c.ContentType()
 			if contentType == binding.MIMEJSON || contentType == "" {
@@ -90,6 +88,16 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 				rpcerror.ParamError.WithErrMsg(fmt.Sprintf("admission validating failed: %v", err)))
 			return
 		}
+		if admissionRequest.Object != nil {
+			bodyBytes, err = json.Marshal(admissionRequest.Object)
+			if err != nil {
+				response.AbortWithRPCError(c,
+					rpcerror.ParamError.WithErrMsg(fmt.Sprintf("marshal request body failed, err: %v", err)))
+				return
+			}
+		}
+		// restore the request body
+		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 		c.Next()
 	}, skippers...)
 }
