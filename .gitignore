@@ -17,3 +17,5 @@ bin/
 # makefile
 tmp/
 tools/
+
+config-dev.yaml

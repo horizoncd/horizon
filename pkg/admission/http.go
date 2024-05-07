@@ -13,12 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattbaird/jsonpatch"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/admission/models"
 	config "github.com/horizoncd/horizon/pkg/config/admission"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/common"
-	"github.com/mattbaird/jsonpatch"
 )
 
 const DefaultTimeout = 5 * time.Second
