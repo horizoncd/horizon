@@ -14,6 +14,9 @@
 
 package argocd
 
+// RegionMapper represents a region-to-ArgoCD Mapper configurations.
+type RegionMapper map[string]*ArgoCD
+
 type Mapper map[string]*ArgoCD
 
 type ArgoCD struct {

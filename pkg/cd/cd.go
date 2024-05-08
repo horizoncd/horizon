@@ -105,11 +105,11 @@ type cd struct {
 }
 
 func NewCD(informerFactories *regioninformers.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
-	argoCDMapper argocdconf.Mapper, targetRevision string) CD {
+	argoCDMapper argocdconf.Mapper, regionArgoCDMapper argocdconf.RegionMapper, targetRevision string) CD {
 	return &cd{
 		kubeClientFactory: kubeclient.Fty,
 		informerFactories: informerFactories,
-		factory:           argocd.NewFactory(argoCDMapper),
+		factory:           argocd.NewFactory(argoCDMapper, regionArgoCDMapper),
 		clusterGitRepo:    clusterGitRepo,
 		targetRevision:    targetRevision,
 	}
@@ -119,7 +119,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	const op = "cd: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.RegionEntity.Name, params.Environment)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (er
 	const op = "cd: deploy cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.Region, params.Environment)
 	if err != nil {
 		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
@@ -163,7 +163,7 @@ func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (er
 	const op = "cd: delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.Region, params.Environment)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *cd) GetResourceTree(ctx context.Context,
 	const op = "cd: get resource tree"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.RegionEntity.Name, params.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 		return nil, err
 	}
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.RegionEntity.Name, params.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +307,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.RegionEntity.Name, params.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (c *cd) GetClusterStateV1(ctx context.Context,
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	argo, err := c.factory.GetArgoCD(params.RegionEntity.Name, params.Environment)
 	if err != nil {
 		return nil, err
 	}

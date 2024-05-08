@@ -558,6 +558,7 @@ func (c *controller) executeRestart(ctx context.Context, application *appmodels.
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    commit,
+		Region:      cluster.RegionName,
 	}); err != nil {
 		return perror.Wrapf(err, "failed to deploy cluster in CD, cluster = %s, revision = %s",
 			cluster.Name, commit)
@@ -668,6 +669,7 @@ func (c *controller) executeRollback(ctx context.Context, application *appmodels
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
+		Region:      cluster.RegionName,
 	}); err != nil {
 		return perror.Wrapf(err, "failed to deploy cluster in CD, cluster = %s, revision = %s",
 			cluster.Name, masterRevision)

@@ -22,6 +22,7 @@ import (
 )
 
 func Test(t *testing.T) {
+	// env-argocd mapper
 	argoCDMapper := make(map[string]*argocd.ArgoCD)
 	argoCDTest := &argocd.ArgoCD{
 		URL:       "http://test.argo.com",
@@ -35,20 +36,40 @@ func Test(t *testing.T) {
 	}
 	argoCDMapper["test"] = argoCDTest
 	argoCDMapper["reg"] = argoCDReg
-	factory := NewFactory(argoCDMapper)
+
+	// region-argocd mapper
+	regionArgoCDMapper := make(map[string]*argocd.ArgoCD)
+	argoCDTest2 := &argocd.ArgoCD{
+		URL:       "http://test2.argo.com",
+		Token:     "token2",
+		Namespace: "argocd2",
+	}
+	regionArgoCDMapper["region"] = argoCDTest2
+
+	// create factory
+	factory := NewFactory(argoCDMapper, regionArgoCDMapper)
 	assert.NotNil(t, factory)
 
-	argoCD, err := factory.GetArgoCD("test")
+	// 1. use test argocd from region-argocd mapper
+	argoCD, err := factory.GetArgoCD("region", "test")
 	assert.Nil(t, err)
 	assert.NotNil(t, argoCD)
-	assert.Equal(t, argoCD, NewArgoCD(argoCDTest.URL, argoCDTest.Token, argoCDTest.Namespace))
+	assert.Equal(t, NewArgoCD(argoCDTest2.URL, argoCDTest2.Token, argoCDTest2.Namespace), argoCD)
 
-	argoCD, err = factory.GetArgoCD("reg")
+	// 2. use reg argocd from env-argocd mapper
+	argoCD, err = factory.GetArgoCD("region2", "reg")
 	assert.Nil(t, err)
 	assert.NotNil(t, argoCD)
-	assert.Equal(t, argoCD, NewArgoCD(argoCDReg.URL, argoCDReg.Token, argoCDReg.Namespace))
+	assert.Equal(t, NewArgoCD(argoCDReg.URL, argoCDReg.Token, argoCDReg.Namespace), argoCD)
 
-	argoCD, err = factory.GetArgoCD("not-exists")
+	// 3. use test argocd from env-argocd mapper
+	argoCD, err = factory.GetArgoCD("region2", "test")
+	assert.Nil(t, err)
+	assert.NotNil(t, argoCD)
+	assert.Equal(t, NewArgoCD(argoCDTest.URL, argoCDTest.Token, argoCDTest.Namespace), argoCD)
+
+	// 4. report error because not found in region-argocd mapper and env-argocd mapper
+	argoCD, err = factory.GetArgoCD("region2", "not-exists")
 	assert.Nil(t, argoCD)
 	assert.NotNil(t, err)
 }

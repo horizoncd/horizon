@@ -180,6 +180,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
+		Region:      cluster.RegionName,
 	}); err != nil {
 		return nil, err
 	}
