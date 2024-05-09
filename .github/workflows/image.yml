@@ -76,6 +76,6 @@ jobs:
         with:
           context: .
           file: ./build/${{ matrix.components }}/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,darwin
           push: true
           tags: ${{ steps.meta.outputs.tags }}
