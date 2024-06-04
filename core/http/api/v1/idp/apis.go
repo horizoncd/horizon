@@ -91,12 +91,12 @@ func (a *API) LoginCallback(c *gin.Context) {
 	)
 
 	if user, err = a.idpCtrl.LoginOrLink(c, code, state, redirect); err != nil {
-		if err = perror.Cause(err); errors.Is(err, herrors.ErrForbidden) {
+		if err := perror.Cause(err); errors.Is(err, herrors.ErrForbidden) {
 			response.AbortWithRPCError(c,
 				rpcerror.ForbiddenError.WithErrMsgf(
 					"this account is banned to sign in"))
 			return
-		} else if err = perror.Cause(err); errors.Is(err, herrors.ErrDuplicatedKey) {
+		} else if err := perror.Cause(err); errors.Is(err, herrors.ErrDuplicatedKey) {
 			response.AbortWithRPCError(c,
 				rpcerror.ConflictError.WithErrMsgf(
 					"idp already linked by another user"))
