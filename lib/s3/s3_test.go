@@ -44,6 +44,7 @@ func Test(t *testing.T) {
 		ContentType:      "text/plain",
 		SkipVerify:       true,
 		S3ForcePathStyle: true,
+		Prefix:           "test",
 		// LogLevel:         func() *aws.LogLevelType { l := aws.LogDebugWithHTTPBody; return &l }(),
 	}
 

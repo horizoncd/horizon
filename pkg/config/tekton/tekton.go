@@ -30,6 +30,7 @@ type LogStorage struct {
 	Region           string `yaml:"region"`
 	Endpoint         string `yaml:"endpoint"`
 	Bucket           string `yaml:"bucket"`
+	Prefix           string `yaml:"prefix"`
 	DisableSSL       bool   `yaml:"disableSSL"`
 	SkipVerify       bool   `yaml:"skipVerify"`
 	S3ForcePathStyle bool   `yaml:"s3ForcePathStyle"`

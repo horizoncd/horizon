@@ -61,6 +61,7 @@ func NewFactory(tektonMapper tektonconfig.Mapper) (Factory, error) {
 				Region:           tektonConfig.LogStorage.Region,
 				Endpoint:         tektonConfig.LogStorage.Endpoint,
 				Bucket:           tektonConfig.LogStorage.Bucket,
+				Prefix:           tektonConfig.LogStorage.Prefix,
 				DisableSSL:       tektonConfig.LogStorage.DisableSSL,
 				SkipVerify:       tektonConfig.LogStorage.SkipVerify,
 				S3ForcePathStyle: tektonConfig.LogStorage.S3ForcePathStyle,
