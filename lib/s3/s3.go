@@ -21,6 +21,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	pathutil "path"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -49,6 +51,7 @@ type Params struct {
 	Region           string
 	Endpoint         string
 	Bucket           string
+	Prefix           string
 	DisableSSL       bool
 	SkipVerify       bool
 	S3ForcePathStyle bool
@@ -84,6 +87,7 @@ func NewDriver(params Params) (Interface, error) {
 		return nil, err
 	}
 	d := &Driver{Params: params}
+	d.Prefix = cleanPrefix(d.Prefix)
 
 	awsConfig := aws.NewConfig()
 	cred := credentials.NewStaticCredentials(params.AccessKey, params.SecretKey, "")
@@ -121,7 +125,7 @@ func (d *Driver) PutObject(ctx context.Context, path string, content io.ReadSeek
 		Body:        content,
 		Bucket:      aws.String(d.Bucket),
 		ContentType: aws.String(d.ContentType),
-		Key:         aws.String(path),
+		Key:         aws.String(pathutil.Join(d.Prefix, path)),
 		Metadata: func() map[string]*string {
 			if metadata == nil {
 				return nil
@@ -139,7 +143,7 @@ func (d *Driver) PutObject(ctx context.Context, path string, content io.ReadSeek
 func (d *Driver) GetObject(ctx context.Context, path string) ([]byte, error) {
 	output, err := d.S3.GetObjectWithContext(ctx, &awss3.GetObjectInput{
 		Bucket: aws.String(d.Bucket),
-		Key:    aws.String(path),
+		Key:    aws.String(pathutil.Join(d.Prefix, path)),
 	})
 	if err != nil {
 		return nil, err
@@ -156,7 +160,7 @@ func (d *Driver) GetObject(ctx context.Context, path string) ([]byte, error) {
 func (d *Driver) GetSignedObjectURL(path string, expire time.Duration) (string, error) {
 	req, _ := d.S3.GetObjectRequest(&awss3.GetObjectInput{
 		Bucket: aws.String(d.Bucket),
-		Key:    aws.String(path),
+		Key:    aws.String(pathutil.Join(d.Prefix, path)),
 	})
 	urlStr, err := req.Presign(expire)
 
@@ -169,22 +173,28 @@ func (d *Driver) GetSignedObjectURL(path string, expire time.Duration) (string, 
 func (d *Driver) CopyObject(ctx context.Context, srcPath, destPath string) error {
 	_, err := d.S3.CopyObjectWithContext(ctx, &awss3.CopyObjectInput{
 		Bucket:     aws.String(d.Bucket),
-		CopySource: aws.String(fmt.Sprintf("/%s/%s", d.Bucket, srcPath)),
-		Key:        aws.String(destPath),
+		CopySource: aws.String(fmt.Sprintf("/%s/%s", d.Bucket, pathutil.Join(d.Prefix, srcPath))),
+		Key:        aws.String(pathutil.Join(d.Prefix, destPath)),
 	})
 	return err
 }
 
 func (d *Driver) ListObjects(ctx context.Context, prefix string, maxKeys int64) ([]*awss3.Object, error) {
+	var objects []*awss3.Object
 	output, err := d.S3.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
 		Bucket:  aws.String(d.Bucket),
 		MaxKeys: aws.Int64(maxKeys),
-		Prefix:  aws.String(prefix),
+		Prefix:  aws.String(pathutil.Join(d.Prefix, prefix)),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return output.Contents, nil
+	for _, obj := range output.Contents {
+		path := removePrefixFromObjectPath(d.Prefix, *obj.Key)
+		obj.Key = &path
+		objects = append(objects, obj)
+	}
+	return objects, nil
 }
 
 func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
@@ -196,7 +206,7 @@ func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
 		if err != nil {
 			return err
 		}
-		if objects == nil {
+		if objects == nil || len(objects) <= 0 {
 			return nil
 		}
 		if _, err := d.S3.DeleteObjectsWithContext(ctx, &awss3.DeleteObjectsInput{
@@ -205,8 +215,9 @@ func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
 				Objects: func() []*awss3.ObjectIdentifier {
 					identifiers := make([]*awss3.ObjectIdentifier, 0)
 					for _, obj := range objects {
+						objKey := pathutil.Join(d.Prefix, *obj.Key)
 						identifiers = append(identifiers, &awss3.ObjectIdentifier{
-							Key: obj.Key,
+							Key: &objKey,
 						})
 					}
 					return identifiers
@@ -220,4 +231,16 @@ func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
 
 func (d *Driver) GetBucket(ctx context.Context) string {
 	return d.Bucket
+}
+
+func cleanPrefix(prefix string) string {
+	return strings.Trim(prefix, "/")
+}
+
+func removePrefixFromObjectPath(prefix string, path string) string {
+	if prefix == "" {
+		return path
+	}
+	path = strings.TrimPrefix(path, fmt.Sprintf("%s/", prefix))
+	return path
 }
