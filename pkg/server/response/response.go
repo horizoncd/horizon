@@ -70,6 +70,10 @@ func Abort(c *gin.Context, httpCode int, errorCode, errorMessage string) {
 	c.Abort()
 }
 
+func AbortWithServiceUnavailable(c *gin.Context, code, errMessage string) {
+	Abort(c, http.StatusServiceUnavailable, code, errMessage)
+}
+
 func AbortWithForbiddenError(c *gin.Context, code, errMessage string) {
 	Abort(c, http.StatusForbidden, code, errMessage)
 }
