@@ -75,6 +75,8 @@ const (
 
 	// NotFound 404 NotFound error code
 	NotFound = "NotFound"
+
+	ServiceUnavailable = "ServiceUnavailable"
 )
 
 const (

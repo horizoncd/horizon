@@ -15,26 +15,42 @@
 package health
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/server/response"
-	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine) {
-	api := engine.Group("/health")
+	engine.GET("/health", healthCheck)
+	engine.GET("/ready", readinessCheck)
 
-	var routes = route.Routes{
-		{
-			Method:      http.MethodGet,
-			HandlerFunc: healthCheck,
-		},
-	}
-	route.RegisterRoutes(api, routes)
+	// authn && authz required, admin only
+	engine.POST("/apis/core/v2/offline", offline)
+	engine.POST("/apis/core/v2/online", online)
 }
 
 func healthCheck(c *gin.Context) {
 	response.Success(c)
+}
+
+var ready = true
+
+func online(c *gin.Context) {
+	ready = true
+	response.Success(c)
+}
+
+func offline(c *gin.Context) {
+	ready = false
+	response.Success(c)
+}
+
+func readinessCheck(c *gin.Context) {
+	if ready {
+		response.Success(c)
+		return
+	}
+	response.AbortWithServiceUnavailable(c, common.ServiceUnavailable, "Service is offline")
 }
