@@ -447,7 +447,7 @@ var (
     }
 	`
 
-	db, _   = orm.NewSqliteDB("")
+	db, _   = orm.NewSqliteDB("file:cluster?mode=memory")
 	manager = managerparam.InitManager(db)
 )
 
