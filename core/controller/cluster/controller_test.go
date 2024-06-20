@@ -35,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/core/config"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -72,7 +71,6 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	prmodels "github.com/horizoncd/horizon/pkg/pr/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
@@ -517,13 +515,6 @@ func TestAll(t *testing.T) {
 // nolint
 func test(t *testing.T) {
 	// for test
-	conf := config.Config{}
-	parameter := param.Param{
-		AutoFreeSvc: service.New([]string{"test", "dev"}),
-		Manager:     managerparam.InitManager(nil),
-	}
-	NewController(&conf, &parameter)
-
 	templateName := "javaapp"
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
@@ -651,7 +642,7 @@ func test(t *testing.T) {
 		envMgr:               envMgr,
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
-		autoFreeSvc:          parameter.AutoFreeSvc,
+		autoFreeSvc:          service.New([]string{"test", "dev"}),
 		groupSvc:             groupservice.NewService(manager),
 		prMgr:                manager.PRMgr,
 		tektonFty:            tektonFty,
@@ -1287,12 +1278,6 @@ func test(t *testing.T) {
 
 func testV2(t *testing.T) {
 	// for test
-	conf := config.Config{}
-	parameter := param.Param{
-		AutoFreeSvc: service.New([]string{"dev", "test2"}),
-		Manager:     managerparam.InitManager(nil),
-	}
-	NewController(&conf, &parameter)
 	templateName := "rollout"
 	templateVersion := "v1.0.0"
 	mockCtl := gomock.NewController(t)
@@ -1423,7 +1408,7 @@ func testV2(t *testing.T) {
 		prMgr:                manager.PRMgr,
 		userManager:          manager.UserMgr,
 		badgeMgr:             manager.BadgeMgr,
-		autoFreeSvc:          parameter.AutoFreeSvc,
+		autoFreeSvc:          service.New([]string{"dev", "test2"}),
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
@@ -1566,12 +1551,6 @@ func testV2(t *testing.T) {
 
 func testUpgrade(t *testing.T) {
 	// for test
-	conf := config.Config{}
-	parameter := param.Param{
-		AutoFreeSvc: service.New([]string{"dev", "test"}),
-		Manager:     managerparam.InitManager(nil),
-	}
-	NewController(&conf, &parameter)
 	templateName := "javaapp"
 	templateRelease := "v1.0.1"
 	mockCtl := gomock.NewController(t)
@@ -1647,7 +1626,7 @@ func testUpgrade(t *testing.T) {
 		groupSvc:              groupservice.NewService(manager),
 		prMgr:                 manager.PRMgr,
 		userManager:           manager.UserMgr,
-		autoFreeSvc:           parameter.AutoFreeSvc,
+		autoFreeSvc:           service.New([]string{"dev", "test"}),
 		badgeMgr:              manager.BadgeMgr,
 		userSvc:               userservice.NewService(manager),
 		schemaTagManager:      manager.ClusterSchemaTagMgr,
