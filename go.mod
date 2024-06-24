@@ -18,7 +18,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.0
-	github.com/hashicorp/go-retryablehttp v0.6.8
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/igm/sockjs-go v3.0.2+incompatible // indirect
 	github.com/johannesboyne/gofakes3 v0.0.0-20210819161434-5c8dfcfe5310
 	github.com/mattbaird/jsonpatch v0.0.0-20230413205102-771768614e91
@@ -30,7 +30,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.2
 	github.com/tektoncd/cli v0.3.1-0.20201026154019-cb027b2293d7
 	github.com/tektoncd/pipeline v0.17.1-0.20201027063619-b7badedd0f65
 	github.com/tektoncd/triggers v0.8.2-0.20201007153255-cb1879311818
