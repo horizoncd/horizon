@@ -188,7 +188,7 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Conte
 func (w *WebhookLogGenerator) listAssociatedResourcesOfPipelinerun(ctx context.Context,
 	id uint) (*prmodels.Pipelinerun, *clustermodels.Cluster, map[string][]uint) {
 	pr, err := w.prMgr.PipelineRun.GetByID(ctx, id)
-	if err != nil {
+	if err != nil || pr == nil {
 		log.Warningf(ctx, "pipelinerun %d is not exist",
 			id)
 		return nil, nil, nil
