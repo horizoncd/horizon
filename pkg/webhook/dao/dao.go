@@ -48,6 +48,7 @@ type DAO interface {
 	GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uint) (*models.WebhookLog, error)
 	GetMaxEventIDOfLog(ctx context.Context) (uint, error)
 	DeleteWebhookLogs(ctx context.Context, id ...uint) (int64, error)
+	ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error)
 }
 
 type dao struct{ db *gorm.DB }
@@ -321,4 +322,45 @@ func (d *dao) GetMaxEventIDOfLog(ctx context.Context) (uint, error) {
 		return maxID, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}
 	return maxID, nil
+}
+
+func (d *dao) ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error) {
+	var logs []*models.WebhookLogWithEventInfo
+
+	stm := d.db.WithContext(ctx).Table("tb_webhook_log l").
+		Joins("left join tb_event e on l.event_id=e.id").
+		Select("l.id, l.updated_at, e.resource_type, e.resource_id, e.event_type")
+
+	if query != nil && query.Keywords != nil {
+		for k, v := range query.Keywords {
+			switch k {
+			case common.Orphaned:
+				stm = stm.Where("e.id is null")
+			case common.WebhookID:
+				stm = stm.Where("l.webhook_id = ?", v)
+			case common.EventType:
+				stm = stm.Where("e.event_type = ?", v)
+			case common.Offset:
+				if offset, ok := v.(int); ok {
+					stm = stm.Offset(offset)
+				}
+			case common.Limit:
+				if limit, ok := v.(int); ok {
+					stm = stm.Limit(limit)
+				}
+			case common.StartID:
+				stm = stm.Where("l.id > ?", v)
+			case common.EndID:
+				stm = stm.Where("l.id <= ?", v)
+			case common.OrderBy:
+				stm = stm.Order(v)
+			}
+		}
+	}
+
+	if result := stm.Find(&logs); result.Error != nil {
+		return nil, herrors.NewErrInsertFailed(herrors.WebhookLogInDB, result.Error.Error())
+	}
+
+	return logs, nil
 }
