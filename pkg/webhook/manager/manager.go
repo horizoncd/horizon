@@ -47,6 +47,7 @@ type Manager interface {
 	GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uint) (*models.WebhookLog, error)
 	GetMaxEventIDOfLog(ctx context.Context) (uint, error)
 	DeleteWebhookLogs(ctx context.Context, id ...uint) (int64, error)
+	ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error)
 }
 
 type manager struct {
@@ -181,4 +182,10 @@ func (m *manager) ResendWebhook(ctx context.Context, id uint) (*models.WebhookLo
 
 func (m *manager) GetMaxEventIDOfLog(ctx context.Context) (uint, error) {
 	return m.dao.GetMaxEventIDOfLog(ctx)
+}
+
+func (m *manager) ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error) {
+	const op = "webhook manager: list webhook logs for clean"
+	defer wlog.Start(ctx, op).StopPrint()
+	return m.dao.ListWebhookLogsForClean(ctx, query)
 }

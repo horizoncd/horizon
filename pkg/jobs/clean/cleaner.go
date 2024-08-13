@@ -104,7 +104,7 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 				common.OrderBy: "l.id",
 			},
 		}
-		webhooklogs, _, err := c.mgr.WebhookMgr.ListWebhookLogs(ctx, query, nil)
+		webhooklogs, err := c.mgr.WebhookMgr.ListWebhookLogsForClean(ctx, query)
 		if err != nil {
 			log.Errorf(ctx, "failed to list webhooklogs: %v", err)
 			time.Sleep(5 * time.Second)
