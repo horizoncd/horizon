@@ -101,7 +101,6 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 			Keywords: q.KeyWords{
 				common.StartID: c.webhookLogCursor,
 				common.Limit:   c.Batch,
-				common.OrderBy: "l.id",
 			},
 		}
 		webhooklogs, err := c.mgr.WebhookMgr.ListWebhookLogsForClean(ctx, query)
