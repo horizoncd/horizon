@@ -189,7 +189,7 @@ func (d *dao) ListWebhookLogs(ctx context.Context, query *q.Query,
 			case common.Orphaned:
 				stm = stm.Where("e.id is null")
 			case common.WebhookID:
-				stm = stm.Where("l.webhook_id = ?", v)
+				stm = stm.Where("l.l.webhook_id = ?", v)
 			case common.EventType:
 				stm = stm.Where("e.event_type = ?", v)
 			case common.Offset:
@@ -333,7 +333,7 @@ func (d *dao) ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*m
 
 	if query != nil {
 		if v, ok := query.Keywords[common.StartID]; ok {
-			statement = statement.Where("created_at <= ?", v)
+			statement = statement.Where("l.id > ?", v)
 		}
 		if v, ok := query.Keywords[common.Limit]; ok {
 			if limit, ok := v.(int); ok {
