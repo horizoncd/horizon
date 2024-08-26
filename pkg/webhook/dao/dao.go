@@ -48,6 +48,7 @@ type DAO interface {
 	GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uint) (*models.WebhookLog, error)
 	GetMaxEventIDOfLog(ctx context.Context) (uint, error)
 	DeleteWebhookLogs(ctx context.Context, id ...uint) (int64, error)
+	ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error)
 }
 
 type dao struct{ db *gorm.DB }
@@ -321,4 +322,29 @@ func (d *dao) GetMaxEventIDOfLog(ctx context.Context) (uint, error) {
 		return maxID, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}
 	return maxID, nil
+}
+
+func (d *dao) ListWebhookLogsForClean(ctx context.Context, query *q.Query) ([]*models.WebhookLogWithEventInfo, error) {
+	var logs []*models.WebhookLogWithEventInfo
+
+	statement := d.db.WithContext(ctx).Table("tb_webhook_log l").
+		Joins("left join tb_event e on l.event_id=e.id").
+		Select("l.id, l.updated_at, e.resource_type, e.resource_id, e.event_type")
+
+	if query != nil {
+		if v, ok := query.Keywords[common.StartID]; ok {
+			statement = statement.Where("l.id > ?", v)
+		}
+		if v, ok := query.Keywords[common.Limit]; ok {
+			if limit, ok := v.(int); ok {
+				statement = statement.Limit(limit)
+			}
+		}
+	}
+
+	if result := statement.Find(&logs); result.Error != nil {
+		return nil, herrors.NewErrInsertFailed(herrors.WebhookLogInDB, result.Error.Error())
+	}
+
+	return logs, nil
 }
