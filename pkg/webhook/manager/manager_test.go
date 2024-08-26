@@ -58,13 +58,16 @@ func Test(t *testing.T) {
 	_, count, err := mgr.ListWebhookOfResources(ctx, resources, q.New(q.KeyWords{
 		common.Enabled: true,
 	}))
+	assert.Nil(t, err)
 	assert.Equal(t, int64(1), count)
 
 	retrieveWebhooks, err := mgr.ListWebhooks(ctx)
+	assert.Nil(t, err)
 	assert.Equal(t, 1, len(retrieveWebhooks))
 
 	webhook.URL = "https://horizon.com"
 	retrieveWebhook, err = mgr.UpdateWebhook(ctx, webhook.ID, webhook)
+	assert.Nil(t, err)
 	assert.Equal(t, retrieveWebhook.ID, webhook.ID)
 	assert.Equal(t, retrieveWebhook.URL, "https://horizon.com")
 
