@@ -35,6 +35,39 @@ var (
 )
 
 func Test(t *testing.T) {
+	clustersCreated := "clustersCreated"
+	webhook := &webhookmodels.Webhook{
+		Enabled:          true,
+		URL:              "https://horizon.org",
+		SSLVerifyEnabled: false,
+		Triggers:         clustersCreated,
+		ResourceType:     "clusters",
+		ResourceID:       0,
+	}
+
+	webhook, err := mgr.CreateWebhook(ctx, webhook)
+	assert.Nil(t, err)
+
+	retrieveWebhook, err := mgr.GetWebhook(ctx, webhook.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, retrieveWebhook)
+	assert.Equal(t, retrieveWebhook.ID, webhook.ID)
+
+	resources := map[string][]uint{}
+	resources[common.ResourceCluster] = []uint{0}
+	_, count, err := mgr.ListWebhookOfResources(ctx, resources, q.New(q.KeyWords{
+		common.Enabled: true,
+	}))
+	assert.Equal(t, int64(1), count)
+
+	retrieveWebhooks, err := mgr.ListWebhooks(ctx)
+	assert.Equal(t, 1, len(retrieveWebhooks))
+
+	webhook.URL = "https://horizon.com"
+	retrieveWebhook, err = mgr.UpdateWebhook(ctx, webhook.ID, webhook)
+	assert.Equal(t, retrieveWebhook.ID, webhook.ID)
+	assert.Equal(t, retrieveWebhook.URL, "https://horizon.com")
+
 	events := []*eventmodels.Event{
 		{
 			EventSummary: eventmodels.EventSummary{
@@ -118,6 +151,16 @@ func Test(t *testing.T) {
 	for _, log := range cleanLogs {
 		assert.Contains(t, []uint{1, 2}, log.ID)
 	}
+
+	_, err = mgr.ResendWebhook(ctx, 1)
+	assert.Nil(t, err)
+
+	_, err = mgr.GetMaxEventIDOfLog(ctx)
+	assert.Nil(t, err)
+
+	retrievedLogs, err := mgr.GetWebhookLogByEventID(ctx, 1, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), retrievedLogs.ID)
 
 	for _, log := range webhookLogs {
 		_, err = mgr.DeleteWebhookLogs(ctx, log.ID)
