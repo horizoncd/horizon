@@ -290,16 +290,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	log.Printf("the roleConfig = %+v\n", roleConfig)
 
 	// init db
-	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
-		Host:              coreConfig.DBConfig.Host,
-		Port:              coreConfig.DBConfig.Port,
-		Username:          coreConfig.DBConfig.Username,
-		Password:          coreConfig.DBConfig.Password,
-		Database:          coreConfig.DBConfig.Database,
-		PrometheusEnabled: coreConfig.DBConfig.PrometheusEnabled,
-		MaxIdleConns:      coreConfig.DBConfig.MaxIdleConns,
-		MaxOpenConns:      coreConfig.DBConfig.MaxOpenConns,
-	})
+	mysqlDB, err := orm.NewMySQLDB(coreConfig.DBConfig)
 	if err != nil {
 		panic(err)
 	}
