@@ -297,6 +297,8 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		Password:          coreConfig.DBConfig.Password,
 		Database:          coreConfig.DBConfig.Database,
 		PrometheusEnabled: coreConfig.DBConfig.PrometheusEnabled,
+		MaxIdleConns:      coreConfig.DBConfig.MaxIdleConns,
+		MaxOpenConns:      coreConfig.DBConfig.MaxOpenConns,
 	})
 	if err != nil {
 		panic(err)

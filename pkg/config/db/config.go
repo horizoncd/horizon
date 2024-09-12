@@ -21,4 +21,6 @@ type Config struct {
 	Password          string `yaml:"password,omitempty"`
 	Database          string `yaml:"database"`
 	PrometheusEnabled bool   `yaml:"prometheusEnabled"`
+	MaxIdleConns      int    `json:"maxIdleConns"`
+	MaxOpenConns      int    `json:"maxOpenConns"`
 }
