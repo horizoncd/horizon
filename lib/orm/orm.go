@@ -17,6 +17,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/horizoncd/horizon/pkg/config/db"
 	"log"
 	"os"
 	"strings"
@@ -31,20 +32,7 @@ import (
 	"gorm.io/plugin/prometheus"
 )
 
-// MySQL ...
-type MySQL struct {
-	Host              string        `json:"host"`
-	Port              int           `json:"port"`
-	Username          string        `json:"username"`
-	Password          string        `json:"password,omitempty"`
-	Database          string        `json:"database"`
-	PrometheusEnabled bool          `json:"prometheusEnabled"`
-	SlowThreshold     time.Duration `json:"slowThreshold"`
-	MaxIdleConns      int           `json:"maxIdleConns"`
-	MaxOpenConns      int           `json:"maxOpenConns"`
-}
-
-func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
+func NewMySQLDB(db db.Config) (*gorm.DB, error) {
 	conn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", db.Username,
 		db.Password, db.Host, db.Port, db.Database)
 
