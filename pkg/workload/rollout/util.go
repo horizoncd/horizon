@@ -60,12 +60,6 @@ func assignContainers(containers []corev1.Container) []corev1.Container {
 			Args:       container.Args,
 			WorkingDir: container.WorkingDir,
 		}
-		for _, env := range container.Env {
-			ctr.Env = append(ctr.Env, corev1.EnvVar{
-				Name:  env.Name,
-				Value: env.Value,
-			})
-		}
 		ctrs = append(ctrs, ctr)
 	}
 	return ctrs
