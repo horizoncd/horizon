@@ -17,6 +17,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/horizoncd/horizon/pkg/config/db"
 	"log"
 	"os"
 	"strings"
@@ -31,27 +32,30 @@ import (
 	"gorm.io/plugin/prometheus"
 )
 
-// MySQL ...
-type MySQL struct {
-	Host              string `json:"host"`
-	Port              int    `json:"port"`
-	Username          string `json:"username"`
-	Password          string `json:"password,omitempty"`
-	Database          string `json:"database"`
-	PrometheusEnabled bool   `json:"prometheusEnabled"`
-}
-
-func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
+func NewMySQLDB(db db.Config) (*gorm.DB, error) {
 	conn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", db.Username,
 		db.Password, db.Host, db.Port, db.Database)
+
+	// Set default value for SlowThreshold if not provided
+	if db.SlowThreshold == 0 {
+		db.SlowThreshold = 200 * time.Millisecond
+	}
+	// Set default value for MaxIdleConns if not provided
+	if db.MaxIdleConns == 0 {
+		db.MaxIdleConns = 10
+	}
+	// Set default value for MaxOpenConns if not provided
+	if db.MaxOpenConns == 0 {
+		db.MaxOpenConns = 100
+	}
 
 	sqlDB, err := sql.Open("mysql", conn)
 	if err != nil {
 		return nil, err
 	}
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(db.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(db.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 	sqlDB.SetConnMaxIdleTime(time.Hour)
 
@@ -62,6 +66,13 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 			TablePrefix:   "tb_",
 			SingularTable: true,
 		},
+		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold:             db.SlowThreshold,
+				LogLevel:                  logger.Warn,
+				IgnoreRecordNotFoundError: false,
+				Colorful:                  true,
+			}),
 	})
 
 	if db.PrometheusEnabled {

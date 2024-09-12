@@ -87,6 +87,7 @@ type PipelinerunInfo struct {
 	ResourceCommonInfo
 	ClusterID   uint   `json:"clusterID,omitempty"`
 	ClusterName string `json:"clusterName,omitempty"`
+	ClusterEnv  string `json:"clusterEnv,omitempty"`
 	Action      string `json:"action,omitempty"`
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -329,6 +330,7 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 				}
 				return ""
 			}(),
+			ClusterEnv:  dep.cluster.EnvironmentName,
 			Action:      dep.pipelinerun.Action,
 			Title:       dep.pipelinerun.Title,
 			Description: dep.pipelinerun.Description,
