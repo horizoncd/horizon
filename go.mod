@@ -11,7 +11,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis/v8 v8.3.3
-	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v41 v41.0.0
