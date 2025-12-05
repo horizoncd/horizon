@@ -29,7 +29,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	github.com/stretchr/testify v1.7.0
 	github.com/tektoncd/cli v0.3.1-0.20201026154019-cb027b2293d7
 	github.com/tektoncd/pipeline v0.17.1-0.20201027063619-b7badedd0f65
