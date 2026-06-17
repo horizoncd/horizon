@@ -118,7 +118,3 @@ GitOps是应用程序交付的最佳实践，Horizon遵循GitOps最佳实践。�
 
 + [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1sehbmzcx-dgIwaExNR4fZKXppj5kmgQ)
 
-+ 微信群
-
-  添加管理员微信，您将被邀请加入该群。
-  <img src="image/readme/wechat.jpg" alt="wechat" style="zoom:67%;" />
